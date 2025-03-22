@@ -1,7 +1,7 @@
 // src/components/combat/CombatInterface.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../context/gameHooks';
 
 // Import sub-components
 import PlayerStatus from './PlayerStatus';

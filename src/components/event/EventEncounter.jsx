@@ -1,7 +1,7 @@
 // src/components/event/EventEncounter.jsx
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../context/gameHooks';
 
 const EventEncounter = ({ event, onClose }) => {
   const { gameState, makeEventChoice } = useGame();

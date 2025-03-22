@@ -1,7 +1,7 @@
 // src/pages/ShopPage.jsx
-import React from "react";
-import Navigation from "../components/ui/Navigation";
-import { useGame } from "../context/GameContext";
+import React from 'react';
+import Navigation from '../components/ui/Navigation';
+import { useGame } from '../context/gameHooks';
 
 const ShopPage = () => {
   const {} = useGame();
@@ -39,8 +39,8 @@ const ShopPage = () => {
               <button
                 className={`px-3 py-1 rounded ${
                   gameState.player.gold >= item.price
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-gray-500 text-gray-300 cursor-not-allowed"
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                 }`}
                 disabled={gameState.player.gold < item.price}
                 onClick={() => purchaseShopItem(index)}

@@ -1,7 +1,7 @@
 // src/components/ui/Navigation.jsx
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../context/gameHooks';
 
 const Navigation = () => {
   const location = useLocation();

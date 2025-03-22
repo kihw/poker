@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventEncounter from '../components/event/EventEncounter';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../context/gameHooks';
 
 const EventPage = () => {
   const { gameState } = useGame();

@@ -1,7 +1,7 @@
 // src/components/map/RoguelikeWorldMap.jsx
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../context/gameHooks';
 
 const RoguelikeWorldMap = ({
   currentFloor,

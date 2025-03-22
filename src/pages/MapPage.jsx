@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
 import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../context/gameHooks';
 
 const MapPage = () => {
   const { gameState, generateMap } = useGame();

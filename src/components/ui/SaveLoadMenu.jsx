@@ -1,7 +1,7 @@
 // src/components/ui/SaveLoadMenu.jsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSaveGame } from '../../context/GameContext';
+import { useSaveGame } from '../../context/gameHooks';
 
 /**
  * Composant pour afficher un menu de sauvegarde et chargement

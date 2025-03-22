@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import RestSite from '../components/rest/RestSite';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../context/gameHooks';
 
 const RestPage = () => {
   const navigate = useNavigate();

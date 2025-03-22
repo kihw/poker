@@ -2,7 +2,7 @@
 import React from 'react';
 import CombatInterface from '../components/combat/CombatInterface';
 import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../context/gameHooks';
 
 const GamePage = () => {
   const { gameState } = useGame();

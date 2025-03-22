@@ -1,7 +1,7 @@
 // src/components/card/BonusCardManager.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useGame } from '../../context/GameContext';
+import { useGame } from '../../context/gameHooks';
 
 const BonusCardManager = () => {
   const { gameState, equipBonusCard, unequipBonusCard } = useGame();

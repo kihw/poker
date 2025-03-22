@@ -64,3 +64,11 @@ export function useSaveGame() {
     hasSave: contextHasSave,
   };
 }
+
+// Export par défaut pour la cohérence
+export default {
+  useGame,
+  useGameStats,
+  useBonusCards,
+  useSaveGame,
+};
