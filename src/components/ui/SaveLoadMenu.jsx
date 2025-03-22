@@ -1,13 +1,25 @@
-// src/components/ui/SaveLoadMenu.jsx
+// src/components/ui/SaveLoadMenu.jsx - Migré vers Redux
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSaveGame } from '../../context/gameHooks';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  saveGame,
+  loadGame,
+  deleteSave,
+  hasSave,
+} from '../../redux/thunks/saveThunks';
 
 /**
  * Composant pour afficher un menu de sauvegarde et chargement
  */
 const SaveLoadMenu = ({ isOpen, onClose }) => {
-  const { saveGame, loadGame, deleteSave, hasSave } = useSaveGame();
+  const dispatch = useDispatch();
+
+  // Sélecteurs Redux pour l'état du joueur
+  const player = useSelector((state) => state.player);
+  const gameState = useSelector((state) => state.game);
+
+  // État local pour la gestion du menu
   const [saveExists, setSaveExists] = useState(false);
   const [saveInfo, setSaveInfo] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -38,11 +50,11 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
         setSaveInfo(null);
       }
     }
-  }, [isOpen, hasSave, actionCompleted]);
+  }, [isOpen, actionCompleted]);
 
   // Gérer les actions
   const handleSave = () => {
-    saveGame();
+    dispatch(saveGame());
     setActionCompleted(`save-${Date.now()}`);
     setTimeout(() => {
       setActionCompleted(null);
@@ -50,13 +62,13 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
   };
 
   const handleLoad = () => {
-    loadGame();
+    dispatch(loadGame());
     onClose();
   };
 
   const handleDelete = () => {
     if (confirmDelete) {
-      deleteSave();
+      dispatch(deleteSave());
       setConfirmDelete(false);
       setActionCompleted(`delete-${Date.now()}`);
       setTimeout(() => {
@@ -145,15 +157,41 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
                     </>
                   )}
 
-                  {saveInfo.progression && (
+                  {saveInfo.game && (
                     <div className="flex justify-between">
                       <span>Étage:</span>
-                      <span>{saveInfo.progression.currentFloor || 1}</span>
+                      <span>{saveInfo.game.currentFloor || 1}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
+
+            {/* Informations sur l'état actuel */}
+            <div className="bg-gray-800 rounded-md p-4 mb-6">
+              <h3 className="text-lg font-bold text-white mb-2">État actuel</h3>
+
+              <div className="space-y-2 text-sm text-gray-300">
+                <div className="flex justify-between">
+                  <span>Niveau du joueur:</span>
+                  <span>{player.level}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Or:</span>
+                  <span>{player.gold}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>PV:</span>
+                  <span>
+                    {player.health}/{player.maxHealth}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Étage:</span>
+                  <span>{gameState.currentFloor}</span>
+                </div>
+              </div>
+            </div>
 
             {/* Boutons d'action */}
             <div className="space-y-3">

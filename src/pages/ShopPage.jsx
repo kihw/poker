@@ -1,41 +1,66 @@
-// Dans ShopPage.jsx
+// src/pages/ShopPage.jsx - Migré vers Redux
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  selectShopItems,
+  selectIsGameOver,
+  selectGamePhase,
+} from '../redux/selectors/gameSelectors';
+import { selectPlayerGold } from '../redux/selectors/playerSelectors';
+import { initShop, purchaseItem } from '../redux/slices/shopSlice';
+import { setGamePhase } from '../redux/slices/gameSlice';
+import { spendGold } from '../redux/slices/playerSlice';
 import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/gameHooks';
-import { useGameOverCheck } from '../hooks/useGameOverCheck';
 
 const ShopPage = () => {
   const navigate = useNavigate();
-  const { purchaseShopItem, leaveShop, gameState } = useGame();
-  const { isGameOver } = useGameOverCheck();
+  const dispatch = useDispatch();
+
+  // Sélecteurs Redux
+  const shopItems = useSelector(selectShopItems);
+  const playerGold = useSelector(selectPlayerGold);
+  const isGameOver = useSelector(selectIsGameOver);
+  const gamePhase = useSelector(selectGamePhase);
+
   // Vérifier l'état du jeu au chargement
   useEffect(() => {
+    // S'assurer que la boutique est initialisée
+    if (shopItems.length === 0 && gamePhase === 'shop') {
+      dispatch(initShop());
+    }
+
     // Rediriger vers la page principale si le jeu est terminé
-    if (
-      gameState &&
-      (gameState.gamePhase === 'gameOver' || gameState.isGameOver)
-    ) {
+    if (isGameOver) {
       navigate('/');
     }
-  }, [gameState, navigate]);
+  }, [isGameOver, gamePhase, shopItems.length, dispatch, navigate]);
 
   // Ajout d'un gestionnaire de secours pour fermer la boutique
   const handleForceExit = () => {
-    // Essayer d'abord la fonction normale de sortie
-    if (leaveShop) {
-      try {
-        leaveShop();
-      } catch (error) {
-        console.error('Erreur lors de la fermeture de la boutique:', error);
-      }
-    }
-    // Dans tous les cas, rediriger vers la carte
+    // Changer la phase du jeu à exploration
+    dispatch(setGamePhase('exploration'));
+    // Rediriger vers la carte
     navigate('/map');
   };
 
+  // Gérer l'achat d'un article
+  const handlePurchase = (itemIndex) => {
+    if (itemIndex >= 0 && itemIndex < shopItems.length) {
+      const item = shopItems[itemIndex];
+
+      // Vérifier si le joueur a assez d'or
+      if (playerGold >= item.price) {
+        // Dépenser l'or
+        dispatch(spendGold(item.price));
+        // Enregistrer l'achat
+        dispatch(purchaseItem({ itemIndex }));
+      }
+    }
+  };
+
   // If shop is not available
-  if (!gameState?.shopItems || gameState.shopItems.length === 0) {
+  if (!shopItems || shopItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
@@ -59,7 +84,7 @@ const ShopPage = () => {
         <h2 className="text-2xl font-bold mb-6 text-white">Boutique</h2>
 
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-          {gameState.shopItems.map((item, index) => (
+          {shopItems.map((item, index) => (
             <div
               key={index}
               className="bg-gray-700 rounded-lg p-4 border border-gray-600 flex justify-between items-start"
@@ -71,12 +96,12 @@ const ShopPage = () => {
               </div>
               <button
                 className={`px-3 py-1 rounded ${
-                  gameState.player.gold >= item.price
+                  playerGold >= item.price
                     ? 'bg-green-600 hover:bg-green-700 text-white'
                     : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                 }`}
-                disabled={gameState.player.gold < item.price}
-                onClick={() => purchaseShopItem(index)}
+                disabled={playerGold < item.price}
+                onClick={() => handlePurchase(index)}
               >
                 Acheter
               </button>
@@ -87,12 +112,12 @@ const ShopPage = () => {
         <div className="mt-6 flex justify-between items-center">
           <div className="text-white">
             <span className="text-yellow-400 mr-2">💰</span>
-            Votre or: {gameState.player.gold}
+            Votre or: {playerGold}
           </div>
           <div>
             <button
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-              onClick={() => leaveShop()}
+              onClick={() => dispatch(setGamePhase('exploration'))}
             >
               Quitter la boutique
             </button>

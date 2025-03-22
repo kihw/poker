@@ -106,6 +106,66 @@ const bonusCardsSlice = createSlice({
       state.maxSlots += action.payload || 1;
     },
     resetBonusCards: () => initialState,
+    // Ajouter le handler pour charger les données sauvegardées
+    LOAD_SAVED_DATA: (state, action) => {
+      const savedData = action.payload;
+
+      if (savedData) {
+        // Réinitialiser les collections existantes
+        state.collection = [];
+        state.active = [];
+
+        // Charger la collection si elle existe
+        if (savedData.collection && Array.isArray(savedData.collection)) {
+          // Reconstituer la collection à partir des IDs sauvegardés
+          savedData.collection.forEach((savedCard) => {
+            const cardTemplate = ALL_BONUS_CARDS.find(
+              (card) => card.id === savedCard.id
+            );
+            if (cardTemplate) {
+              const card = {
+                ...cardTemplate,
+                owned: savedCard.owned !== false,
+                level: savedCard.level || 1,
+              };
+
+              // Ajuster la valeur du bonus en fonction du niveau
+              if (card.bonus && card.level > 1) {
+                if (!card.bonus.originalValue) {
+                  card.bonus.originalValue = card.bonus.value;
+                }
+                card.bonus.value = Math.floor(
+                  card.bonus.originalValue * (1 + 0.2 * (card.level - 1))
+                );
+              }
+
+              state.collection.push(card);
+            }
+          });
+        }
+
+        // Charger les cartes actives si elles existent
+        if (savedData.active && Array.isArray(savedData.active)) {
+          savedData.active.forEach((activeCard) => {
+            const card = state.collection.find((c) => c.id === activeCard.id);
+            if (card) {
+              state.active.push({
+                ...card,
+                usesRemaining:
+                  activeCard.usesRemaining !== undefined
+                    ? activeCard.usesRemaining
+                    : card.uses || 0,
+              });
+            }
+          });
+        }
+
+        // Charger le nombre maximum d'emplacements
+        if (savedData.maxSlots !== undefined) {
+          state.maxSlots = savedData.maxSlots;
+        }
+      }
+    },
   },
 });
 
@@ -119,6 +179,7 @@ export const {
   upgradeCard,
   increaseMaxSlots,
   resetBonusCards,
+  LOAD_SAVED_DATA, // Exporter la nouvelle action
 } = bonusCardsSlice.actions;
 
 export default bonusCardsSlice.reducer;

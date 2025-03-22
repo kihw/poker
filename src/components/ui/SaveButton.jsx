@@ -1,6 +1,7 @@
-// src/components/ui/SaveButton.jsx
+// src/components/ui/SaveButton.jsx - Migré vers Redux
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
 import SaveLoadMenu from './SaveLoadMenu';
 
 /**

@@ -1,11 +1,16 @@
-// src/components/ui/Navigation.jsx
+// src/components/ui/Navigation.jsx - Migré vers Redux
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useGame } from '../../context/gameHooks';
+import { useSelector } from 'react-redux';
+import { selectStage } from '../../redux/selectors/gameSelectors';
+import { selectPlayerGold } from '../../redux/selectors/playerSelectors';
 
 const Navigation = () => {
   const location = useLocation();
-  const { gameState } = useGame();
+
+  // Sélecteurs Redux
+  const stage = useSelector(selectStage);
+  const gold = useSelector(selectPlayerGold);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-2 flex justify-center space-x-2 z-50 nav-bar">
@@ -40,8 +45,8 @@ const Navigation = () => {
         Collection
       </Link>
       <div className="flex items-center text-xs text-gray-400 ml-2">
-        <span className="mr-2">Niveau {gameState?.stage || 1}</span>
-        <span>{gameState?.player?.gold || 0} Or</span>
+        <span className="mr-2">Niveau {stage || 1}</span>
+        <span>{gold || 0} Or</span>
       </div>
     </div>
   );

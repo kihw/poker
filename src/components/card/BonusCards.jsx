@@ -1,8 +1,16 @@
-// src/components/card/BonusCards.jsx
+// src/components/card/BonusCards.jsx - Migré vers Redux
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectActiveBonusCards } from '../../redux/selectors/gameSelectors';
+import { useCard } from '../../redux/slices/bonusCardsSlice';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
 
-const BonusCards = ({ bonusCards, onUseBonus }) => {
+const BonusCards = () => {
+  const dispatch = useDispatch();
+  // Utiliser le sélecteur pour obtenir les cartes bonus actives
+  const bonusCards = useSelector(selectActiveBonusCards);
+
   if (!bonusCards || bonusCards.length === 0) {
     return null;
   }
@@ -67,6 +75,37 @@ const BonusCards = ({ bonusCards, onUseBonus }) => {
     }
   };
 
+  // Gérer l'utilisation d'une carte bonus
+  const handleUseBonus = (index) => {
+    const card = bonusCards[index];
+
+    // Vérifier si la carte peut être utilisée
+    if (
+      card.effect !== 'active' ||
+      card.usesRemaining <= 0 ||
+      card.available === false
+    ) {
+      dispatch(
+        setActionFeedback({
+          message: 'Cette carte ne peut pas être utilisée actuellement',
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    // Dispatche l'action pour utiliser la carte
+    dispatch(useCard(index));
+
+    // Feedback visuel
+    dispatch(
+      setActionFeedback({
+        message: `${card.name} activée`,
+        type: 'success',
+      })
+    );
+  };
+
   return (
     <div className="p-4 bg-gray-800 rounded-md">
       <h2 className="font-bold mb-2 text-white">Cartes Bonus</h2>
@@ -80,7 +119,7 @@ const BonusCards = ({ bonusCards, onUseBonus }) => {
           <motion.button
             key={index}
             variants={item}
-            onClick={() => onUseBonus(index)}
+            onClick={() => handleUseBonus(index)}
             className={`px-3 py-2 text-xs font-semibold rounded-md text-white
                         transition-all transform ${getRarityColor(bonus.rarity)}
                         ${

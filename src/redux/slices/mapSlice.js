@@ -38,6 +38,26 @@ const mapSlice = createSlice({
       state.error = action.payload;
     },
     resetMap: () => initialState,
+    // Ajouter le handler pour charger les données sauvegardées
+    LOAD_SAVED_DATA: (state, action) => {
+      const savedData = action.payload;
+
+      if (savedData) {
+        // Charger le chemin s'il existe
+        if (savedData.path && Array.isArray(savedData.path)) {
+          state.path = savedData.path;
+        }
+
+        // Charger le nœud actuel
+        if (savedData.currentNodeId) {
+          state.currentNodeId = savedData.currentNodeId;
+        }
+
+        // Réinitialiser l'état d'erreur
+        state.isGenerating = false;
+        state.error = null;
+      }
+    },
   },
 });
 
@@ -48,6 +68,7 @@ export const {
   mapGenerationSuccess,
   mapGenerationFailure,
   resetMap,
+  LOAD_SAVED_DATA, // Exporter la nouvelle action
 } = mapSlice.actions;
 
 export default mapSlice.reducer;

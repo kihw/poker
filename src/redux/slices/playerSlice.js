@@ -51,6 +51,21 @@ const playerSlice = createSlice({
       );
     },
     resetPlayer: () => initialState,
+    // Ajouter le handler pour charger les données sauvegardées
+    LOAD_SAVED_DATA: (state, action) => {
+      // Récupérer les données du joueur depuis le payload
+      const savedData = action.payload;
+
+      // Appliquer toutes les propriétés sauvegardées
+      if (savedData) {
+        Object.keys(savedData).forEach((key) => {
+          // Ne copier que les propriétés qui existent dans l'état
+          if (state.hasOwnProperty(key)) {
+            state[key] = savedData[key];
+          }
+        });
+      }
+    },
   },
 });
 
@@ -66,6 +81,7 @@ export const {
   addToInventory,
   removeFromInventory,
   resetPlayer,
+  LOAD_SAVED_DATA, // Exporter la nouvelle action
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

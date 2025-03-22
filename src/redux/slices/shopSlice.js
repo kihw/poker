@@ -53,9 +53,32 @@ const shopSlice = createSlice({
       }
     },
     resetShop: () => initialState,
+    // Ajouter le handler pour charger les données sauvegardées
+    LOAD_SAVED_DATA: (state, action) => {
+      const savedData = action.payload;
+
+      if (savedData) {
+        // Charger les articles achetés
+        if (
+          savedData.itemsPurchased &&
+          typeof savedData.itemsPurchased === 'object'
+        ) {
+          state.itemsPurchased = { ...savedData.itemsPurchased };
+        }
+
+        // Réinitialiser les articles de la boutique
+        // Ils seront régénérés lors de la prochaine visite de la boutique
+        state.items = [];
+      }
+    },
   },
 });
 
-export const { initShop, purchaseItem, resetShop } = shopSlice.actions;
+export const {
+  initShop,
+  purchaseItem,
+  resetShop,
+  LOAD_SAVED_DATA, // Exporter la nouvelle action
+} = shopSlice.actions;
 
 export default shopSlice.reducer;

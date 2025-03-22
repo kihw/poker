@@ -1,20 +1,25 @@
-// src/pages/EventPage.jsx
+// src/pages/EventPage.jsx - Migré vers Redux
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { setGamePhase } from '../redux/slices/gameSlice';
 import EventEncounter from '../components/event/EventEncounter';
-import { useGame } from '../context/gameHooks';
-import { useGameOverCheck } from '../hooks/useGameOverCheck';
 
 const EventPage = () => {
-  const { gameState } = useGame();
   const navigate = useNavigate();
-  const { isGameOver } = useGameOverCheck();
+  const dispatch = useDispatch();
+
+  // Sélecteur pour l'événement actuel
+  const currentEvent = useSelector((state) => state.game.currentEvent);
+
   // Handle event close/completion
   const handleEventComplete = () => {
+    // Retourner à la phase d'exploration après l'événement
+    dispatch(setGamePhase('exploration'));
     navigate('/map');
   };
 
-  if (!gameState?.currentEvent) {
+  if (!currentEvent) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
@@ -33,10 +38,7 @@ const EventPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <EventEncounter
-        event={gameState.currentEvent}
-        onClose={handleEventComplete}
-      />
+      <EventEncounter event={currentEvent} onClose={handleEventComplete} />
     </div>
   );
 };

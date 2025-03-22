@@ -1,83 +1,65 @@
-// src/pages/GamePage.jsx
-import React from 'react';
+// src/pages/GamePage.jsx - Migré vers Redux
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/gameHooks';
-import { useSaveGame } from '../context/gameHooks';
-import { useGameOverCheck } from '../hooks/useGameOverCheck';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  selectGamePhase,
+  selectIsGameOver,
+} from '../redux/selectors/gameSelectors';
+import { resetEntireGame, deleteSave } from '../redux/thunks/saveThunks';
 import Navigation from '../components/ui/Navigation';
 import CombatInterface from '../components/combat/CombatInterface';
 
 const GamePage = () => {
-  const { gameState, resetGame } = useGame();
-  const { deleteSave } = useSaveGame();
+  const gamePhase = useSelector(selectGamePhase);
+  const isGameOver = useSelector(selectIsGameOver);
+  const player = useSelector((state) => state.player);
+  const stage = useSelector((state) => state.game.stage);
+
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Nous n'utilisons pas useGameOverCheck ici pour éviter les redirections automatiques
-  const isGameOver = gameState?.gamePhase === 'gameOver';
-
   // Check if we're in a combat phase
-  const isInCombat =
-    gameState?.gamePhase === 'combat' || gameState?.gamePhase === 'reward';
+  const isInCombat = gamePhase === 'combat' || gamePhase === 'reward';
 
-  React.useEffect(() => {
-    if (gameState?.gamePhase === 'reward') {
+  // Redirection automatique vers la carte lorsqu'on est en phase 'reward'
+  useEffect(() => {
+    if (gamePhase === 'reward') {
       console.log(
         "Phase 'reward' détectée, redirection vers la carte dans 1 seconde"
       );
 
       // Utiliser un timeout pour laisser le temps aux animations de se terminer
       const timer = setTimeout(() => {
-        // Changer manuellement la phase
-        if (gameState) {
-          gameState.gamePhase = 'exploration';
-
-          // Rediriger vers la carte
-          navigate('/map');
-          console.log('Redirection vers la carte effectuée');
-        }
+        // Rediriger vers la carte
+        navigate('/map');
+        console.log('Redirection vers la carte effectuée');
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [gameState?.gamePhase, navigate, gameState]);
+  }, [gamePhase, navigate]);
 
   // Si on est en mode exploration, rediriger vers la carte
-  React.useEffect(() => {
-    if (gameState?.gamePhase === 'exploration') {
+  useEffect(() => {
+    if (gamePhase === 'exploration') {
       navigate('/map');
     }
-  }, [gameState?.gamePhase, navigate]);
+  }, [gamePhase, navigate]);
 
   // Fonction de redémarrage du jeu
   const handleRestart = () => {
-    if (resetGame) {
-      resetGame();
-      window.location.reload(); // Forcer un rechargement complet
-    } else {
-      // Fallback
-      window.location.href = '/';
-    }
+    dispatch(resetEntireGame());
+    window.location.reload(); // Forcer un rechargement complet
   };
 
   // Fonction pour supprimer la sauvegarde et recommencer
   const handleDeleteSaveAndRestart = () => {
-    if (deleteSave) {
-      deleteSave();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
+    dispatch(deleteSave());
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
-
-  // Si le jeu est en cours de chargement
-  if (!gameState) {
-    return (
-      <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <div className="text-white text-xl">Chargement du jeu...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
@@ -90,12 +72,11 @@ const GamePage = () => {
           <div className="bg-gray-700 p-4 rounded-lg mb-6 text-left">
             <h3 className="text-yellow-400 mb-2">État actuel du jeu:</h3>
             <p>
-              Phase: <span className="text-red-400">{gameState.gamePhase}</span>
+              Phase: <span className="text-red-400">{gamePhase}</span>
             </p>
-            <p>Niveau: {gameState.stage}</p>
+            <p>Niveau: {stage}</p>
             <p>
-              PV du joueur: {gameState.player.health}/
-              {gameState.player.maxHealth}
+              PV du joueur: {player.health}/{player.maxHealth}
             </p>
           </div>
 

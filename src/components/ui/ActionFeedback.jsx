@@ -1,15 +1,30 @@
-// src/components/ui/ActionFeedback.jsx
+// src/components/ui/ActionFeedback.jsx - Migré vers Redux
 import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, useAnimation } from 'framer-motion';
+import { clearActionFeedback } from '../../redux/slices/uiSlice';
 
 /**
  * Composant pour afficher un feedback visuel temporaire sur une action
- * @param {string} message - Message à afficher
- * @param {string} type - Type de feedback ('success', 'error', 'info', 'warning')
- * @param {number} duration - Durée d'affichage en ms
+ * @param {string} message - Message à afficher (optionnel, utilise le state Redux si non fourni)
+ * @param {string} type - Type de feedback ('success', 'error', 'info', 'warning') (optionnel)
+ * @param {number} duration - Durée d'affichage en ms (optionnel)
  */
-const ActionFeedback = ({ message, type = 'info', duration = 2000 }) => {
+const ActionFeedback = ({ message, type, duration }) => {
   const controls = useAnimation();
+  const dispatch = useDispatch();
+
+  // Utiliser les paramètres fournis ou l'état Redux
+  const stateFeedback = useSelector((state) => state.ui.actionFeedback);
+
+  const feedbackMessage =
+    message || (stateFeedback ? stateFeedback.message : '');
+  const feedbackType = type || (stateFeedback ? stateFeedback.type : 'info');
+  const feedbackDuration =
+    duration || (stateFeedback ? stateFeedback.duration : 2000);
+
+  // Si aucun message n'est présent, ne rien afficher
+  if (!feedbackMessage) return null;
 
   useEffect(() => {
     // Animation de départ
@@ -26,19 +41,26 @@ const ActionFeedback = ({ message, type = 'info', duration = 2000 }) => {
 
     // Programmer la disparition
     const timer = setTimeout(() => {
-      controls.start({
-        opacity: 0,
-        y: -50,
-        transition: { duration: 0.3 },
-      });
-    }, duration);
+      controls
+        .start({
+          opacity: 0,
+          y: -50,
+          transition: { duration: 0.3 },
+        })
+        .then(() => {
+          // Nettoyer le feedback dans le state Redux une fois l'animation terminée
+          if (stateFeedback) {
+            dispatch(clearActionFeedback());
+          }
+        });
+    }, feedbackDuration);
 
     return () => clearTimeout(timer);
-  }, [controls, duration, message]);
+  }, [controls, feedbackDuration, feedbackMessage, dispatch, stateFeedback]);
 
   // Styles et classes basés sur le type
   const getTypeStyles = () => {
-    switch (type) {
+    switch (feedbackType) {
       case 'success':
         return 'bg-green-600 border-green-800 shadow-green-900/30';
       case 'error':
@@ -53,7 +75,7 @@ const ActionFeedback = ({ message, type = 'info', duration = 2000 }) => {
 
   // Icône basée sur le type
   const getTypeIcon = () => {
-    switch (type) {
+    switch (feedbackType) {
       case 'success':
         return '✅';
       case 'error':
@@ -70,7 +92,7 @@ const ActionFeedback = ({ message, type = 'info', duration = 2000 }) => {
   const getPulseAnimation = () => {
     let baseColor, pulseColor;
 
-    switch (type) {
+    switch (feedbackType) {
       case 'success':
         baseColor = 'rgba(22, 163, 74, 0.1)'; // green-600 avec alpha
         pulseColor = 'rgba(22, 163, 74, 0.3)'; // green-600 avec plus d'alpha
@@ -139,7 +161,7 @@ const ActionFeedback = ({ message, type = 'info', duration = 2000 }) => {
           transition: { delay: 0.1, duration: 0.3 },
         }}
       >
-        {message}
+        {feedbackMessage}
       </motion.span>
     </motion.div>
   );

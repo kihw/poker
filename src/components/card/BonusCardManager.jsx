@@ -1,10 +1,24 @@
-// src/components/card/BonusCardManager.jsx
+// src/components/card/BonusCardManager.jsx - Migré vers Redux
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useGame } from '../../context/gameHooks';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  selectBonusCardCollection,
+  selectActiveBonusCards,
+  selectMaxBonusCardSlots,
+} from '../../redux/selectors/gameSelectors';
+import { equipCard, unequipCard } from '../../redux/slices/bonusCardsSlice';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const BonusCardManager = () => {
-  const { gameState, equipBonusCard, unequipBonusCard } = useGame();
+  const dispatch = useDispatch();
+
+  // Sélecteurs Redux
+  const bonusCardCollection = useSelector(selectBonusCardCollection);
+  const activeBonusCards = useSelector(selectActiveBonusCards);
+  const maxBonusCardSlots = useSelector(selectMaxBonusCardSlots);
+
+  // État local pour la gestion de l'UI
   const [selectedTab, setSelectedTab] = useState('equipped');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
@@ -12,7 +26,7 @@ const BonusCardManager = () => {
   const [displayedCards, setDisplayedCards] = useState([]);
 
   // Loading state
-  if (!gameState?.bonusCardCollection || !gameState?.activeBonusCards) {
+  if (!bonusCardCollection || !activeBonusCards) {
     return <div className="text-white">Loading bonus cards...</div>;
   }
 
@@ -29,10 +43,10 @@ const BonusCardManager = () => {
   useEffect(() => {
     let cards;
     if (selectedTab === 'equipped') {
-      cards = [...gameState.activeBonusCards];
+      cards = [...activeBonusCards];
     } else {
-      cards = gameState.bonusCardCollection.filter(
-        (card) => !gameState.activeBonusCards.some((ec) => ec.id === card.id)
+      cards = bonusCardCollection.filter(
+        (card) => !activeBonusCards.some((ec) => ec.id === card.id)
       );
     }
 
@@ -77,16 +91,34 @@ const BonusCardManager = () => {
     searchTerm,
     sortBy,
     filterRarity,
-    gameState?.activeBonusCards,
-    gameState?.bonusCardCollection,
+    activeBonusCards,
+    bonusCardCollection,
   ]);
 
   const handleEquip = (cardId) => {
-    equipBonusCard(cardId);
+    dispatch(equipCard(cardId));
+
+    // Feedback
+    dispatch(
+      setActionFeedback({
+        message: 'Carte équipée',
+        type: 'success',
+        duration: 2000,
+      })
+    );
   };
 
   const handleUnequip = (cardId) => {
-    unequipBonusCard(cardId);
+    dispatch(unequipCard(cardId));
+
+    // Feedback
+    dispatch(
+      setActionFeedback({
+        message: 'Carte retirée',
+        type: 'info',
+        duration: 2000,
+      })
+    );
   };
 
   return (
@@ -96,8 +128,8 @@ const BonusCardManager = () => {
           Gestion des cartes bonus
         </h2>
         <div className="text-sm font-medium text-yellow-400">
-          {gameState.activeBonusCards.length}/{gameState.maxBonusCardSlots || 3}{' '}
-          emplacements utilisés
+          {activeBonusCards.length}/{maxBonusCardSlots || 3} emplacements
+          utilisés
         </div>
       </div>
 
@@ -197,13 +229,9 @@ const BonusCardManager = () => {
                 ) : (
                   <button
                     onClick={() => handleEquip(card.id)}
-                    disabled={
-                      gameState.activeBonusCards.length >=
-                      (gameState.maxBonusCardSlots || 3)
-                    }
+                    disabled={activeBonusCards.length >= maxBonusCardSlots}
                     className={`text-xs px-2 py-1 rounded ${
-                      gameState.activeBonusCards.length >=
-                      (gameState.maxBonusCardSlots || 3)
+                      activeBonusCards.length >= maxBonusCardSlots
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}

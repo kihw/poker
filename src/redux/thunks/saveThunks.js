@@ -1,12 +1,24 @@
 // src/redux/thunks/saveThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setLoading, setError, setActionFeedback } from '../slices/uiSlice';
-import { resetPlayer } from '../slices/playerSlice';
-import { resetGame } from '../slices/gameSlice';
+import {
+  resetPlayer,
+  LOAD_SAVED_DATA as LOAD_PLAYER_DATA,
+} from '../slices/playerSlice';
+import {
+  resetGame,
+  LOAD_SAVED_DATA as LOAD_GAME_DATA,
+} from '../slices/gameSlice';
 import { resetCombatState } from '../slices/combatSlice';
-import { resetBonusCards } from '../slices/bonusCardsSlice';
-import { resetMap } from '../slices/mapSlice';
-import { resetShop } from '../slices/shopSlice';
+import {
+  resetBonusCards,
+  LOAD_SAVED_DATA as LOAD_BONUS_CARDS_DATA,
+} from '../slices/bonusCardsSlice';
+import { resetMap, LOAD_SAVED_DATA as LOAD_MAP_DATA } from '../slices/mapSlice';
+import {
+  resetShop,
+  LOAD_SAVED_DATA as LOAD_SHOP_DATA,
+} from '../slices/shopSlice';
 import { resetUi } from '../slices/uiSlice';
 import { generateNewMap } from './mapThunks';
 
@@ -100,6 +112,7 @@ export const loadGame = createAsyncThunk(
             type: 'warning',
           })
         );
+        dispatch(setLoading(false));
         return { success: false, reason: 'no_save' };
       }
 
@@ -115,43 +128,27 @@ export const loadGame = createAsyncThunk(
 
       // Charger les données du joueur
       if (saveData.player) {
-        // Charger directement dans le reducer via une action
-        dispatch({
-          type: 'player/LOAD_SAVED_DATA',
-          payload: saveData.player,
-        });
+        dispatch(LOAD_PLAYER_DATA(saveData.player));
       }
 
       // Charger les données du jeu
       if (saveData.game) {
-        dispatch({
-          type: 'game/LOAD_SAVED_DATA',
-          payload: saveData.game,
-        });
+        dispatch(LOAD_GAME_DATA(saveData.game));
       }
 
       // Charger les données de la carte
       if (saveData.map) {
-        dispatch({
-          type: 'map/LOAD_SAVED_DATA',
-          payload: saveData.map,
-        });
+        dispatch(LOAD_MAP_DATA(saveData.map));
       }
 
       // Charger les données des cartes bonus
       if (saveData.bonusCards) {
-        dispatch({
-          type: 'bonusCards/LOAD_SAVED_DATA',
-          payload: saveData.bonusCards,
-        });
+        dispatch(LOAD_BONUS_CARDS_DATA(saveData.bonusCards));
       }
 
       // Charger les données de la boutique
       if (saveData.shop) {
-        dispatch({
-          type: 'shop/LOAD_SAVED_DATA',
-          payload: saveData.shop,
-        });
+        dispatch(LOAD_SHOP_DATA(saveData.shop));
       }
 
       dispatch(setLoading(false));
@@ -257,33 +254,4 @@ export const resetEntireGame = createAsyncThunk(
 // Fonction utilitaire pour vérifier si une sauvegarde existe
 export const hasSave = () => {
   return localStorage.getItem(SAVE_KEY) !== null;
-};
-
-// Composant pour la sauvegarde automatique (React component)
-export const AutoSaveComponent = ({ interval = 60000 }) => {
-  const dispatch = useDispatch();
-  const gamePhase = useSelector((state) => state.game.gamePhase);
-
-  useEffect(() => {
-    // Fonction pour sauvegarder automatiquement
-    const performAutoSave = () => {
-      // Ne pas sauvegarder en mode game over
-      if (gamePhase !== 'gameOver') {
-        dispatch(saveGame());
-        console.log(
-          'Sauvegarde automatique effectuée à',
-          new Date().toLocaleTimeString()
-        );
-      }
-    };
-
-    // Configurer l'intervalle de sauvegarde
-    const saveInterval = setInterval(performAutoSave, interval);
-
-    // Nettoyer l'intervalle lors du démontage
-    return () => clearInterval(saveInterval);
-  }, [dispatch, gamePhase, interval]);
-
-  // Ce composant ne rend rien visuellement
-  return null;
 };

@@ -1,32 +1,53 @@
-// src/pages/MapPage.jsx
+// src/pages/MapPage.jsx - Migré vers Redux
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  selectMapPath,
+  selectCurrentNodeId,
+  selectIsGameOver,
+  selectGamePhase,
+} from '../redux/selectors/gameSelectors';
+import {
+  selectPlayerHealth,
+  selectPlayerMaxHealth,
+  selectPlayerGold,
+} from '../redux/selectors/playerSelectors';
+import { generateNewMap } from '../redux/thunks/mapThunks';
+import { setActionFeedback } from '../redux/slices/uiSlice';
 import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
 import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/gameHooks';
 import ActionFeedback from '../components/ui/ActionFeedback';
-import { useGameOverCheck } from '../hooks/useGameOverCheck';
+
 const MapPage = () => {
-  const { gameState, generateMap } = useGame();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [feedback, setFeedback] = useState(null);
   const [mapLoading, setMapLoading] = useState(false);
-  const { isGameOver } = useGameOverCheck();
+
+  // Sélecteurs Redux
+  const path = useSelector(selectMapPath);
+  const currentNodeId = useSelector(selectCurrentNodeId);
+  const isGameOver = useSelector(selectIsGameOver);
+  const gamePhase = useSelector(selectGamePhase);
+  const playerHealth = useSelector(selectPlayerHealth);
+  const playerMaxHealth = useSelector(selectPlayerMaxHealth);
+  const playerGold = useSelector(selectPlayerGold);
+
+  // État local pour le feedback
+  const [feedback, setFeedback] = useState(null);
 
   // S'assurer que path est un tableau valide
-  const safePath = Array.isArray(gameState?.path) ? gameState.path : [];
-  const safePlayer = gameState?.player || {
-    health: 50,
-    maxHealth: 50,
-    gold: 100,
+  const safePath = Array.isArray(path) ? path : [];
+  const safePlayer = {
+    health: playerHealth,
+    maxHealth: playerMaxHealth,
+    gold: playerGold,
   };
 
   // Navigation automatique vers la page appropriée lorsqu'un nœud est sélectionné
   useEffect(() => {
-    if (!gameState) return;
-
     // Redirection basée sur la phase de jeu actuelle
-    switch (gameState.gamePhase) {
+    switch (gamePhase) {
       case 'combat':
         console.log('Redirection vers la page de combat');
         navigate('/');
@@ -47,50 +68,40 @@ const MapPage = () => {
         // Rester sur la page de carte
         break;
     }
-  }, [gameState?.gamePhase, navigate]);
+  }, [gamePhase, navigate]);
 
   // Generate map if not exists or empty
   useEffect(() => {
     const tryGenerateMap = async () => {
       console.log('Vérification de la carte', {
-        gameStateExists: !!gameState,
-        pathExists: gameState?.path?.length > 0,
-        generateMapAvailable: typeof generateMap === 'function',
+        pathExists: safePath.length > 0,
       });
 
-      // Ensure gameState exists, path is empty, and generateMap is a function
-      if (gameState && (!gameState.path || gameState.path.length === 0)) {
-        if (generateMap) {
-          try {
-            setMapLoading(true);
-            console.log('Génération de la carte roguelike');
-            await generateMap();
-            setFeedback({
-              message: 'Carte générée avec succès',
-              type: 'success',
-            });
-          } catch (error) {
-            console.error('Erreur lors de la génération de la carte:', error);
-            setFeedback({
-              message: 'Erreur lors de la génération de la carte',
-              type: 'error',
-            });
-          } finally {
-            setMapLoading(false);
-          }
-        } else {
-          console.error('Fonction de génération de carte non disponible');
+      // Ensure path is empty before generating a new map
+      if (safePath.length === 0) {
+        try {
+          setMapLoading(true);
+          console.log('Génération de la carte roguelike');
+          await dispatch(generateNewMap({}));
           setFeedback({
-            message: 'Impossible de générer la carte',
+            message: 'Carte générée avec succès',
+            type: 'success',
+          });
+        } catch (error) {
+          console.error('Erreur lors de la génération de la carte:', error);
+          setFeedback({
+            message: 'Erreur lors de la génération de la carte',
             type: 'error',
           });
+        } finally {
+          setMapLoading(false);
         }
       }
     };
 
     // Try to generate map immediately
     tryGenerateMap();
-  }, [gameState, generateMap]);
+  }, [safePath, dispatch]);
 
   // Afficher un écran de chargement si la carte est en cours de génération
   if (mapLoading) {
@@ -103,7 +114,7 @@ const MapPage = () => {
   }
 
   // Si pas de données de carte, afficher un message d'attente
-  if (!gameState || safePath.length === 0) {
+  if (safePath.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
@@ -118,7 +129,7 @@ const MapPage = () => {
             </p>
           </div>
           <button
-            onClick={() => generateMap && generateMap()}
+            onClick={() => dispatch(generateNewMap({}))}
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             Essayer de générer une nouvelle carte
@@ -160,10 +171,10 @@ const MapPage = () => {
       {/* Carte roguelike avec z-index élevé */}
       <div className="relative z-10 w-full">
         <RoguelikeWorldMap
-          currentFloor={gameState.currentFloor || 1}
-          maxFloors={gameState.maxFloors || 10}
+          currentFloor={useSelector((state) => state.game.currentFloor) || 1}
+          maxFloors={useSelector((state) => state.game.maxFloors) || 10}
           nodes={safePath}
-          currentNodeId={gameState.currentNodeId}
+          currentNodeId={currentNodeId}
           playerStats={safePlayer}
         />
       </div>
