@@ -1,7 +1,7 @@
-// src/components/ui/ActionFeedback.jsx - Migré vers Redux
-import React, { useEffect } from 'react';
+// src/components/ui/ActionFeedback.jsx - Fixed version
+import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { clearActionFeedback } from '../../redux/slices/uiSlice';
 
 /**
@@ -11,8 +11,8 @@ import { clearActionFeedback } from '../../redux/slices/uiSlice';
  * @param {number} duration - Durée d'affichage en ms (optionnel)
  */
 const ActionFeedback = ({ message, type, duration }) => {
-  const controls = useAnimation();
   const dispatch = useDispatch();
+  const [isVisible, setIsVisible] = useState(false);
 
   // Utiliser les paramètres fournis ou l'état Redux
   const stateFeedback = useSelector((state) => state.ui.actionFeedback);
@@ -24,39 +24,32 @@ const ActionFeedback = ({ message, type, duration }) => {
     duration || (stateFeedback ? stateFeedback.duration : 2000);
 
   // Si aucun message n'est présent, ne rien afficher
-  if (!feedbackMessage) return null;
-
   useEffect(() => {
-    // Animation de départ
-    controls.start({
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-        type: 'spring',
-        stiffness: 300,
-        damping: 25,
-      },
-    });
+    if (!feedbackMessage) {
+      setIsVisible(false);
+      return;
+    }
+
+    // Rendre le message visible
+    setIsVisible(true);
 
     // Programmer la disparition
     const timer = setTimeout(() => {
-      controls
-        .start({
-          opacity: 0,
-          y: -50,
-          transition: { duration: 0.3 },
-        })
-        .then(() => {
-          // Nettoyer le feedback dans le state Redux une fois l'animation terminée
-          if (stateFeedback) {
-            dispatch(clearActionFeedback());
-          }
-        });
+      setIsVisible(false);
+
+      // Attendre la fin de l'animation avant de nettoyer le feedback
+      setTimeout(() => {
+        if (stateFeedback) {
+          dispatch(clearActionFeedback());
+        }
+      }, 300); // Durée de l'animation de sortie
     }, feedbackDuration);
 
     return () => clearTimeout(timer);
-  }, [controls, feedbackDuration, feedbackMessage, dispatch, stateFeedback]);
+  }, [feedbackMessage, feedbackDuration, dispatch, stateFeedback]);
+
+  // Si aucun message à afficher, ne rien rendre
+  if (!feedbackMessage) return null;
 
   // Styles et classes basés sur le type
   const getTypeStyles = () => {
@@ -130,7 +123,13 @@ const ActionFeedback = ({ message, type, duration }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: -50 }}
-      animate={controls}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: -50 }}
+      transition={{
+        duration: 0.3,
+        type: 'spring',
+        stiffness: 300,
+        damping: 25,
+      }}
       className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-md border ${getTypeStyles()} text-white font-bold shadow-lg flex items-center`}
       role="alert"
       aria-live="assertive"

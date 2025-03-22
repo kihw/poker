@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Migré vers Redux
+// src/components/combat/CombatInterface.jsx - Fixed imports
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,9 +17,9 @@ import TutorialOverlay from '../ui/TutorialOverlay';
 import {
   toggleCardSelection,
   setTurnPhase,
+  dealHand, // Import this from combatSlice directly
 } from '../../redux/slices/combatSlice';
 import {
-  dealHand,
   attackEnemy,
   continueAfterVictory,
 } from '../../redux/thunks/combatThunks';
