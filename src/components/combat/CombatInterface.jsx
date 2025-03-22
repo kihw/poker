@@ -170,12 +170,13 @@ const CombatInterface = () => {
   };
 
   // Lancer l'attaque en passant les cartes sélectionnées localement
+  // Pour handleAttack
   const handleAttack = () => {
     // Vérifier qu'au moins 1 carte est sélectionnée
-    if (this.gameState.selectedCards.length === 0) {
+    if (gameState.selectedCards.length === 0) {
       // Utiliser le système de feedback si disponible
-      if (this.gameState.setActionFeedback) {
-        this.gameState.setActionFeedback(
+      if (gameState.setActionFeedback) {
+        gameState.setActionFeedback(
           'Vous devez sélectionner au moins 1 carte pour attaquer',
           'warning'
         );
@@ -186,10 +187,10 @@ const CombatInterface = () => {
     }
 
     // Vérifier qu'au maximum 5 cartes sont sélectionnées
-    if (this.gameState.selectedCards.length > 5) {
+    if (gameState.selectedCards.length > 5) {
       // Utiliser le système de feedback si disponible
-      if (this.gameState.setActionFeedback) {
-        this.gameState.setActionFeedback(
+      if (gameState.setActionFeedback) {
+        gameState.setActionFeedback(
           'Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer',
           'warning'
         );
@@ -200,34 +201,23 @@ const CombatInterface = () => {
     }
 
     // Vérifier que les propriétés isSelected des cartes correspondent à selectedCards
-    if (this.gameState && this.gameState.hand) {
+    if (gameState && gameState.hand) {
       // Réinitialiser toutes les cartes
-      this.gameState.hand.forEach((card, index) => {
-        card.isSelected = this.gameState.selectedCards.includes(index);
+      gameState.hand.forEach((card, index) => {
+        card.isSelected = gameState.selectedCards.includes(index);
       });
     }
 
     // Évaluer la main sélectionnée
-    this.gameState.evaluateSelectedHand();
-
-    // IMPORTANT: Appeler notre nouvelle fonction pour préparer la transition
-    this.prepareCombatTransition();
+    evaluateSelectedHand();
   };
 
-  // Continuer au prochain tour/étage
+  // Pour handleContinue
   const handleContinue = () => {
     if (gameState?.enemy && gameState.enemy.health <= 0) {
       nextStage();
     } else {
-      // S'assurer que les cartes sélectionnées sont correctement marquées avant de distribuer
-      // Si le composant a accès au combatSystem, utiliser:
-      if (
-        combatSystem &&
-        typeof combatSystem.prepareCombatTransition === 'function'
-      ) {
-        combatSystem.prepareCombatTransition();
-      }
-
+      // S'assurer que toutes les cartes sont correctement marquées avant de distribuer
       dealHand();
     }
   };

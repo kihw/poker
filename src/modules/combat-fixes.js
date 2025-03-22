@@ -497,78 +497,46 @@ export function fixedEvaluateSelectedHand() {
  */
 export function fixedDiscardCards(indices) {
   if (!indices || !Array.isArray(indices) || indices.length === 0) {
-    console.warn('Aucune carte à défausser');
-    return this.hand;
-  }
-
-  // Vérification de la validité des indices
-  if (indices.some((idx) => idx < 0 || idx >= this.hand.length)) {
-    console.error('Indices de défausse invalides:', indices);
     return this.hand;
   }
 
   // Marquer la défausse comme utilisée
   this.discardUsed = true;
 
-  // Trier les indices en ordre décroissant pour éviter les problèmes lors de la suppression
-  const sortedIndices = [...indices].sort((a, b) => b - a);
+  // Trier les indices en ordre croissant
+  const sortedIndices = [...indices].sort((a, b) => a - b);
 
   // Sauvegarder les cartes défaussées
-  if (!this.discard) {
-    this.discard = [];
-  }
-
-  const discardedCards = sortedIndices.map((index) => {
-    const card = this.hand[index];
-    console.log(
-      `Défausse de la carte ${card.value} de ${card.suit} à l'index ${index}`
-    );
-    return card;
-  });
-
+  const discardedCards = sortedIndices.map((index) => this.hand[index]);
+  if (!this.discard) this.discard = [];
   this.discard.push(...discardedCards);
 
-  // Créer une nouvelle main sans les cartes défaussées
-  const newHand = [...this.hand];
-  sortedIndices.forEach((index) => {
-    if (index >= 0 && index < newHand.length) {
-      newHand.splice(index, 1);
-    }
-  });
+  // S'assurer que le deck a suffisamment de cartes
+  if (this.deck.length < indices.length) {
+    this.deck = [
+      ...this.deck,
+      ...this.discard.filter((card) => !discardedCards.includes(card)),
+    ];
+    this.discard = [...discardedCards];
+    this.deck = shuffleDeck(this.deck);
 
-  // Nombre de cartes à tirer
-  const drawCount = indices.length;
-
-  // Si le deck est trop petit, on recycle la défausse (sauf les cartes qu'on vient de défausser)
-  if (this.deck.length < drawCount) {
-    const oldDiscard = [...this.discard];
-    this.deck = shuffleDeck([...this.deck, ...oldDiscard]);
-    this.discard = discardedCards; // On garde seulement les cartes qu'on vient de défausser
-
-    // Si c'est toujours insuffisant, on recrée un deck
-    if (this.deck.length < drawCount) {
+    if (this.deck.length < indices.length) {
       this.initializeDeck();
     }
   }
 
-  // Tirer de nouvelles cartes
-  const newCards = drawCards(this.deck, drawCount);
+  // Tirer les nouvelles cartes
+  const newCards = drawCards(this.deck, indices.length);
+  this.deck = this.deck.slice(indices.length);
 
-  // S'assurer que les nouvelles cartes ont isSelected = false
-  newCards.forEach((card) => {
-    card.isSelected = false;
+  // Créer une nouvelle main avec les nouvelles cartes aux positions correctes
+  const newHand = [...this.hand];
+  sortedIndices.forEach((index, i) => {
+    newHand[index] = { ...newCards[i], isSelected: false };
   });
 
-  // Mettre à jour le deck
-  this.deck = this.deck.slice(drawCount);
-
-  // Mise à jour de la main
-  this.hand = [...newHand, ...newCards];
-
-  // Reset des cartes sélectionnées
+  this.hand = newHand;
   this.selectedCards = [];
-
-  // Désactiver le mode défausse
   this.discardMode = false;
 
   return this.hand;
@@ -655,18 +623,15 @@ export function improvedDiscardCards(indices) {
   this.discardUsed = true;
 
   // Créer une copie de la main actuelle
-  const currentHand = [...this.hand];
+  const handCopy = [...this.hand];
 
-  // Trier les indices en ordre décroissant pour éviter les problèmes lors de la suppression
-  const sortedIndices = [...indices].sort((a, b) => b - a);
-
-  // Sauvegarder les cartes défaussées
+  // Sauvegarder les cartes défaussées DANS L'ORDRE EXACT fourni
   if (!this.discard) {
     this.discard = [];
   }
 
-  const discardedCards = sortedIndices.map((index) => {
-    const card = currentHand[index];
+  const discardedCards = indices.map((index) => {
+    const card = handCopy[index];
     console.log(
       `Défausse de la carte ${card.value} de ${card.suit} à l'index ${index}`
     );
@@ -675,65 +640,39 @@ export function improvedDiscardCards(indices) {
 
   this.discard.push(...discardedCards);
 
-  // Créer une nouvelle main sans les cartes défaussées
-  let newHand = [...currentHand];
+  // Gérer le deck si besoin
+  if (!this.deck || this.deck.length < indices.length) {
+    if (!this.deck) this.deck = [];
 
-  // Retirer les cartes dans l'ordre inverse pour éviter les décalages d'indices
-  sortedIndices.forEach((index) => {
-    if (index >= 0 && index < newHand.length) {
-      newHand.splice(index, 1);
-    } else {
-      console.error(
-        `Tentative de suppression d'une carte à l'indice invalide: ${index}`
-      );
-    }
-  });
-
-  // Nombre de cartes à tirer
-  const drawCount = indices.length;
-
-  // Si le deck est trop petit, on recycle la défausse (sauf les cartes qu'on vient de défausser)
-  if (!this.deck || this.deck.length < drawCount) {
     // Sauvegarde temporaire des cartes défaussées
     const tempDiscardedCards = [...discardedCards];
 
-    // Créer un nouveau deck à partir du deck existant et de la défausse
-    if (!this.deck) this.deck = [];
-    this.deck = [...this.deck, ...this.discard];
-
-    // Réinitialiser la défausse avec seulement les cartes nouvellement défaussées
+    // Fusionner deck et défausse, puis mélanger
+    this.deck = [
+      ...this.deck,
+      ...this.discard.filter((card) => !discardedCards.includes(card)),
+    ];
     this.discard = tempDiscardedCards;
 
-    // Mélanger le deck
     if (typeof shuffleDeck === 'function') {
       this.deck = shuffleDeck(this.deck);
-    } else {
-      console.warn(
-        "La fonction shuffleDeck n'est pas disponible, le deck ne sera pas mélangé"
-      );
     }
 
-    // Si c'est toujours insuffisant, on recrée un deck complet
-    if (this.deck.length < drawCount && typeof createDeck === 'function') {
-      this.initializeDeck();
+    // Si toujours insuffisant, recréer un deck
+    if (this.deck.length < indices.length) {
+      if (typeof this.initializeDeck === 'function') {
+        this.initializeDeck();
+      }
     }
   }
 
-  // Tirer de nouvelles cartes
+  // Tirer les nouvelles cartes
   let newCards = [];
 
   if (typeof drawCards === 'function') {
-    newCards = drawCards(this.deck, drawCount);
+    newCards = drawCards(this.deck, indices.length);
   } else {
-    // Fallback si drawCards n'est pas disponible
-    console.warn("La fonction drawCards n'est pas disponible, tirage manuel");
-    newCards = this.deck.slice(0, drawCount);
-
-    if (newCards.length < drawCount) {
-      console.error(
-        `Impossible de tirer ${drawCount} cartes, seulement ${newCards.length} disponibles`
-      );
-    }
+    newCards = this.deck.slice(0, indices.length);
   }
 
   // S'assurer que les nouvelles cartes ont isSelected = false
@@ -742,10 +681,19 @@ export function improvedDiscardCards(indices) {
   });
 
   // Mettre à jour le deck
-  this.deck = this.deck.slice(drawCount);
+  this.deck = this.deck.slice(indices.length);
+
+  // IMPORTANT: Créer une nouvelle main en remplaçant les cartes exactement aux indices fournis
+  // Utiliser une copie de la main pour éviter les problèmes de référence
+  const newHand = [...handCopy];
+
+  // Remplacer chaque carte dans l'ordre exact des indices fournis
+  indices.forEach((index, i) => {
+    newHand[index] = newCards[i];
+  });
 
   // Mise à jour de la main
-  this.hand = [...newHand, ...newCards];
+  this.hand = newHand;
 
   console.log(
     'Nouvelle main après défausse:',
@@ -760,7 +708,6 @@ export function improvedDiscardCards(indices) {
 
   return this.hand;
 }
-
 /**
  * Cette fonction applique tous les correctifs aux classes appropriées
  * @param {Object} gameState - L'état du jeu à corriger
