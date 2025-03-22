@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useGame } from './context/GameContext';
+import { useGame } from './context/gameHooks';
 
 // Import pages
 import GamePage from './pages/GamePage';

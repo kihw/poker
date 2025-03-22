@@ -20,6 +20,7 @@ const RoguelikeWorldMap = ({
 
   // Icons for each node type
   const nodeIcons = {
+    start: '🏁',
     combat: '⚔️',
     elite: '🛡️',
     boss: '👑',
@@ -30,6 +31,7 @@ const RoguelikeWorldMap = ({
 
   // Colors for each node type
   const nodeColors = {
+    start: 'from-blue-700 to-blue-900',
     combat: 'from-red-700 to-red-900',
     elite: 'from-purple-700 to-purple-900',
     boss: 'from-red-800 to-red-950',
@@ -79,7 +81,7 @@ const RoguelikeWorldMap = ({
     return levels;
   }, [safeNodes]);
 
-  // Calculate node positions - VERSION CORRIGÉE
+  // Calculate node positions
   useEffect(() => {
     if (!svgRef.current || safeNodes.length === 0) return;
 
@@ -121,23 +123,30 @@ const RoguelikeWorldMap = ({
 
   // Check if a node is accessible
   const isNodeAccessible = (nodeId) => {
-    console.log('Checking node accessibility:', {
-      nodeId,
-      currentNodeId,
-      currentNode: safeNodes.find((node) => node.id === currentNodeId),
-      targetNode: safeNodes.find((node) => node.id === nodeId),
-    });
-
+    // If no current node is selected (game just started),
+    // only the start node is accessible
     if (!currentNodeId) {
-      // Si aucun nœud n'est sélectionné, seul le nœud de départ est accessible
       const startNode = safeNodes.find(
-        (node) => !node.parentIds || node.parentIds.length === 0
+        (node) =>
+          node.type === 'start' ||
+          !node.parentIds ||
+          node.parentIds.length === 0
       );
       return startNode && startNode.id === nodeId;
     }
 
-    // Un nœud est accessible s'il est un enfant du nœud courant
+    // Find the current node
     const currentNode = safeNodes.find((node) => node.id === currentNodeId);
+
+    // Debug logging - keep this to help with troubleshooting
+    console.log('Checking node accessibility:', {
+      nodeId,
+      currentNodeId,
+      currentNode,
+      targetNode: safeNodes.find((node) => node.id === nodeId),
+    });
+
+    // A node is accessible if it's a child of the current node
     const isAccessible =
       currentNode &&
       currentNode.childIds &&
@@ -146,6 +155,7 @@ const RoguelikeWorldMap = ({
     console.log('Node accessibility result:', isAccessible);
     return isAccessible;
   };
+
   // Afficher le premier message de guide
   const renderFirstTimeGuide = () => {
     return (
@@ -157,6 +167,7 @@ const RoguelikeWorldMap = ({
       </div>
     );
   };
+
   // Generate connection lines between nodes
   const generateConnections = () => {
     if (Object.keys(nodePositions).length === 0) return null;
@@ -227,6 +238,8 @@ const RoguelikeWorldMap = ({
   // Get a description for each node type
   const getNodeDescription = (type) => {
     switch (type) {
+      case 'start':
+        return 'Point de départ de votre aventure';
       case 'combat':
         return 'Combat contre un ennemi standard';
       case 'elite':
@@ -326,6 +339,7 @@ const RoguelikeWorldMap = ({
                   r={25}
                   className={`bg-gradient-${nodeColors[nodeType] || 'from-gray-700 to-gray-900'} ${isCurrent ? 'stroke-yellow-400 stroke-[3px]' : 'stroke-none'} ${isAccessible && !isCurrent ? 'animate-pulse' : ''}`}
                   opacity={isAccessible || isCurrent ? 1 : 0.5}
+                  fill={`url(#gradient-${nodeType})`}
                 />
 
                 {/* Node text/icon */}
@@ -357,6 +371,23 @@ const RoguelikeWorldMap = ({
               </motion.g>
             );
           })}
+
+          {/* Define gradients for node types */}
+          <defs>
+            {Object.entries(nodeColors).map(([type, gradient]) => (
+              <linearGradient
+                key={`gradient-${type}`}
+                id={`gradient-${type}`}
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
+                <stop offset="0%" stopColor={gradient.split('-')[1]} />
+                <stop offset="100%" stopColor={gradient.split('-')[2]} />
+              </linearGradient>
+            ))}
+          </defs>
         </svg>
 
         {/* Hover tooltip */}
@@ -374,6 +405,9 @@ const RoguelikeWorldMap = ({
           <div key={type} className="flex items-center">
             <div
               className={`w-6 h-6 rounded-full flex items-center justify-center bg-gradient-${nodeColors[type]}`}
+              style={{
+                background: `linear-gradient(to bottom, ${nodeColors[type].split('-')[1].replace('from-', '')}, ${nodeColors[type].split('-')[2].replace('to-', '')})`,
+              }}
             >
               <span className="text-xs">{icon}</span>
             </div>
