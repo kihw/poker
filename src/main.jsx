@@ -1,16 +1,18 @@
+// src/main.jsx - Mise à jour avec le Provider Redux
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
 import App from './App';
 import './index.css';
-import { GameProvider } from './context/GameContext';
+import store from './redux/store';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <GameProvider>
+    <Provider store={store}>
+      <BrowserRouter>
         <App />
-      </GameProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </Provider>
   </React.StrictMode>
 );
