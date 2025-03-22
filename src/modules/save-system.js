@@ -1,7 +1,7 @@
 // src/modules/save-system.js - Système de sauvegarde unifié
 
 import React, { useEffect } from 'react';
-
+import { generateRoguelikeMap, validateMap } from './map-generator.js';
 const SAVE_KEY = 'pokerSoloRpgSave';
 
 /**
@@ -131,41 +131,28 @@ export function applySaveData(gameState, saveData) {
     } else {
       // Générer une nouvelle carte si nécessaire
       if (!gameState.path || gameState.path.length === 0) {
-        // Importer la fonction de génération de carte si nécessaire
-        let generateRoguelikeMap;
-        try {
-          // Version dynamique de l'import (fonctionne uniquement dans certains environnements)
-          const mapGenerator = require('./map-generator.js');
-          generateRoguelikeMap = mapGenerator.generateRoguelikeMap;
-        } catch (error) {
-          console.error("Impossible d'importer generateRoguelikeMap:", error);
-          // Utiliser la version du contexte si disponible
-          if (gameState.generateMap) {
-            gameState.generateMap();
-          } else {
-            console.error('Impossible de générer une nouvelle carte');
-          }
-          return false;
-        }
-
-        if (generateRoguelikeMap) {
-          const mapOptions = {
-            width: 3 + Math.min(2, Math.floor(gameState.currentFloor / 3)),
-            depth: 5 + Math.min(3, Math.floor(gameState.currentFloor / 2)),
-          };
-
-          const mapNodes = generateRoguelikeMap(
-            gameState.stage,
-            mapOptions.width,
-            mapOptions.depth
+        // Utiliser la version du contexte si disponible
+        if (gameState.generateMap) {
+          console.log(
+            'Utilisation de gameState.generateMap pour créer une nouvelle carte'
+          );
+          gameState.generateMap();
+        } else {
+          // Méthode alternative pour générer une carte si generateMap n'est pas disponible
+          console.warn(
+            "generateMap non disponible - utilisation d'une méthode alternative"
           );
 
-          gameState.path = mapNodes;
-
-          // Définir le nœud de départ
-          const startNode = mapNodes.find((node) => node.type === 'start');
-          if (startNode) {
-            gameState.currentNodeId = startNode.id;
+          // Si une autre méthode est disponible dans l'état du jeu, l'utiliser
+          if (
+            gameState.progressionSystem &&
+            gameState.progressionSystem.generateMap
+          ) {
+            gameState.progressionSystem.generateMap();
+          } else {
+            console.error(
+              'Impossible de générer une nouvelle carte - aucune méthode disponible'
+            );
           }
         }
       }

@@ -1,15 +1,5 @@
 // src/modules/combat-fixes.js
-/**
- * Corrections pour le système de combat
- * Ce module contient des correctifs pour les problèmes identifiés dans le système de combat,
- * notamment la gestion des cartes sélectionnées.
- */
-
-/**
- * Version corrigée de la méthode toggleCardSelection
- * Le problème principal était la désynchronisation entre l'état isSelected des cartes
- * et le tableau selectedCards qui gardait les indices.
- */
+import { createDeck, shuffleDeck, drawCards } from '../core/deck.js';
 export function fixedToggleCardSelection(index) {
   // Vérification de la validité de l'index
   if (index < 0 || index >= this.hand.length) {

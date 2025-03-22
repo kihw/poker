@@ -10,7 +10,6 @@ import { GameState } from '../core/game-state';
 import { BonusCardSystem } from '../modules/bonus-cards';
 import { CombatSystem } from '../modules/combat';
 import { ProgressionSystem } from '../modules/progression';
-import { generateRoguelikeMap, validateMap } from '../modules/map-generator';
 import {
   saveGame,
   loadGame,
@@ -21,7 +20,7 @@ import { ACTIONS } from './gameActions';
 import { gameReducer, initialGameState } from './gameReducer';
 import { AutoSaveHandler } from '../modules/save-system';
 import { applyCombatFixes } from '../modules/combat-fixes';
-
+import { generateRoguelikeMap, validateMap } from '../modules/map-generator.js';
 // Création du contexte
 export const GameContext = createContext();
 
