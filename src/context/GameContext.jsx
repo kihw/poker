@@ -51,7 +51,25 @@ export function GameProvider({ children }) {
 
         // Appliquer les correctifs au système de combat
         applyCombatFixes(gameState);
+        if (gameState.discardCards) {
+          // Importer la fonction améliorée de défausse depuis le module
+          const { improvedDiscardCards } = await import(
+            '../modules/combat-fixes'
+          );
+          gameState.discardCards = improvedDiscardCards.bind(gameState);
+        }
 
+        // Appliquer les correctifs de gestion de la mort
+        if (combatSystem && combatSystem.checkCombatEnd) {
+          // Importer les fonctions améliorées
+          const { improvedCheckCombatEnd, applyDeathHandlingFixes } =
+            await import('../modules/combat-fixes');
+
+          // Appliquer les correctifs
+          applyDeathHandlingFixes(gameState, combatSystem);
+        }
+
+        console.log('Correctifs améliorés appliqués avec succès');
         // Vérifier si une sauvegarde existe
         if (hasSave()) {
           const saveData = loadGame();

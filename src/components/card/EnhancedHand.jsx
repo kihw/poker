@@ -1,5 +1,5 @@
 // src/components/card/EnhancedHand.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import EnhancedCard from './EnhancedCard';
 import { motion } from 'framer-motion';
 
@@ -36,16 +36,27 @@ const EnhancedHand = ({
   );
 
   // Fonction pour gérer la sélection des cartes
-  const handleCardSelect = (index) => {
-    if (onToggleSelect && selectionMode !== 'view') {
-      onToggleSelect(index);
-    }
-  };
+  // Utiliser useCallback pour la stabilité de référence
+  const handleCardSelect = useCallback(
+    (index) => {
+      if (onToggleSelect && selectionMode !== 'view') {
+        // Log pour déboguer la sélection
+        console.log('Selecting card at index:', index);
+        onToggleSelect(index);
+      }
+    },
+    [onToggleSelect, selectionMode]
+  );
 
   // Fonction pour basculer entre tri par valeur et tri par couleur
-  const toggleSortMethod = () => {
-    setSortByValue(!sortByValue);
-  };
+  const toggleSortMethod = useCallback(() => {
+    setSortByValue((prev) => !prev);
+  }, []);
+
+  // Créer une clé unique pour chaque carte basée sur ses propriétés
+  const getCardKey = useCallback((card, index) => {
+    return `${card.value}-${card.suit}-${index}`;
+  }, []);
 
   // Trier les cartes de façon mémoïsée
   const sortedCards = useMemo(() => {
@@ -54,12 +65,15 @@ const EnhancedHand = ({
       return [];
     }
 
-    // Créer une copie avant de trier pour éviter de modifier l'original
-    let newSortedCards = [...cards];
+    // Ajouter l'index original à chaque carte avant de trier
+    const cardsWithIndex = cards.map((card, idx) => ({
+      ...card,
+      originalIndex: idx,
+    }));
 
     if (sortByValue) {
       // Trier par valeur (numérique ascendante, de gauche à droite)
-      newSortedCards.sort((a, b) => {
+      cardsWithIndex.sort((a, b) => {
         // Vérifier que les propriétés existent
         const aValue = a.numericValue !== undefined ? a.numericValue : 0;
         const bValue = b.numericValue !== undefined ? b.numericValue : 0;
@@ -68,7 +82,7 @@ const EnhancedHand = ({
     } else {
       // Trier par couleur puis par valeur
       const suitOrder = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
-      newSortedCards.sort((a, b) => {
+      cardsWithIndex.sort((a, b) => {
         // S'assurer que suit existe
         const aSuit = a.suit || 'spades';
         const bSuit = b.suit || 'spades';
@@ -87,7 +101,7 @@ const EnhancedHand = ({
       });
     }
 
-    return newSortedCards;
+    return cardsWithIndex;
   }, [cards, sortByValue]);
 
   return (
@@ -111,21 +125,24 @@ const EnhancedHand = ({
         initial="hidden"
         animate="show"
       >
-        {sortedCards.map((card, index) => {
+        {sortedCards.map((card) => {
           if (!card) {
-            console.warn('Invalid card at index', index);
+            console.warn('Invalid card at index');
             return null;
           }
 
+          // Utiliser l'index original stocké lors du tri
+          const originalIndex = card.originalIndex;
+
           return (
             <motion.div
-              key={index}
+              key={getCardKey(card, originalIndex)}
               variants={cardAnimation}
               whileHover={{
                 y: -15,
                 transition: { duration: 0.2 },
               }}
-              onHoverStart={() => setHoverIndex(index)}
+              onHoverStart={() => setHoverIndex(originalIndex)}
               onHoverEnd={() => setHoverIndex(null)}
               className="relative"
             >
@@ -133,8 +150,8 @@ const EnhancedHand = ({
                 value={card.value}
                 suit={card.suit}
                 isSelected={card.isSelected}
-                isHighlighted={bestHandCards.includes(index)}
-                onToggleSelect={() => handleCardSelect(index)}
+                isHighlighted={bestHandCards.includes(originalIndex)}
+                onToggleSelect={() => handleCardSelect(originalIndex)}
                 selectionType={selectionMode}
                 disabled={
                   !card.isSelected &&
@@ -156,6 +173,13 @@ const EnhancedHand = ({
       {selectionMode === 'discard' && (
         <div className="text-center text-sm text-gray-400 mt-4">
           Sélectionnez les cartes à défausser
+        </div>
+      )}
+
+      {/* Debugging - Afficher les indices des cartes sélectionnées */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-center text-xs text-yellow-400 mt-2">
+          Cartes sélectionnées: {cards.filter((c) => c.isSelected).length}
         </div>
       )}
     </div>

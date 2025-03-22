@@ -88,58 +88,148 @@
   }
 }
 
-/* Ajouter ceci à src/index.css */
+/* Ajoutez ces styles à votre fichier index.css */
 
-/* Z-index hierarchy */
+/* Z-index hierarchy - valeurs plus élevées pour assurer la priorité */
 :root {
   --z-background: 1;
   --z-ui-base: 10;
-  --z-combat-interface: 20;
-  --z-navigation: 30;
-  --z-tutorial: 40;
+  --z-map-elements: 15;
+  --z-combat-elements: 20;
+  --z-combat-interface: 30;
+  --z-card-container: 35;
+  --z-card-selected: 40;
+  --z-navigation: 50;
+  --z-tutorial: 60;
   --z-popup: 100;
   --z-modal: 200;
   --z-notification: 300;
 }
 
-/* Combat interface */
+/* Styles spécifiques pour assurer que l'interface de combat reste visible */
 .combat-interface {
-  position: relative;
-  z-index: var(--z-combat-interface);
+  position: relative !important;
+  z-index: var(--z-combat-interface) !important;
 }
 
-/* Navigation */
+/* Sélecteurs spécifiques pour l'interface de combat et ses éléments */
+.combat-hand,
+.hand-ranking,
+.bonus-cards {
+  position: relative !important;
+  z-index: var(--z-combat-elements) !important;
+}
+
+/* Style pour le conteneur des cartes */
+.combat-hand .flex {
+  position: relative !important;
+  z-index: var(--z-card-container) !important;
+}
+
+/* Styles pour les cartes individuelles et les cartes sélectionnées */
+.perspective-500 {
+  z-index: 2;
+}
+
+.perspective-500:hover,
+.perspective-500:focus {
+  z-index: 4 !important;
+}
+
+/* Cartes sélectionnées */
+.perspective-500[class*='isSelected'] {
+  z-index: var(--z-card-selected) !important;
+}
+
+/* Navigation toujours au-dessus de l'interface principale */
 .nav-bar {
-  position: fixed;
-  z-index: var(--z-navigation);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: var(--z-navigation) !important;
 }
 
-/* Save/Load popup */
+/* Modifications pour les composants modaux */
+.modal-overlay,
+.event-popup,
+.rest-popup,
 .save-load-popup {
-  position: fixed;
-  z-index: var(--z-popup) !important;
-}
-
-/* Modal overlays */
-.modal-overlay {
-  position: fixed;
+  position: fixed !important;
+  inset: 0 !important;
   z-index: var(--z-modal) !important;
 }
 
-/* Event popups */
-.event-popup {
-  position: fixed;
-  z-index: var(--z-popup) !important;
+/* Tutoriel toujours visible */
+.tutorial-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: var(--z-tutorial) !important;
 }
 
-/* Rest site */
-.rest-popup {
-  position: fixed;
-  z-index: var(--z-popup) !important;
-}
-
-/* Notifications and feedback */
+/* Notifications toujours au-dessus de tout */
 .notification {
-  position: fixed;
+  position: fixed !important;
   z-index: var(--z-notification) !important;
+}
+
+/* Correction pour les problèmes spécifiques */
+.distribute-cards-btn,
+.start-screen,
+.combat-hand,
+.hand-ranking,
+.bonus-cards {
+  position: relative !important;
+  z-index: var(--z-combat-elements) !important;
+}
+
+/* Classes utilitaires pour forcer un z-index particulier */
+.z-front {
+  z-index: 1000 !important;
+}
+
+.z-back {
+  z-index: 1 !important;
+}
+
+/* Ajoutez ces styles spécifiques pour les effets de sélection */
+
+/* Assurer que les cartes et leurs effets de sélection sont au premier plan */
+.perspective-500 {
+  z-index: 50 !important; /* Base z-index for cards */
+  transform: scale(1);
+  transition:
+    transform 0.2s,
+    z-index 0.2s;
+}
+
+/* Augmenter le z-index sur hover */
+.perspective-500:hover {
+  z-index: 55 !important;
+  transform: scale(1.05);
+}
+
+/* Encore plus élevé pour les cartes sélectionnées */
+.perspective-500 .border-blue-500,
+.perspective-500 .border-red-500,
+.perspective-500 .shadow-blue-500\/50,
+.perspective-500 .shadow-red-500\/50 {
+  z-index: 60 !important;
+}
+
+/* L'indicateur de sélection (le label "Attaque" ou "Défausser") */
+.perspective-500 .absolute.-bottom-2 {
+  z-index: 70 !important;
+}
+
+/* S'assurer que le conteneur des cartes est plus haut que les autres éléments d'interface */
+.combat-hand {
+  z-index: 65 !important;
+  position: relative !important;
+}
+
+/* Assurer que les effets visuels de sélection sont visibles */
+.shadow-lg.shadow-blue-500\/50,
+.shadow-lg.shadow-red-500\/50 {
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5) !important;
 }
