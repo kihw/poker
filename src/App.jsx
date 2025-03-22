@@ -1,6 +1,6 @@
-// src/App.jsx (mise à jour)
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+// src/App.jsx
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useGame } from './context/GameContext';
 
 // Import pages
@@ -17,7 +17,14 @@ import ErrorScreen from './components/ui/ErrorScreen';
 import SaveButton from './components/ui/SaveButton';
 
 function App() {
-  const { loading, error } = useGame();
+  const { gameState, loading, error } = useGame();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('App Component - GameState:', gameState);
+    console.log('Loading:', loading);
+    console.log('Error:', error);
+  }, [gameState, loading, error]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -28,7 +35,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <>
       {/* Bouton de sauvegarde présent sur toutes les pages */}
       <SaveButton />
 
@@ -39,8 +46,10 @@ function App() {
         <Route path="/collection" element={<CollectionPage />} />
         <Route path="/event" element={<EventPage />} />
         <Route path="/rest" element={<RestPage />} />
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </Router>
+    </>
   );
 }
 

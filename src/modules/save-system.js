@@ -3,7 +3,7 @@
  * Système de sauvegarde et chargement
  * Ce module gère la sauvegarde de la progression du joueur et son chargement
  */
-
+import React from 'react';
 const SAVE_KEY = 'pokerSoloRpgSave';
 
 /**

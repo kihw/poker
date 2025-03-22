@@ -9,25 +9,45 @@ const MapPage = () => {
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(gameState?.path) ? gameState.path : [];
-
-  // S'assurer que player existe et contient les propriétés nécessaires
   const safePlayer = gameState?.player || {
-    health: 0,
-    maxHealth: 1,
-    gold: 0,
+    health: 50,
+    maxHealth: 50,
+    gold: 100,
   };
-
-  // Générer une carte si aucune n'existe encore
+  // Extended logging for debugging
+  console.log('MapPage Game State:', {
+    gameState,
+    safePath,
+    safePlayer,
+    generateMap: typeof generateMap,
+  });
+  // Generate map if not exists or empty
   useEffect(() => {
-    if (gameState && (!gameState.path || gameState.path.length === 0)) {
-      // Si generateMap est disponible, l'utiliser
-      if (generateMap) {
-        console.log('Génération automatique de la carte roguelike');
-        generateMap();
-      } else {
-        console.warn('Fonction generateMap non disponible');
+    const tryGenerateMap = () => {
+      console.log('Attempting to generate map', {
+        gameStateExists: !!gameState,
+        pathExists: gameState?.path?.length > 0,
+        generateMapAvailable: typeof generateMap === 'function',
+      });
+
+      // Ensure gameState exists, path is empty, and generateMap is a function
+      if (gameState && (!gameState.path || gameState.path.length === 0)) {
+        if (generateMap) {
+          console.log('Generating roguelike map automatically');
+          generateMap();
+        } else {
+          console.error('Map generation function not available');
+        }
       }
-    }
+    };
+
+    // Try to generate map immediately
+    tryGenerateMap();
+
+    // Optional: Set a timeout to retry if first attempt fails
+    const timer = setTimeout(tryGenerateMap, 1000);
+
+    return () => clearTimeout(timer);
   }, [gameState, generateMap]);
 
   // Nettoyer tous les overlays potentiels au chargement de la page

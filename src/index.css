@@ -16,6 +16,32 @@
   backface-visibility: hidden;
 }
 
+/* Ajout de classes pour le tutoriel */
+.distribute-cards-btn {
+  position: relative;
+  z-index: 60;
+}
+
+.start-screen {
+  position: relative;
+  z-index: 60;
+}
+
+.combat-hand {
+  position: relative;
+  z-index: 60;
+}
+
+.hand-ranking {
+  position: relative;
+  z-index: 60;
+}
+
+.bonus-cards {
+  position: relative;
+  z-index: 60;
+}
+
 /* Additional custom styles */
 @layer base {
   body {

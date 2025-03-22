@@ -12,96 +12,72 @@
  * @param {number} depth - Profondeur de la carte (nombre de niveaux)
  * @returns {Array} Tableau de nœuds représentant la carte
  */
+
 export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
   const nodes = [];
   let nodeId = 1;
 
   // Probabilités de chaque type de nœud en fonction de l'étage
   const nodeProbabilities = {
-    combat: 0.6 - stage * 0.005, // Légèrement moins de combats aux étages supérieurs
-    elite: 0.05 + stage * 0.01, // Plus d'élites aux étages supérieurs
-    event: 0.2,
+    combat: 0.6,
+    rest: 0.15,
+    event: 0.15,
     shop: 0.1,
-    rest: 0.15 - stage * 0.005, // Légèrement moins de repos aux étages supérieurs
   };
 
   // Créer le nœud de départ
   const startNode = {
-    id: `${nodeId}`,
+    id: `${nodeId++}`,
     type: 'start',
     parentIds: [],
     childIds: [],
-    x: width / 2, // Position horizontale au milieu
-    y: 0, // Premier niveau vertical
+    x: width / 2,
+    y: 0,
   };
   nodes.push(startNode);
-  nodeId++;
 
-  // Créer les nœuds intermédiaires niveau par niveau
+  // Générer les niveaux intermédiaires
   for (let level = 1; level < depth - 1; level++) {
-    // Déterminer combien de nœuds pour ce niveau
-    // Plus de variabilité aux niveaux intermédiaires
     const nodesInLevel = Math.max(
       2,
-      Math.min(width, Math.floor(Math.random() * (width - 1)) + 2)
+      Math.min(width, Math.floor(Math.random() * width) + 2)
     );
-
     const levelNodes = [];
-    // Créer les nœuds de ce niveau
+
+    // Créer les nœuds du niveau
     for (let i = 0; i < nodesInLevel; i++) {
-      // Déterminer le type de nœud en fonction des probabilités
-      const nodeType = getRandomNodeType(
-        nodeProbabilities,
-        level,
-        depth,
-        stage
-      );
+      const nodeType = getNodeTypeForLevel(level, nodeProbabilities);
 
-      // Créer le nœud
       const node = {
-        id: `${nodeId}`,
+        id: `${nodeId++}`,
         type: nodeType,
-        parentIds: [], // Sera rempli plus tard
-        childIds: [], // Sera rempli plus tard
-        x: (i + 0.5) * (width / nodesInLevel), // Position horizontale répartie
-        y: level, // Niveau vertical
+        parentIds: [],
+        childIds: [],
+        x: (i + 0.5) * (width / nodesInLevel),
+        y: level,
       };
-
-      // Ajouter des données spécifiques selon le type
-      if (nodeType === 'event') {
-        node.event = generateRandomEvent(stage);
-      }
-      if (nodeType === 'elite' || nodeType === 'combat') {
-        node.rewards = generateCombatRewards(nodeType, stage);
-      }
 
       levelNodes.push(node);
       nodes.push(node);
-      nodeId++;
     }
 
     // Connecter avec le niveau précédent
     const prevLevelNodes = nodes.filter((n) => n.y === level - 1);
 
-    // Assurer que chaque nœud a au moins une connexion entrante et sortante
     prevLevelNodes.forEach((prevNode) => {
-      // Nombre de connexions sortantes par nœud (1-3)
-      const numConnections = Math.floor(Math.random() * 2) + 1;
+      // Connecter à 1-2 nœuds du niveau suivant
+      const connectionsCount = Math.floor(Math.random() * 2) + 1;
+      const selectedNodes = getRandomSubset(levelNodes, connectionsCount);
 
-      // Sélectionner des nœuds du niveau actuel au hasard
-      const selectedNodes = getRandomSubset(levelNodes, numConnections);
-
-      // Créer les connexions
       selectedNodes.forEach((node) => {
         prevNode.childIds.push(node.id);
         node.parentIds.push(prevNode.id);
       });
     });
 
-    // Vérifier que tous les nœuds du niveau actuel ont au moins un parent
+    // S'assurer que chaque nœud a au moins un parent
     levelNodes.forEach((node) => {
       if (node.parentIds.length === 0) {
-        // Connecter à un nœud aléatoire du niveau précédent
         const randomPrevNode =
           prevLevelNodes[Math.floor(Math.random() * prevLevelNodes.length)];
         randomPrevNode.childIds.push(node.id);
@@ -110,19 +86,18 @@ export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
     });
   }
 
-  // Créer le nœud boss (final)
+  // Créer le nœud boss final
   const bossNode = {
     id: `${nodeId}`,
     type: 'boss',
     parentIds: [],
     childIds: [],
-    x: width / 2, // Position horizontale au milieu
-    y: depth - 1, // Dernier niveau vertical
-    rewards: generateCombatRewards('boss', stage),
+    x: width / 2,
+    y: depth - 1,
   };
   nodes.push(bossNode);
 
-  // Connecter les nœuds du niveau précédent au boss
+  // Connecter les derniers nœuds au boss
   const preBossNodes = nodes.filter((n) => n.y === depth - 2);
   preBossNodes.forEach((node) => {
     node.childIds.push(bossNode.id);
@@ -130,6 +105,65 @@ export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
   });
 
   return nodes;
+}
+
+// Déterminer le type de nœud en fonction du niveau
+function getNodeTypeForLevel(level, probabilities) {
+  const types = Object.keys(probabilities);
+  const weights = types.map((type) => probabilities[type]);
+
+  const randomValue = Math.random();
+  let cumulativeWeight = 0;
+
+  for (let i = 0; i < types.length; i++) {
+    cumulativeWeight += weights[i];
+    if (randomValue <= cumulativeWeight) {
+      return types[i];
+    }
+  }
+
+  return 'combat'; // Défaut
+}
+
+// Sélectionner un sous-ensemble aléatoire d'éléments
+function getRandomSubset(array, count) {
+  const shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, Math.min(count, array.length));
+}
+
+// Validation de la carte
+export function validateMap(nodes) {
+  const startNode = nodes.find((node) => node.type === 'start');
+  const bossNode = nodes.find((node) => node.type === 'boss');
+
+  if (!startNode || !bossNode) {
+    console.error('Carte invalide : pas de nœud de départ ou de boss');
+    return false;
+  }
+
+  // Vérifier qu'il existe un chemin du début à la fin
+  const visited = new Set();
+  const toVisit = [startNode.id];
+
+  while (toVisit.length > 0) {
+    const currentId = toVisit.shift();
+    if (visited.has(currentId)) continue;
+
+    visited.add(currentId);
+    const currentNode = nodes.find((node) => node.id === currentId);
+
+    if (currentNode && currentNode.childIds) {
+      toVisit.push(...currentNode.childIds.filter((id) => !visited.has(id)));
+    }
+  }
+
+  // Vérifier que le boss est accessible
+  if (!visited.has(bossNode.id)) {
+    console.error('Carte invalide : le boss est inaccessible');
+    return false;
+  }
+
+  return true;
 }
 
 /**

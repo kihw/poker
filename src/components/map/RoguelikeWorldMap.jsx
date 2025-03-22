@@ -121,23 +121,42 @@ const RoguelikeWorldMap = ({
 
   // Check if a node is accessible
   const isNodeAccessible = (nodeId) => {
+    console.log('Checking node accessibility:', {
+      nodeId,
+      currentNodeId,
+      currentNode: safeNodes.find((node) => node.id === currentNodeId),
+      targetNode: safeNodes.find((node) => node.id === nodeId),
+    });
+
     if (!currentNodeId) {
-      // If no node is selected, only the start node is accessible
+      // Si aucun nœud n'est sélectionné, seul le nœud de départ est accessible
       const startNode = safeNodes.find(
         (node) => !node.parentIds || node.parentIds.length === 0
       );
       return startNode && startNode.id === nodeId;
     }
 
-    // A node is accessible if it's a child of the current node
+    // Un nœud est accessible s'il est un enfant du nœud courant
     const currentNode = safeNodes.find((node) => node.id === currentNodeId);
-    return (
+    const isAccessible =
       currentNode &&
       currentNode.childIds &&
-      currentNode.childIds.includes(nodeId)
+      currentNode.childIds.includes(nodeId);
+
+    console.log('Node accessibility result:', isAccessible);
+    return isAccessible;
+  };
+  // Afficher le premier message de guide
+  const renderFirstTimeGuide = () => {
+    return (
+      <div className="bg-gray-800 rounded-lg p-4 mb-4 text-sm text-gray-300">
+        <p>
+          Bienvenue à votre première exploration ! Commencez par cliquer sur le
+          nœud de départ (🏁). Chaque nœud représente une rencontre différente.
+        </p>
+      </div>
     );
   };
-
   // Generate connection lines between nodes
   const generateConnections = () => {
     if (Object.keys(nodePositions).length === 0) return null;

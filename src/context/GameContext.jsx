@@ -344,11 +344,21 @@ function GameProvider({ children }) {
 
     const initGame = async () => {
       try {
+        console.log('Starting game initialization...');
+
         // Create instances of game systems
         const gameState = new GameState();
         const combatSystem = new CombatSystem(gameState);
         const bonusCardSystem = new BonusCardSystem(gameState);
         const progressionSystem = new ProgressionSystem(gameState);
+
+        // Attach systems to game state
+        gameState.combatSystem = combatSystem;
+        gameState.bonusCardSystem = bonusCardSystem;
+        gameState.progressionSystem = progressionSystem;
+
+        // Initialiser les emplacements de cartes bonus
+        gameState.maxBonusCardSlots = 3;
 
         // Check if a save exists and load it if so
         if (hasSave()) {
@@ -359,13 +369,92 @@ function GameProvider({ children }) {
           }
         } else {
           console.log('No save found, starting new game');
+          
+          // Initialiser le deck et le premier combat
+          combatSystem.startCombat();
+
+          // Initialiser les cartes bonus
+          bonusCardSystem.initBonusCardCollection();
         }
 
-        // Generate a map for the first level if needed
+        // Génération de la carte avec validation
+        let mapNodes;
+        let attempts = 0;
+        const maxAttempts = 5;
+
+        do {
+          const mapOptions = {
+            width: 3 + Math.min(2, Math.floor(gameState.currentFloor / 3)),
+            depth: 5 + Math.min(3, Math.floor(gameState.currentFloor / 2))
+          };
+
+          mapNodes = generateRoguelikeMap(gameState.stage, mapOptions.width, mapOptions.depth);
+          
+          console.log(`Map generation attempt ${attempts + 1}`);
+          console.log('Generated nodes:', mapNodes.map(node => ({
+            id: node.id, 
+            type: node.type, 
+            parentIds: node.parentIds, 
+            childIds: node.childIds
+          })));
+
+          attempts++;
+        } while (!validateMap(mapNodes) && attempts < maxAttempts);
+
+        if (!validateMap(mapNodes)) {
+          throw new Error('Impossible de générer une carte valide après plusieurs tentatives');
+        }
+
+        // Mettre à jour l'état du jeu avec la carte
+        gameState.path = mapNodes;
+
+        // Définir le nœud de départ
+        const startNode = mapNodes.find(node => node.type === 'start');
+        if (startNode) {
+          gameState.currentNodeId = startNode.id;
+        }
+
+        console.log('Map generation complete');
+        console.log('Current node:', gameState.currentNodeId);
+        console.log('Path details:', gameState.path);
+
+        // Check if component is still mounted before updating state
+        if (isMounted) {
+          dispatch({
+            type: ACTIONS.INIT_GAME,
+            payload: {
+              game: gameState,
+              combatSystem,
+              bonusCardSystem,
+              progressionSystem,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Critical Error initializing game:', error);
+        if (isMounted) {
+          dispatch({
+            type: ACTIONS.SET_ERROR,
+            payload: { error: error.message || 'Failed to initialize game' },
+          });
+        }
+      }
+    };// Generate a map for the first level if needed
         if (!gameState.path) {
-          generateMapForCurrentFloor(gameState);
-        }
+          // Use generateMap method with current floor and game state parameters
+          const mapOptions = {
+            width: 3 + Math.min(2, Math.floor(gameState.currentFloor / 3)),
+            depth: 5 + Math.min(3, Math.floor(gameState.currentFloor / 2))
+          };
+          const mapNodes = generateRoguelikeMap(gameState.stage, mapOptions.width, mapOptions.depth);
+          gameState.path = mapNodes;
 
+          // Set start node as current node
+          const startNode = mapNodes.find((node) => node.type === 'start');
+          if (startNode) {
+            gameState.currentNodeId = startNode.id;
+          }
+        }
         // Start the first combat to set up initial state
         combatSystem.startCombat();
 
@@ -403,6 +492,7 @@ function GameProvider({ children }) {
     };
   }, []);
 
+  
   // Periodic combat state check
   useEffect(() => {
     if (!state.game || !state.combatSystem) return;

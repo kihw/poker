@@ -6,27 +6,39 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
   // Définition des étapes du tutoriel
   const tutorialSteps = [
     {
-      target: '.card-hand',
+      target: '.start-screen',
       content:
-        "Bienvenue dans votre aventure de carte! Sélectionnez jusqu'à 5 cartes pour attaquer. Les combinaisons comme au poker vous donneront des bonus de dégâts!",
+        'Bienvenue dans Poker Solo RPG ! Votre aventure commence ici. Votre objectif est de progresser à travers différents étages en battant des ennemis.',
+      position: 'center',
+    },
+    {
+      target: '.distribute-cards-btn',
+      content:
+        "Pour commencer chaque combat, cliquez sur 'Distribuer les cartes'. Vous recevrez 7 cartes avec lesquelles vous pourrez attaquer.",
+      position: 'bottom',
+    },
+    {
+      target: '.combat-hand',
+      content:
+        'Sélectionnez 1 à 5 cartes pour attaquer. Votre but est de créer les meilleures combinaisons de poker possible !',
+      position: 'bottom',
+    },
+    {
+      target: '.hand-ranking',
+      content:
+        'Plus votre combinaison est forte (comme une Quinte Flush ou un Carré), plus les dégâts seront élevés. Un simple Pair ou une Carte Haute infligera moins de dégâts.',
       position: 'bottom',
     },
     {
       target: '.bonus-cards',
       content:
-        "Utilisez vos cartes bonus pour obtenir des effets spéciaux pendant le combat. Certaines sont passives, d'autres doivent être activées.",
+        "Ces cartes bonus vous donnent des effets spéciaux pendant le combat. Certaines sont passives, d'autres doivent être activées manuellement.",
       position: 'top',
     },
     {
-      target: '.hand-instructions',
+      target: null,
       content:
-        'Avec 5 cartes, vous pouvez former des mains de poker comme une paire, un brelan ou une quinte flush! Plus la main est forte, plus les dégâts sont élevés.',
-      position: 'bottom',
-    },
-    {
-      target: null, // Pas de cible spécifique
-      content:
-        "Après chaque combat, vous recevrez de l'or et de l'expérience. Vous pourrez également obtenir de nouvelles cartes bonus! Explorez la carte pour trouver des combats, des événements, des boutiques et des sites de repos.",
+        "Vous êtes maintenant prêt à commencer votre aventure ! Combattez des ennemis, gagnez de l'or, améliorez votre deck et progressez à travers les étages.",
       position: 'center',
     },
   ];
@@ -37,24 +49,12 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
     return null;
   }
 
-  // Désactiver le tutoriel lors du changement de page
   useEffect(() => {
     return () => {
       // S'assurer que le tutoriel est bien fermé quand on quitte la page
       localStorage.setItem('tutorialCompleted', 'true');
     };
   }, []);
-
-  // IMPORTANT: S'assurer que l'overlay ne bloque pas les interactions sur d'autres pages
-  useEffect(() => {
-    const currentPath = window.location.pathname;
-
-    // Si nous sommes sur la page de carte, désactiver automatiquement le tutoriel
-    if (currentPath === '/map') {
-      console.log('Tutoriel désactivé automatiquement sur la page de carte');
-      onComplete();
-    }
-  }, [onComplete]);
 
   const currentStep = tutorialSteps[step];
 
@@ -89,7 +89,6 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
     }
 
     // Pour les autres positions, calculer en fonction de la cible
-    // (Dans une implémentation complète, on utiliserait getBoundingClientRect)
     return {
       position: 'absolute',
       [currentStep.position]: '100%',
@@ -100,7 +99,7 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center tutorial-overlay">
-      {/* Fond translucide avec un trou pour la cible - IMPORTANT: pointer-events-auto */}
+      {/* Fond translucide avec un trou pour la cible */}
       <div
         className="absolute inset-0 pointer-events-auto"
         onClick={onComplete}
@@ -123,7 +122,7 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
         </motion.div>
       )}
 
-      {/* Boîte de texte du tutoriel - IMPORTANT: pointer-events-auto */}
+      {/* Boîte de texte du tutoriel */}
       <motion.div
         variants={textBoxAnimation}
         initial="hidden"

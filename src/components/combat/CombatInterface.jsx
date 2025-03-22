@@ -9,6 +9,7 @@ import EnemyStatus from './EnemyStatus';
 import EnhancedHand from '../card/EnhancedHand';
 import HandCombinationDisplay from './HandCombinationDisplay';
 import BonusCards from '../card/BonusCards';
+import TutorialOverlay from '../ui/TutorialOverlay';
 
 const CombatInterface = () => {
   const {
@@ -25,6 +26,13 @@ const CombatInterface = () => {
   const [discardMode, setDiscardMode] = useState(false);
   const [selectedAttackCards, setSelectedAttackCards] = useState([]);
   const [selectedDiscards, setSelectedDiscards] = useState([]);
+  const [showTutorial, setShowTutorial] = useState(true);
+
+  // Vérifier si le tutoriel a déjà été vu
+  useEffect(() => {
+    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+    setShowTutorial(!tutorialCompleted);
+  }, []);
 
   // Reset local selection when a new hand is dealt
   useEffect(() => {
@@ -35,18 +43,35 @@ const CombatInterface = () => {
     }
   }, [gameState?.turnPhase]);
 
-  // Detect state changes that trigger animations
+  // Détecter les changements d'état qui déclenchent des animations
   useEffect(() => {
     if (
       gameState?.turnPhase === 'result' &&
       gameState.enemy &&
       gameState.enemy.health > 0
     ) {
-      // Damage animation
+      // Animation de dégâts
       setShowDamageEffect(true);
       setTimeout(() => setShowDamageEffect(false), 700);
     }
   }, [gameState?.turnPhase, gameState?.enemy?.health, gameState?.enemy]);
+
+  // Gestion du tutoriel
+  const handleNextTutorialStep = () => {
+    // Logique pour faire avancer les étapes du tutoriel
+    // Vous pouvez ajouter une logique plus complexe ici si nécessaire
+    const currentStep = gameState.tutorialStep || 0;
+    const nextStep = currentStep + 1;
+
+    // TODO: Mettre à jour l'état du tutoriel dans le contexte de jeu
+    console.log(`Étape de tutoriel suivante: ${nextStep}`);
+  };
+
+  const completeTutorial = () => {
+    // Marquer le tutoriel comme terminé
+    localStorage.setItem('tutorialCompleted', 'true');
+    setShowTutorial(false);
+  };
 
   // Gestion locale de la sélection en mode attaque
   const handleAttackSelection = (index) => {
@@ -87,6 +112,7 @@ const CombatInterface = () => {
       }
     });
   };
+
   // Confirmer la défausse
   const confirmDiscard = () => {
     if (selectedDiscards.length > 0) {
@@ -134,8 +160,7 @@ const CombatInterface = () => {
       return;
     }
 
-    // Important: S'assurer que l'état visuel correspond à l'état interne avant d'évaluer
-    // Mettre à jour l'état isSelected dans gameState.hand
+    // Mettre à jour l'état visuel
     if (gameState && gameState.hand) {
       // Réinitialiser toutes les cartes
       gameState.hand.forEach((card) => {
@@ -166,6 +191,22 @@ const CombatInterface = () => {
     }
   };
 
+  // Styles et messages conditionnels pour l'interface
+  const getInterfaceMessage = () => {
+    if (gameState?.turnPhase === 'draw') {
+      return "Cliquez sur 'Distribuer les cartes' pour commencer";
+    }
+    if (gameState?.turnPhase === 'select') {
+      return "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
+    }
+    if (gameState?.turnPhase === 'result') {
+      return gameState.enemy?.health <= 0
+        ? 'Victoire ! Cliquez sur Continuer'
+        : 'Regardez les résultats de votre attaque';
+    }
+    return '';
+  };
+
   // Préparation des cartes à afficher selon le mode
   const getDisplayCards = () => {
     if (!gameState?.hand) return [];
@@ -183,8 +224,22 @@ const CombatInterface = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden">
-      {/* Damage effect overlay */}
+    <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen">
+      {/* Tutoriel */}
+      {showTutorial && (
+        <TutorialOverlay
+          step={gameState?.tutorialStep || 0}
+          onNextStep={handleNextTutorialStep}
+          onComplete={completeTutorial}
+        />
+      )}
+
+      {/* Message d'interface */}
+      <div className="text-center mb-4 text-white text-lg">
+        {getInterfaceMessage()}
+      </div>
+
+      {/* Dommages */}
       <AnimatePresence>
         {showDamageEffect && (
           <motion.div
@@ -197,7 +252,7 @@ const CombatInterface = () => {
         )}
       </AnimatePresence>
 
-      {/* Combat header */}
+      {/* En-tête de combat */}
       <div className="mb-6 text-center relative">
         <h2 className="text-2xl font-bold text-white">
           Niveau {gameState.stage} -{' '}
@@ -208,7 +263,7 @@ const CombatInterface = () => {
         </div>
       </div>
 
-      {/* Enemy zone */}
+      {/* Zone ennemie */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -224,7 +279,7 @@ const CombatInterface = () => {
         )}
       </motion.div>
 
-      {/* Combat log */}
+      {/* Journal de combat */}
       <div className="bg-gray-800 rounded-md p-3 max-h-32 overflow-y-auto mb-6 text-sm">
         <h3 className="text-gray-400 uppercase text-xs font-bold mb-2">
           Journal de combat
@@ -243,7 +298,7 @@ const CombatInterface = () => {
           ))}
       </div>
 
-      {/* Player's hand */}
+      {/* Main du joueur */}
       <div className="mb-6">
         {gameState.hand && gameState.hand.length > 0 && (
           <>
@@ -298,7 +353,7 @@ const CombatInterface = () => {
                 />
 
                 {gameState.turnPhase === 'select' && (
-                  <div className="text-center mt-3 mb-2">
+                  <div className="text-center mt-3 mb-2 hand-ranking">
                     <p className="text-gray-300 mb-2">
                       Sélectionnez 1 à 5 cartes pour attaquer.
                       {selectedAttackCards.length >= 1 &&
@@ -339,7 +394,7 @@ const CombatInterface = () => {
         )}
       </div>
 
-      {/* Hand result (if available) */}
+      {/* Résultat de la main (si disponible) */}
       {gameState.turnPhase === 'result' && gameState.handResult && (
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -356,7 +411,7 @@ const CombatInterface = () => {
         </motion.div>
       )}
 
-      {/* Player actions */}
+      {/* Actions du joueur */}
       <div className="flex justify-between items-center mb-6">
         <PlayerStatus
           hp={gameState.player.health}
@@ -370,7 +425,7 @@ const CombatInterface = () => {
           {gameState.turnPhase === 'draw' && (
             <button
               onClick={dealHand}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg"
+              className="distribute-cards-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg"
             >
               Distribuer les cartes
             </button>
@@ -424,8 +479,9 @@ const CombatInterface = () => {
         </div>
       </div>
 
-      {/* Bonus cards */}
+      {/* Cartes bonus */}
       <BonusCards
+        className="bonus-cards"
         bonusCards={gameState.activeBonusCards || []}
         onUseBonus={useBonus}
       />
