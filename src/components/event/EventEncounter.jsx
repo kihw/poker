@@ -1,4 +1,4 @@
-// src/components/event/EventEncounter.jsx - Mise à jour pour utiliser Redux
+// src/components/event/EventEncounter.jsx - Version corrigée
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +11,7 @@ const EventEncounter = ({ event, onClose }) => {
   // Sélectionner les données du joueur et les résultats d'événements depuis Redux
   const player = useSelector((state) => state.player);
   const eventResult = useSelector((state) => state.event.eventResult);
-  
+
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [showResult, setShowResult] = useState(false);
 
@@ -64,12 +64,15 @@ const EventEncounter = ({ event, onClose }) => {
           setShowResult(true);
         }, 500);
       })
-      .catch(error => {
-        console.error("Erreur lors du traitement du choix:", error);
-        dispatch(setActionFeedback({
-          message: "Une erreur est survenue lors du traitement de votre choix",
-          type: "error"
-        }));
+      .catch((error) => {
+        console.error('Erreur lors du traitement du choix:', error);
+        dispatch(
+          setActionFeedback({
+            message:
+              'Une erreur est survenue lors du traitement de votre choix',
+            type: 'error',
+          })
+        );
       });
   };
 
@@ -97,9 +100,7 @@ const EventEncounter = ({ event, onClose }) => {
 
           {/* Event illustration image (optional) */}
           <div className="h-48 overflow-hidden flex items-center justify-center bg-gray-800">
-            {event.image && (
-              <div className="text-6xl">{event.image}</div>
-            )}
+            {event.image && <div className="text-6xl">{event.image}</div>}
           </div>
 
           {/* Event description */}
@@ -177,10 +178,8 @@ const EventEncounter = ({ event, onClose }) => {
                                 choice.requiresItem
                               )) &&
                             'Objet requis manquant.'}
-                      </motion.div>
-      </AnimatePresence>
-    </div>
-          )}
+                        </div>
+                      )}
 
                       {/* Success probability */}
                       {choice.chance && isAvailable && (
@@ -208,7 +207,9 @@ const EventEncounter = ({ event, onClose }) => {
                 className="bg-gray-800 p-4 rounded-md"
               >
                 <h3 className="text-lg font-bold mb-2 text-white">Résultat</h3>
-                <p className="text-gray-300 mb-4">{eventResult?.message || "Résultat indisponible"}</p>
+                <p className="text-gray-300 mb-4">
+                  {eventResult?.message || 'Résultat indisponible'}
+                </p>
 
                 {/* Display choice consequences */}
                 {eventResult?.details && (
