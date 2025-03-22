@@ -7,7 +7,7 @@ import { useGame } from '../context/gameHooks';
 import ActionFeedback from '../components/ui/ActionFeedback';
 
 const MapPage = () => {
-  const { gameState, generateMap, selectNode } = useGame();
+  const { gameState, generateMap } = useGame();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState(null);
   const [mapLoading, setMapLoading] = useState(false);
@@ -91,68 +91,6 @@ const MapPage = () => {
     tryGenerateMap();
   }, [gameState, generateMap]);
 
-  // Version améliorée de la fonction de sélection de nœud
-  const handleNodeSelect = (nodeId) => {
-    console.log(`Sélection du nœud: ${nodeId}`);
-
-    try {
-      // Vérifier que le nœud existe
-      const selectedNode = safePath.find((node) => node.id === nodeId);
-
-      if (!selectedNode) {
-        setFeedback({
-          message: 'Nœud introuvable',
-          type: 'error',
-        });
-        return;
-      }
-
-      // Vérifier que le nœud est accessible
-      const currentNode = safePath.find(
-        (node) => node.id === gameState.currentNodeId
-      );
-      const isAccessible =
-        currentNode &&
-        currentNode.childIds &&
-        currentNode.childIds.includes(nodeId);
-
-      if (!isAccessible && gameState.currentNodeId !== null) {
-        setFeedback({
-          message: "Ce lieu n'est pas accessible actuellement",
-          type: 'warning',
-        });
-        return;
-      }
-
-      // Afficher un feedback sur le type de nœud sélectionné
-      const nodeTypeMessages = {
-        combat: 'Combat contre un ennemi standard',
-        elite: "Combat difficile contre un ennemi d'élite",
-        boss: 'Combat de boss',
-        shop: 'Boutique de marchand',
-        rest: 'Site de repos',
-        event: 'Événement aléatoire',
-        start: 'Point de départ',
-      };
-
-      setFeedback({
-        message: nodeTypeMessages[selectedNode.type] || 'Lieu sélectionné',
-        type: 'info',
-      });
-
-      // Appeler la fonction de sélection de nœud
-      selectNode(nodeId);
-
-      // La redirection sera gérée par l'effet useEffect ci-dessus
-    } catch (error) {
-      console.error('Erreur lors de la sélection du nœud:', error);
-      setFeedback({
-        message: `Erreur: ${error.message}`,
-        type: 'error',
-      });
-    }
-  };
-
   // Afficher un écran de chargement si la carte est en cours de génération
   if (mapLoading) {
     return (
@@ -226,8 +164,6 @@ const MapPage = () => {
           nodes={safePath}
           currentNodeId={gameState.currentNodeId}
           playerStats={safePlayer}
-          // Utiliser notre fonction de sélection personnalisée
-          selectNode={handleNodeSelect}
         />
       </div>
 

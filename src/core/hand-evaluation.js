@@ -20,9 +20,28 @@ export const HAND_TYPES = {
  * @returns {Object} Le type de main et les cartes qui composent cette main
  */
 export function evaluateHand(hand) {
+  // Vérifications de sécurité
+  if (!hand || !Array.isArray(hand)) {
+    throw new Error('La main doit être un tableau valide');
+  }
+
   // On s'assure d'avoir 5 cartes
   if (hand.length !== 5) {
     throw new Error(`Hand must contain exactly 5 cards, got ${hand.length}`);
+  }
+
+  // Vérifier que les cartes ont les propriétés nécessaires
+  for (let i = 0; i < hand.length; i++) {
+    const card = hand[i];
+    if (!card || !card.value || !card.suit || card.numericValue === undefined) {
+      console.warn(`Carte invalide à l'index ${i}:`, card);
+      // Créer une carte valide par défaut si nécessaire
+      hand[i] = hand[i] || {
+        value: '2',
+        suit: 'spades',
+        numericValue: 2,
+      };
+    }
   }
 
   // Trier les cartes par valeur numérique décroissante
@@ -132,11 +151,20 @@ function isFullHouse(hand) {
 
 function isFlush(hand) {
   // Toutes les cartes doivent avoir la même couleur
+  if (!hand || !hand[0] || !hand[0].suit) return false;
+
   const firstSuit = hand[0].suit;
-  return hand.every((card) => card.suit === firstSuit);
+  return hand.every((card) => card && card.suit === firstSuit);
 }
 
 function isStraight(hand) {
+  if (!hand || !Array.isArray(hand) || hand.length < 5) return false;
+
+  // Vérifier que toutes les cartes ont une valeur numérique
+  if (hand.some((card) => card.numericValue === undefined)) {
+    return false;
+  }
+
   // Cas spécial: A-5-4-3-2 (As bas)
   if (
     hand[0].numericValue === 14 &&
@@ -183,6 +211,8 @@ function countValues(hand) {
   const valueCount = {};
 
   for (const card of hand) {
+    if (!card || card.numericValue === undefined) continue;
+
     const value = card.numericValue;
     valueCount[value] = (valueCount[value] || 0) + 1;
   }
@@ -201,10 +231,10 @@ function findGroups(hand, groupSize) {
   }
 
   const group = hand.filter(
-    (card) => card.numericValue === parseInt(groupValue)
+    (card) => card && card.numericValue === parseInt(groupValue)
   );
   const remainingCards = hand.filter(
-    (card) => card.numericValue !== parseInt(groupValue)
+    (card) => card && card.numericValue !== parseInt(groupValue)
   );
 
   return { group, remainingCards };
@@ -262,6 +292,11 @@ function findFullHouse(hand) {
  * @returns {number} Les dégâts calculés
  */
 export function calculateDamage(handResult) {
+  if (!handResult || !handResult.type || handResult.type.rank === undefined) {
+    console.warn('handResult invalide:', handResult);
+    return 1; // Valeur par défaut
+  }
+
   // Base damage is 2^rank
   const baseDamage = Math.pow(2, handResult.type.rank);
   return baseDamage;
@@ -273,6 +308,11 @@ export function calculateDamage(handResult) {
  * @returns {Object} La meilleure main trouvée et les indices des cartes qui la composent
  */
 export function findBestHand(cards) {
+  // Vérifications de sécurité
+  if (!cards || !Array.isArray(cards)) {
+    throw new Error('Les cartes doivent être un tableau valide');
+  }
+
   // S'il y a exactement 5 cartes, pas besoin de chercher
   if (cards.length === 5) {
     const evaluation = evaluateHand(cards);
@@ -290,12 +330,29 @@ export function findBestHand(cards) {
 
   for (const indices of combinations) {
     const hand = indices.map((index) => cards[index]);
-    const evaluation = evaluateHand(hand);
+    try {
+      const evaluation = evaluateHand(hand);
 
-    if (!bestEvaluation || evaluation.type.rank > bestEvaluation.type.rank) {
-      bestEvaluation = evaluation;
-      bestIndices = indices;
+      if (!bestEvaluation || evaluation.type.rank > bestEvaluation.type.rank) {
+        bestEvaluation = evaluation;
+        bestIndices = indices;
+      }
+    } catch (error) {
+      console.error(`Erreur d'évaluation pour les indices ${indices}:`, error);
+      continue;
     }
+  }
+
+  // Si aucune main valide n'a été trouvée, retourner une main par défaut
+  if (!bestEvaluation) {
+    console.warn('Aucune main valide trouvée, retour à la valeur par défaut');
+    return {
+      evaluation: {
+        type: HAND_TYPES.HIGH_CARD,
+        cards: cards.slice(0, 5),
+      },
+      indices: [0, 1, 2, 3, 4],
+    };
   }
 
   return {

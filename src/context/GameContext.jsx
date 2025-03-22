@@ -20,6 +20,7 @@ import {
 import { ACTIONS } from './gameActions';
 import { gameReducer, initialGameState } from './gameReducer';
 import { AutoSaveHandler } from '../modules/save-system';
+import { applyCombatFixes } from '../modules/combat-fixes';
 
 // Création du contexte
 export const GameContext = createContext();
@@ -48,6 +49,9 @@ export function GameProvider({ children }) {
 
         // Initialiser les emplacements de cartes bonus
         gameState.maxBonusCardSlots = 3;
+
+        // Appliquer les correctifs au système de combat
+        applyCombatFixes(gameState);
 
         // Vérifier si une sauvegarde existe
         if (hasSave()) {
@@ -132,6 +136,7 @@ export function GameProvider({ children }) {
       isMounted = false;
     };
   }, []);
+
   // Système d'événements pour la communication entre composants
   const gameEventBus = {
     listeners: {},
@@ -156,6 +161,7 @@ export function GameProvider({ children }) {
       this.listeners[event].forEach((callback) => callback(data));
     },
   };
+
   // Vérification périodique de l'état du combat
   useEffect(() => {
     if (!state.game || !state.combatSystem) return;

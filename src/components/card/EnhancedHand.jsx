@@ -1,5 +1,5 @@
 // src/components/card/EnhancedHand.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import EnhancedCard from './EnhancedCard';
 import { motion } from 'framer-motion';
 
@@ -30,11 +30,13 @@ const EnhancedHand = ({
   };
 
   // Calcule le nombre de cartes sélectionnées
-  const selectedCount = cards.filter((card) => card.isSelected).length;
+  const selectedCount = useMemo(
+    () => cards.filter((card) => card.isSelected).length,
+    [cards]
+  );
 
   // Fonction pour gérer la sélection des cartes
   const handleCardSelect = (index) => {
-    console.log(`EnhancedHand: handleCardSelect called with index ${index}`);
     if (onToggleSelect && selectionMode !== 'view') {
       onToggleSelect(index);
     }
@@ -45,23 +47,43 @@ const EnhancedHand = ({
     setSortByValue(!sortByValue);
   };
 
-  // Trier les cartes
-  const sortedCards = React.useMemo(() => {
+  // Trier les cartes de façon mémoïsée
+  const sortedCards = useMemo(() => {
+    if (!Array.isArray(cards)) {
+      console.warn('cards is not an array:', cards);
+      return [];
+    }
+
+    // Créer une copie avant de trier pour éviter de modifier l'original
     let newSortedCards = [...cards];
 
     if (sortByValue) {
       // Trier par valeur (numérique ascendante, de gauche à droite)
-      newSortedCards.sort((a, b) => a.numericValue - b.numericValue);
+      newSortedCards.sort((a, b) => {
+        // Vérifier que les propriétés existent
+        const aValue = a.numericValue !== undefined ? a.numericValue : 0;
+        const bValue = b.numericValue !== undefined ? b.numericValue : 0;
+        return aValue - bValue;
+      });
     } else {
       // Trier par couleur puis par valeur
       const suitOrder = { spades: 0, hearts: 1, diamonds: 2, clubs: 3 };
       newSortedCards.sort((a, b) => {
+        // S'assurer que suit existe
+        const aSuit = a.suit || 'spades';
+        const bSuit = b.suit || 'spades';
+
         // D'abord par couleur
-        const suitComparison = suitOrder[a.suit] - suitOrder[b.suit];
+        const suitComparison =
+          (suitOrder[aSuit] !== undefined ? suitOrder[aSuit] : 0) -
+          (suitOrder[bSuit] !== undefined ? suitOrder[bSuit] : 0);
+
         if (suitComparison !== 0) return suitComparison;
 
         // Ensuite par valeur (ascendante)
-        return a.numericValue - b.numericValue;
+        const aValue = a.numericValue !== undefined ? a.numericValue : 0;
+        const bValue = b.numericValue !== undefined ? b.numericValue : 0;
+        return aValue - bValue;
       });
     }
 
@@ -89,33 +111,40 @@ const EnhancedHand = ({
         initial="hidden"
         animate="show"
       >
-        {sortedCards.map((card, index) => (
-          <motion.div
-            key={index}
-            variants={cardAnimation}
-            whileHover={{
-              y: -15,
-              transition: { duration: 0.2 },
-            }}
-            onHoverStart={() => setHoverIndex(index)}
-            onHoverEnd={() => setHoverIndex(null)}
-            className="relative"
-          >
-            <EnhancedCard
-              value={card.value}
-              suit={card.suit}
-              isSelected={card.isSelected}
-              isHighlighted={bestHandCards.includes(index)}
-              onToggleSelect={() => handleCardSelect(index)}
-              selectionType={selectionMode}
-              disabled={
-                !card.isSelected &&
-                selectedCount >= maxSelectable &&
-                selectionMode === 'attack'
-              }
-            />
-          </motion.div>
-        ))}
+        {sortedCards.map((card, index) => {
+          if (!card) {
+            console.warn('Invalid card at index', index);
+            return null;
+          }
+
+          return (
+            <motion.div
+              key={index}
+              variants={cardAnimation}
+              whileHover={{
+                y: -15,
+                transition: { duration: 0.2 },
+              }}
+              onHoverStart={() => setHoverIndex(index)}
+              onHoverEnd={() => setHoverIndex(null)}
+              className="relative"
+            >
+              <EnhancedCard
+                value={card.value}
+                suit={card.suit}
+                isSelected={card.isSelected}
+                isHighlighted={bestHandCards.includes(index)}
+                onToggleSelect={() => handleCardSelect(index)}
+                selectionType={selectionMode}
+                disabled={
+                  !card.isSelected &&
+                  selectedCount >= maxSelectable &&
+                  selectionMode === 'attack'
+                }
+              />
+            </motion.div>
+          );
+        })}
       </motion.div>
 
       {/* Instructions */}

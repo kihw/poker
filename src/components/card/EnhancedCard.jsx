@@ -11,8 +11,11 @@ const EnhancedCard = ({
   selectionType = 'attack', // 'attack', 'discard', 'view'
   disabled = false,
 }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isProcessingClick, setIsProcessingClick] = useState(false);
+
+  // Vérification des valeurs
+  const safeValue = value || 'A';
+  const safeSuit = suit || 'spades';
 
   // Dictionnaire pour afficher les symboles des couleurs
   const suitSymbols = {
@@ -21,9 +24,12 @@ const EnhancedCard = ({
     diamonds: '♦',
     clubs: '♣',
   };
-  const displaySuit = suitSymbols[suit] || suit;
+  const displaySuit = suitSymbols[safeSuit] || safeSuit;
   const isRed =
-    suit === 'hearts' || suit === 'diamonds' || suit === '♥' || suit === '♦';
+    safeSuit === 'hearts' ||
+    safeSuit === 'diamonds' ||
+    safeSuit === '♥' ||
+    safeSuit === '♦';
 
   // Déterminer les couleurs en fonction du type de carte
   const cardColors = isRed ? 'bg-white text-red-600' : 'bg-white text-black';
@@ -78,7 +84,7 @@ const EnhancedCard = ({
         {/* Face avant (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
           <div className="flex justify-between items-center">
-            <div className="text-lg font-bold">{value}</div>
+            <div className="text-lg font-bold">{safeValue}</div>
             <div className="text-lg">{displaySuit}</div>
           </div>
 
@@ -87,7 +93,7 @@ const EnhancedCard = ({
           </div>
 
           <div className="flex justify-between items-center rotate-180">
-            <div className="text-lg font-bold">{value}</div>
+            <div className="text-lg font-bold">{safeValue}</div>
             <div className="text-lg">{displaySuit}</div>
           </div>
         </div>

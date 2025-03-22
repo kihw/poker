@@ -44,10 +44,11 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
   ];
 
   // Vérifier si nous avons terminé le tutoriel
-  if (step >= tutorialSteps.length) {
-    onComplete();
-    return null;
-  }
+  useEffect(() => {
+    if (step >= tutorialSteps.length) {
+      onComplete();
+    }
+  }, [step, tutorialSteps.length, onComplete]);
 
   useEffect(() => {
     return () => {
@@ -55,6 +56,11 @@ const TutorialOverlay = ({ step = 0, onNextStep, onComplete }) => {
       localStorage.setItem('tutorialCompleted', 'true');
     };
   }, []);
+
+  // Si on a dépassé le nombre d'étapes, ne rien afficher
+  if (step >= tutorialSteps.length) {
+    return null;
+  }
 
   const currentStep = tutorialSteps[step];
 

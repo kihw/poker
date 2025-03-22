@@ -64,7 +64,7 @@ export class GameState {
     // UI feedback states
     this.actionFeedback = null;
     this.tutorialStep = 0;
-    this.showTutorial = false;
+    this.showTutorial = true;
 
     // Initialize the deck
     this.initializeDeck();
@@ -102,6 +102,12 @@ export class GameState {
    * Distribue une nouvelle main jusqu'à avoir 7 cartes
    */
   dealHand() {
+    // S'assurer que les tableaux nécessaires existent
+    if (!this.hand) this.hand = [];
+    if (!this.deck) this.initializeDeck();
+    if (!this.discard) this.discard = [];
+    if (!this.selectedCards) this.selectedCards = [];
+
     // Garder les cartes non sélectionnées du tour précédent
     const keptCards = [];
     if (this.hand.length > 0 && this.selectedCards.length > 0) {
@@ -109,8 +115,8 @@ export class GameState {
       for (let i = 0; i < this.hand.length; i++) {
         if (!this.selectedCards.includes(i)) {
           // S'assurer que la carte n'est pas marquée comme sélectionnée
-          this.hand[i].isSelected = false;
-          keptCards.push(this.hand[i]);
+          const card = { ...this.hand[i], isSelected: false };
+          keptCards.push(card);
         }
       }
     }
@@ -172,17 +178,26 @@ export class GameState {
       return false;
     }
 
-    // IMPORTANT: S'assurer que isSelected est toujours un booléen
-    this.hand[index].isSelected = !Boolean(this.hand[index].isSelected);
+    // Vérifier et créer une copie de la carte pour éviter les mutations
+    const card = this.hand[index];
+    if (!card) {
+      console.error(`Card not found at index ${index}`);
+      return false;
+    }
 
-    // IMPORTANT: Toujours reconstruire le tableau selectedCards complet
-    // pour qu'il soit correctement synchronisé
+    // IMPORTANT: Toujours traiter isSelected comme un booléen
+    const newIsSelected = !Boolean(card.isSelected);
+
+    // Mettre à jour la carte avec la nouvelle valeur (création d'un nouvel objet)
+    this.hand[index] = { ...card, isSelected: newIsSelected };
+
+    // IMPORTANT: Reconstruire le tableau selectedCards pour qu'il soit correctement synchronisé
     this.selectedCards = this.hand
-      .map((card, idx) => (card.isSelected ? idx : -1))
+      .map((c, idx) => (c.isSelected ? idx : -1))
       .filter((idx) => idx !== -1);
 
     console.log(
-      `Card ${index} is now ${this.hand[index].isSelected ? 'selected' : 'deselected'}`
+      `Card ${index} is now ${newIsSelected ? 'selected' : 'deselected'}`
     );
     console.log(`Selected cards indices: ${this.selectedCards}`);
 
@@ -194,9 +209,12 @@ export class GameState {
    */
   resetCardSelections() {
     // Réinitialiser les propriétés isSelected de toutes les cartes
-    this.hand.forEach((card) => {
-      card.isSelected = false;
-    });
+    if (this.hand && Array.isArray(this.hand)) {
+      this.hand = this.hand.map((card) => ({
+        ...card,
+        isSelected: false,
+      }));
+    }
 
     // Vider le tableau des indices
     this.selectedCards = [];
@@ -206,6 +224,11 @@ export class GameState {
    * Évalue la main sélectionnée et calcule les dégâts
    */
   evaluateSelectedHand() {
+    if (!this.hand || !Array.isArray(this.hand)) {
+      console.error("La main n'est pas initialisée");
+      return null;
+    }
+
     // S'assurer que selectedCards est synchronisé avec l'état isSelected des cartes
     this.selectedCards = this.hand
       .map((card, index) => (card.isSelected ? index : -1))
@@ -226,7 +249,11 @@ export class GameState {
 
       for (const index of this.selectedCards) {
         const card = this.hand[index];
-        totalValue += card.numericValue;
+        if (!card) {
+          console.error(`Card not found at index ${index}`);
+          continue;
+        }
+        totalValue += card.numericValue || 0;
         selectedCardsData.push(card);
       }
 
@@ -254,12 +281,23 @@ export class GameState {
     // Si 5 cartes sont sélectionnées, on utilise l'évaluateur de main de poker
     else {
       // Extraire les 5 cartes sélectionnées
-      const selectedCardsData = this.selectedCards.map(
-        (index) => this.hand[index]
-      );
+      const selectedCardsData = this.selectedCards
+        .map((index) => this.hand[index])
+        .filter((card) => card); // Filtrer les cartes non définies
+
+      if (selectedCardsData.length !== 5) {
+        console.error("Impossible d'extraire les 5 cartes sélectionnées");
+        return null;
+      }
 
       // Trouver la meilleure main
-      const result = findBestHand(selectedCardsData);
+      let result;
+      try {
+        result = findBestHand(selectedCardsData);
+      } catch (error) {
+        console.error("Erreur lors de l'évaluation de la main:", error);
+        return null;
+      }
 
       // Sauvegarder les indices des cartes qui forment la meilleure main
       this.bestHandCards = result.indices.map((relativeIndex) => {
@@ -304,10 +342,19 @@ export class GameState {
 
       // Ajouter au journal de combat
       let logEntry = `Vous infligez ${this.handResult.totalDamage} dégâts avec ${this.handResult.handName}`;
+
+      // Initialiser combatLog s'il n'existe pas
+      if (!this.combatLog) {
+        this.combatLog = [];
+      }
+
       this.combatLog.unshift(logEntry);
 
       // Ajouter les effets bonus au journal
-      if (this.handResult.bonusEffects.length > 0) {
+      if (
+        this.handResult.bonusEffects &&
+        this.handResult.bonusEffects.length > 0
+      ) {
         this.combatLog.unshift(
           `Effets bonus: ${this.handResult.bonusEffects.join(', ')}`
         );
@@ -325,7 +372,10 @@ export class GameState {
    * @param {Array} indices Les indices des cartes à défausser
    */
   discardCards(indices) {
-    if (indices.length === 0) return;
+    if (!indices || !Array.isArray(indices) || indices.length === 0) {
+      console.warn('Aucune carte à défausser');
+      return this.hand;
+    }
 
     // Marquer la défausse comme utilisée
     this.discardUsed = true;
@@ -334,13 +384,22 @@ export class GameState {
     const sortedIndices = [...indices].sort((a, b) => b - a);
 
     // Sauvegarder les cartes défaussées
-    const discardedCards = sortedIndices.map((index) => this.hand[index]);
+    if (!this.discard) {
+      this.discard = [];
+    }
+
+    const discardedCards = sortedIndices
+      .map((index) => this.hand[index])
+      .filter((card) => card); // Filtrer les cartes non définies
+
     this.discard.push(...discardedCards);
 
     // Créer une nouvelle main sans les cartes défaussées
-    const newHand = [...this.hand];
+    let newHand = [...this.hand];
     sortedIndices.forEach((index) => {
-      newHand.splice(index, 1);
+      if (index >= 0 && index < newHand.length) {
+        newHand.splice(index, 1);
+      }
     });
 
     // Nombre de cartes à tirer
@@ -348,7 +407,8 @@ export class GameState {
 
     // Si le deck est trop petit, on recycle la défausse (sauf les cartes qu'on vient de défausser)
     if (this.deck.length < drawCount) {
-      this.deck = shuffleDeck([...this.deck, ...this.discard]);
+      const oldDiscard = [...this.discard];
+      this.deck = shuffleDeck([...this.deck, ...oldDiscard]);
       this.discard = discardedCards; // On garde seulement les cartes qu'on vient de défausser
 
       // Si c'est toujours insuffisant, on recrée un deck

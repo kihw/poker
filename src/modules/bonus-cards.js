@@ -96,11 +96,15 @@ export class BonusCardSystem {
     return false;
   }
 
-  // Méthodes updatées de src/modules/bonus-cards.js
-
   // Méthode equipBonusCard corrigée
   equipBonusCard(cardId) {
     console.log('BonusCardSystem.equipBonusCard', cardId);
+
+    // Vérifications préliminaires
+    if (!this.gameState || !this.gameState.bonusCardCollection) {
+      console.error('GameState ou collection de cartes non initialisé');
+      return false;
+    }
 
     // Check if the player owns this card
     const card = this.gameState.bonusCardCollection.find(
@@ -110,6 +114,11 @@ export class BonusCardSystem {
     if (!card) {
       console.error('Card not found or not owned:', cardId);
       return false;
+    }
+
+    // S'assurer que activeBonusCards existe
+    if (!this.gameState.activeBonusCards) {
+      this.gameState.activeBonusCards = [];
     }
 
     // Check if the card is already equipped
@@ -143,6 +152,12 @@ export class BonusCardSystem {
   // Méthode unequipBonusCard corrigée
   unequipBonusCard(cardId) {
     console.log('BonusCardSystem.unequipBonusCard', cardId);
+
+    // Vérifications préliminaires
+    if (!this.gameState || !this.gameState.activeBonusCards) {
+      console.error('GameState ou cartes actives non initialisé');
+      return false;
+    }
 
     const cardIndex = this.gameState.activeBonusCards.findIndex(
       (card) => card.id === cardId
@@ -231,6 +246,12 @@ export class BonusCardSystem {
 
   // Maps hand types to bonus card conditions
   mapHandTypeToCondition(handName) {
+    // Vérifier que handName est une chaîne valide
+    if (!handName || typeof handName !== 'string') {
+      console.warn('handName invalide:', handName);
+      return 'unknown';
+    }
+
     const conditionMap = {
       // Noms anglais
       'Royal Flush': 'Royal Flush',
@@ -266,20 +287,43 @@ export class BonusCardSystem {
 
   // Apply bonus card effects to a hand
   applyBonusCardEffects(handRank, handName) {
+    if (handRank === undefined || handRank === null) {
+      console.warn('handRank non spécifié:', handRank);
+      handRank = 0;
+    }
+
+    if (!handName) {
+      console.warn('handName non spécifié');
+      handName = 'High Card';
+    }
+
+    // Calcul de base des dégâts - 2^rang
     let damage = Math.pow(2, handRank);
     let bonusEffects = [];
 
     // Map the hand name to the bonus card condition
     const condition = this.mapHandTypeToCondition(handName);
 
+    // Vérifier que activeBonusCards existe et est un tableau
+    if (
+      !this.gameState.activeBonusCards ||
+      !Array.isArray(this.gameState.activeBonusCards)
+    ) {
+      console.warn('activeBonusCards non initialisé ou invalide');
+      return { damage, bonusEffects };
+    }
+
     // Apply effects from active bonus cards
     for (const bonusCard of this.gameState.activeBonusCards) {
+      // Skip invalid cards
+      if (!bonusCard) continue;
+
       // Check for passive effects that apply to this hand or always
       if (
         bonusCard.effect === 'passive' &&
         (bonusCard.condition === condition || bonusCard.condition === 'always')
       ) {
-        switch (bonusCard.bonus.type) {
+        switch (bonusCard.bonus?.type) {
           case 'damage':
             damage += bonusCard.bonus.value;
             bonusEffects.push(
@@ -287,6 +331,8 @@ export class BonusCardSystem {
             );
             break;
           case 'heal':
+            if (!this.gameState.player) continue;
+
             const healAmount = Math.min(
               bonusCard.bonus.value,
               this.gameState.player.maxHealth - this.gameState.player.health
@@ -295,6 +341,8 @@ export class BonusCardSystem {
             bonusEffects.push(`${bonusCard.name} healed ${healAmount} HP`);
             break;
           case 'shield':
+            if (!this.gameState.player) continue;
+
             this.gameState.player.shield =
               (this.gameState.player.shield || 0) + bonusCard.bonus.value;
             bonusEffects.push(
@@ -308,31 +356,31 @@ export class BonusCardSystem {
       if (
         bonusCard.effect === 'passive' &&
         bonusCard.condition === 'damageTaken' &&
-        this.gameState.playerDamagedLastTurn
+        this.gameState.playerDamagedLastTurn &&
+        bonusCard.bonus?.type === 'damage'
       ) {
-        if (bonusCard.bonus.type === 'damage') {
-          damage += bonusCard.bonus.value;
-          bonusEffects.push(
-            `${bonusCard.name} added ${bonusCard.bonus.value} damage from last turn's damage`
-          );
-        }
+        damage += bonusCard.bonus.value;
+        bonusEffects.push(
+          `${bonusCard.name} added ${bonusCard.bonus.value} damage from last turn's damage`
+        );
       }
 
       // Check for low health effects
       if (
         bonusCard.effect === 'passive' &&
         bonusCard.condition === 'lowHealth' &&
-        this.gameState.player.health <= this.gameState.player.maxHealth * 0.25
+        this.gameState.player &&
+        this.gameState.player.health <=
+          this.gameState.player.maxHealth * 0.25 &&
+        bonusCard.bonus?.type === 'damageMultiplier'
       ) {
-        if (bonusCard.bonus.type === 'damageMultiplier') {
-          const additionalDamage = Math.floor(
-            damage * (bonusCard.bonus.value - 1)
-          );
-          damage = Math.floor(damage * bonusCard.bonus.value);
-          bonusEffects.push(
-            `${bonusCard.name} increased damage by ${additionalDamage} (low health bonus)`
-          );
-        }
+        const additionalDamage = Math.floor(
+          damage * (bonusCard.bonus.value - 1)
+        );
+        damage = Math.floor(damage * bonusCard.bonus.value);
+        bonusEffects.push(
+          `${bonusCard.name} increased damage by ${additionalDamage} (low health bonus)`
+        );
       }
     }
 
@@ -361,6 +409,14 @@ export class BonusCardSystem {
 
   // Use an active bonus card
   useActiveBonus(index) {
+    // Vérifications préliminaires
+    if (!this.gameState || !this.gameState.activeBonusCards) {
+      return {
+        success: false,
+        message: 'État du jeu non initialisé',
+      };
+    }
+
     if (index < 0 || index >= this.gameState.activeBonusCards.length) {
       return {
         success: false,
@@ -369,6 +425,12 @@ export class BonusCardSystem {
     }
 
     const bonusCard = this.gameState.activeBonusCards[index];
+    if (!bonusCard) {
+      return {
+        success: false,
+        message: 'Carte bonus non trouvée',
+      };
+    }
 
     // Check if the card is active and has uses left
     if (bonusCard.effect !== 'active') {
@@ -391,6 +453,13 @@ export class BonusCardSystem {
       message: `${bonusCard.name} utilisée`,
     };
 
+    if (!bonusCard.bonus) {
+      return {
+        success: false,
+        message: 'Carte bonus mal configurée',
+      };
+    }
+
     switch (bonusCard.bonus.type) {
       case 'damage':
         // Add damage to the current or next attack
@@ -407,6 +476,12 @@ export class BonusCardSystem {
 
       case 'heal':
         // Healing effect
+        if (!this.gameState.player) {
+          result.success = false;
+          result.message = 'Joueur non initialisé';
+          return result;
+        }
+
         const healAmount = Math.min(
           bonusCard.bonus.value,
           this.gameState.player.maxHealth - this.gameState.player.health
@@ -446,9 +521,17 @@ export class BonusCardSystem {
 
   // Upgrade a bonus card
   upgradeCard(cardId, upgradeMaterials = { goldCost: 50 }) {
+    // Vérifications préliminaires
+    if (!this.gameState || !this.gameState.bonusCardCollection) {
+      return {
+        success: false,
+        message: 'État du jeu non initialisé',
+      };
+    }
+
     // Find the card to upgrade
     const cardIndex = this.gameState.bonusCardCollection.findIndex(
-      (card) => card.id === cardId && card.owned
+      (card) => card && card.id === cardId && card.owned
     );
 
     if (cardIndex === -1) {
@@ -485,6 +568,11 @@ export class BonusCardSystem {
 
     // Improve card bonus
     if (card.bonus) {
+      // Store original value if not already saved
+      if (!card.bonus.originalValue) {
+        card.bonus.originalValue = card.bonus.value;
+      }
+
       // Increase bonus value by 20% per level
       card.bonus.value = Math.floor(
         card.bonus.originalValue * (1 + 0.2 * (card.level - 1))
@@ -499,7 +587,7 @@ export class BonusCardSystem {
 
     // Update active card if equipped
     const activeCardIndex = this.gameState.activeBonusCards.findIndex(
-      (activeCard) => activeCard.id === cardId
+      (activeCard) => activeCard && activeCard.id === cardId
     );
 
     if (activeCardIndex !== -1) {

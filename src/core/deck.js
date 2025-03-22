@@ -33,6 +33,7 @@ export function createDeck() {
         suit: suit,
         // Pour faciliter l'évaluation des mains, on ajoute une valeur numérique
         numericValue: getNumericValue(value),
+        isSelected: false, // Initialiser isSelected à false par défaut
       });
     }
   }
@@ -46,6 +47,11 @@ export function createDeck() {
  * @returns {Array} Le deck mélangé
  */
 export function shuffleDeck(deck) {
+  if (!deck || !Array.isArray(deck)) {
+    console.warn('deck est invalide:', deck);
+    return createDeck(); // Créer un nouveau deck par défaut
+  }
+
   // Créer une copie du deck pour ne pas modifier l'original
   const shuffled = [...deck];
 
@@ -65,14 +71,26 @@ export function shuffleDeck(deck) {
  * @returns {Array} Les cartes tirées
  */
 export function drawCards(deck, count) {
+  if (!deck || !Array.isArray(deck)) {
+    console.warn('deck est invalide:', deck);
+    return [];
+  }
+
   if (count > deck.length) {
-    throw new Error(
+    console.warn(
       `Cannot draw ${count} cards from a deck of ${deck.length} cards`
     );
+    count = deck.length; // Limiter au nombre de cartes disponibles
   }
 
   // Prendre les premières cartes du deck
-  return deck.slice(0, count);
+  const drawnCards = deck.slice(0, count);
+
+  // S'assurer que toutes les cartes tirées ont isSelected = false
+  return drawnCards.map((card) => ({
+    ...card,
+    isSelected: false,
+  }));
 }
 
 /**
@@ -97,5 +115,5 @@ export function getNumericValue(value) {
     A: 14,
   };
 
-  return valueMap[value] || parseInt(value);
+  return valueMap[value] || parseInt(value) || 2; // Valeur par défaut: 2
 }
