@@ -49,6 +49,18 @@ const EventEncounter = ({ event, onClose }) => {
     return true;
   };
 
+  const handleEventComplete = () => {
+    if (onClose) {
+      // Vérifier que result existe avant de l'utiliser
+      onClose(result || { message: 'Événement terminé' });
+    }
+  };
+
+  // Dans la méthode render de EventEncounter, ligne ~202
+  // Ajouter une vérification pour éviter l'erreur
+  const resultMessage =
+    result && result.message ? result.message : 'Résultat indisponible';
+
   // Make a choice and display the result
   const handleChoice = async (choiceIndex) => {
     setSelectedChoice(choiceIndex);

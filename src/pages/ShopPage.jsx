@@ -1,11 +1,38 @@
-// src/pages/ShopPage.jsx
-import React from 'react';
+// Dans ShopPage.jsx
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/ui/Navigation';
 import { useGame } from '../context/gameHooks';
+import { useGameOverCheck } from '../hooks/useGameOverCheck';
 
 const ShopPage = () => {
-  const {} = useGame();
+  const navigate = useNavigate();
   const { purchaseShopItem, leaveShop, gameState } = useGame();
+  const { isGameOver } = useGameOverCheck();
+  // Vérifier l'état du jeu au chargement
+  useEffect(() => {
+    // Rediriger vers la page principale si le jeu est terminé
+    if (
+      gameState &&
+      (gameState.gamePhase === 'gameOver' || gameState.isGameOver)
+    ) {
+      navigate('/');
+    }
+  }, [gameState, navigate]);
+
+  // Ajout d'un gestionnaire de secours pour fermer la boutique
+  const handleForceExit = () => {
+    // Essayer d'abord la fonction normale de sortie
+    if (leaveShop) {
+      try {
+        leaveShop();
+      } catch (error) {
+        console.error('Erreur lors de la fermeture de la boutique:', error);
+      }
+    }
+    // Dans tous les cas, rediriger vers la carte
+    navigate('/map');
+  };
 
   // If shop is not available
   if (!gameState?.shopItems || gameState.shopItems.length === 0) {
@@ -14,6 +41,12 @@ const ShopPage = () => {
         <div className="text-white text-center">
           <h2 className="text-2xl mb-4">Boutique fermée</h2>
           <p>Revenez plus tard lorsque la boutique sera disponible</p>
+          <button
+            onClick={handleForceExit}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Retour à la carte
+          </button>
         </div>
         <Navigation />
       </div>
@@ -56,12 +89,21 @@ const ShopPage = () => {
             <span className="text-yellow-400 mr-2">💰</span>
             Votre or: {gameState.player.gold}
           </div>
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-            onClick={() => leaveShop()}
-          >
-            Quitter la boutique
-          </button>
+          <div>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              onClick={() => leaveShop()}
+            >
+              Quitter la boutique
+            </button>
+            {/* Bouton de secours qui redirige directement */}
+            <button
+              className="ml-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+              onClick={handleForceExit}
+            >
+              Forcer le retour à la carte
+            </button>
+          </div>
         </div>
       </div>
       <Navigation />

@@ -211,6 +211,16 @@ export function GameProvider({ children }) {
       [state.toggleResult]
     ),
 
+    resetGame: useCallback(() => {
+      console.log('Réinitialisation complète du jeu');
+      dispatch({ type: ACTIONS.RESET_GAME });
+
+      // Recharger la page après un court délai pour s'assurer que tout est bien réinitialisé
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    }, []),
+
     evaluateSelectedHand: useCallback(() => {
       dispatch({ type: ACTIONS.EVALUATE_SELECTED_HAND });
     }, []),

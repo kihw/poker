@@ -5,12 +5,13 @@ import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
 import Navigation from '../components/ui/Navigation';
 import { useGame } from '../context/gameHooks';
 import ActionFeedback from '../components/ui/ActionFeedback';
-
+import { useGameOverCheck } from '../hooks/useGameOverCheck';
 const MapPage = () => {
   const { gameState, generateMap } = useGame();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState(null);
   const [mapLoading, setMapLoading] = useState(false);
+  const { isGameOver } = useGameOverCheck();
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(gameState?.path) ? gameState.path : [];

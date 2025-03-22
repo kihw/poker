@@ -1,15 +1,11 @@
-// src/pages/GamePage.jsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import CombatInterface from '../components/combat/CombatInterface';
-import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/gameHooks';
+import { useGameOverCheck } from '../hooks/useGameOverCheck';
 
 const GamePage = () => {
-  const { gameState } = useGame();
+  const { isGameOver } = useGameOverCheck();
+  const { gameState, resetGame } = useGame();
   const navigate = useNavigate();
 
-  // Check if we're in a combat phase
+  // Check if we're in a combat phase or game over
   const isInCombat =
     gameState?.gamePhase === 'combat' || gameState?.gamePhase === 'reward';
 
@@ -20,22 +16,31 @@ const GamePage = () => {
     }
   }, [gameState?.gamePhase, navigate]);
 
+  // Fonction de redémarrage du jeu
+  const handleRestart = () => {
+    if (resetGame) {
+      resetGame();
+    } else {
+      // Fallback si resetGame n'est pas disponible
+      window.location.href = '/';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
-      {isInCombat ? (
-        <CombatInterface />
-      ) : (
+      {isGameOver && (
         <div className="text-white text-center">
-          <h2 className="text-2xl mb-4">Pas de combat en cours</h2>
-          <p>Rendez-vous à la carte pour commencer une nouvelle aventure</p>
+          <h2 className="text-3xl mb-4 text-red-500 font-bold">GAME OVER</h2>
+          <p className="mb-6">Vous avez été vaincu!</p>
           <button
-            onClick={() => navigate('/map')}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded"
+            onClick={handleRestart}
+            className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded"
           >
-            Aller à la carte
+            Recommencer une nouvelle partie
           </button>
         </div>
       )}
+
       <Navigation />
     </div>
   );

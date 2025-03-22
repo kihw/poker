@@ -3,11 +3,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventEncounter from '../components/event/EventEncounter';
 import { useGame } from '../context/gameHooks';
+import { useGameOverCheck } from '../hooks/useGameOverCheck';
 
 const EventPage = () => {
   const { gameState } = useGame();
   const navigate = useNavigate();
-
+  const { isGameOver } = useGameOverCheck();
   // Handle event close/completion
   const handleEventComplete = () => {
     navigate('/map');

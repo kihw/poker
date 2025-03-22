@@ -12,6 +12,9 @@ import {
   deleteSave,
 } from '../modules/save-system';
 
+export const ACTIONS = {
+  RESET_GAME: 'RESET_GAME',
+};
 // Initial state
 export const initialGameState = {
   game: null,
@@ -37,7 +40,18 @@ export function gameReducer(state, action) {
           loading: false,
           lastUpdate: Date.now(),
         };
+      case ACTIONS.RESET_GAME:
+        // Supprimer la sauvegarde si elle existe
+        if (typeof deleteSave === 'function') {
+          deleteSave();
+        }
 
+        // Retourner un état initial frais
+        return {
+          ...initialGameState,
+          loading: false,
+          lastUpdate: Date.now(),
+        };
       case ACTIONS.DEAL_HAND:
         if (!state.game) {
           throw new Error('Game state is not initialized');

@@ -15,7 +15,7 @@ import ErrorScreen from './components/ui/ErrorScreen';
 
 // Import du bouton de sauvegarde
 import SaveButton from './components/ui/SaveButton';
-
+// Dans App.jsx, ajouter une vérification de l'état gameOver
 function App() {
   const { gameState, loading, error } = useGame();
   const navigate = useNavigate();
@@ -29,8 +29,13 @@ function App() {
 
   // Rediriger vers la carte si le jeu démarre en mode exploration
   useEffect(() => {
-    if (gameState && gameState.gamePhase === 'exploration') {
-      navigate('/map');
+    if (gameState) {
+      if (gameState.gamePhase === 'exploration') {
+        navigate('/map');
+      } else if (gameState.gamePhase === 'gameOver') {
+        // Rediriger vers la page principale en cas de game over
+        navigate('/');
+      }
     }
   }, [gameState, navigate]);
 
@@ -55,7 +60,7 @@ function App() {
         <Route path="/event" element={<EventPage />} />
         <Route path="/rest" element={<RestPage />} />
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/map" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
