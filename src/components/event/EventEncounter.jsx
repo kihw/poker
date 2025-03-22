@@ -1,20 +1,19 @@
-// src/components/event/EventEncounter.jsx - Migré vers Redux
+// src/components/event/EventEncounter.jsx - Mise à jour pour utiliser Redux
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { addGold, heal, takeDamage } from '../../redux/slices/playerSlice';
-import { addCard } from '../../redux/slices/bonusCardsSlice';
+import { makeEventChoice } from '../../redux/thunks/eventThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const EventEncounter = ({ event, onClose }) => {
   const dispatch = useDispatch();
 
-  // Sélectionner les données du joueur depuis Redux
+  // Sélectionner les données du joueur et les résultats d'événements depuis Redux
   const player = useSelector((state) => state.player);
-
+  const eventResult = useSelector((state) => state.event.eventResult);
+  
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [showResult, setShowResult] = useState(false);
-  const [result, setResult] = useState(null);
 
   if (!event) return null;
 
@@ -53,109 +52,31 @@ const EventEncounter = ({ event, onClose }) => {
     return true;
   };
 
-  const handleEventComplete = () => {
-    if (onClose) {
-      // Vérifier que result existe avant de l'utiliser
-      onClose(result || { message: 'Événement terminé' });
-    }
-  };
-
-  // Dans la méthode render de EventEncounter, ligne ~202
-  // Ajouter une vérification pour éviter l'erreur
-  const resultMessage =
-    result && result.message ? result.message : 'Résultat indisponible';
-
   // Make a choice and display the result
   const handleChoice = async (choiceIndex) => {
     setSelectedChoice(choiceIndex);
 
-    // Wait a bit for animation
-    setTimeout(() => {
-      // Get the selected choice
-      const choice = event.choices[choiceIndex];
-
-      // Determine if the choice succeeds or fails based on chance
-      const isSuccess = Math.random() <= (choice.chance || 1.0);
-
-      // Create result object
-      const choiceResult = {
-        success: isSuccess,
-        message: isSuccess
-          ? choice.resultText
-          : choice.failText ||
-            "Le résultat n'est pas celui que vous espériez...",
-        details: isSuccess
-          ? { ...(choice.resultDetails || {}) }
-          : { ...(choice.failDetails || {}) },
-      };
-
-      // Apply effects to the player via Redux
-      const details = choiceResult.details;
-
-      if (details) {
-        // Handle gold changes
-        if (details.gold) {
-          if (details.gold > 0) {
-            dispatch(addGold(details.gold));
-          } else if (details.gold < 0) {
-            dispatch(addGold(details.gold)); // negative value will be handled in the reducer
-          }
-        }
-
-        // Handle healing
-        if (details.healing && details.healing > 0) {
-          dispatch(heal(details.healing));
-        }
-
-        // Handle damage (health cost)
-        if (details.healthCost && details.healthCost > 0) {
-          dispatch(takeDamage(details.healthCost));
-        }
-
-        // Handle bonus card rewards
-        if (details.card && details.card.id) {
-          dispatch(addCard(details.card.id));
-        } else if (details.card && details.card.name === 'Carte mystérieuse') {
-          // Generate a random card ID between 1 and 31 (from the available bonus cards)
-          const randomCardId = Math.floor(Math.random() * 31) + 1;
-          dispatch(addCard(randomCardId));
-
-          // Update the result with the card info for UI
-          details.card = {
-            ...details.card,
-            id: randomCardId,
-          };
-        }
-
-        // Handle item rewards
-        if (details.item) {
-          // Add item to inventory (would require a dedicated action)
-          dispatch(
-            setActionFeedback({
-              message: `Obtenu: ${details.item.name}`,
-              type: 'success',
-            })
-          );
-        }
-      }
-
-      setResult(choiceResult);
-      setShowResult(true);
-
-      // Send feedback
-      dispatch(
-        setActionFeedback({
-          message: choiceResult.message,
-          type: choiceResult.success ? 'success' : 'warning',
-        })
-      );
-    }, 500);
+    // Dispatch l'action Redux pour traiter le choix
+    dispatch(makeEventChoice({ choiceIndex }))
+      .then(() => {
+        // Attendre un peu pour l'animation
+        setTimeout(() => {
+          setShowResult(true);
+        }, 500);
+      })
+      .catch(error => {
+        console.error("Erreur lors du traitement du choix:", error);
+        dispatch(setActionFeedback({
+          message: "Une erreur est survenue lors du traitement de votre choix",
+          type: "error"
+        }));
+      });
   };
 
   // Continue after seeing the result
   const handleContinue = () => {
     if (onClose) {
-      onClose(result);
+      onClose(eventResult);
     }
   };
 
@@ -175,15 +96,11 @@ const EventEncounter = ({ event, onClose }) => {
           </div>
 
           {/* Event illustration image (optional) */}
-          {event.image && (
-            <div className="h-48 overflow-hidden flex items-center justify-center bg-gray-800">
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full object-cover"
-              />
-            </div>
-          )}
+          <div className="h-48 overflow-hidden flex items-center justify-center bg-gray-800">
+            {event.image && (
+              <div className="text-6xl">{event.image}</div>
+            )}
+          </div>
 
           {/* Event description */}
           <div className="p-6">
@@ -260,8 +177,10 @@ const EventEncounter = ({ event, onClose }) => {
                                 choice.requiresItem
                               )) &&
                             'Objet requis manquant.'}
-                        </div>
-                      )}
+                      </motion.div>
+      </AnimatePresence>
+    </div>
+          )}
 
                       {/* Success probability */}
                       {choice.chance && isAvailable && (
@@ -289,50 +208,50 @@ const EventEncounter = ({ event, onClose }) => {
                 className="bg-gray-800 p-4 rounded-md"
               >
                 <h3 className="text-lg font-bold mb-2 text-white">Résultat</h3>
-                <p className="text-gray-300 mb-4">{result.message}</p>
+                <p className="text-gray-300 mb-4">{eventResult?.message || "Résultat indisponible"}</p>
 
                 {/* Display choice consequences */}
-                {result.details && (
+                {eventResult?.details && (
                   <div className="space-y-2 mb-4">
-                    {result.details.gold && (
+                    {eventResult.details.gold && (
                       <div className="flex items-center">
                         <span className="text-yellow-500 mr-2">💰</span>
                         <span
                           className={
-                            result.details.gold > 0
+                            eventResult.details.gold > 0
                               ? 'text-green-400'
                               : 'text-red-400'
                           }
                         >
-                          {result.details.gold > 0 ? '+' : ''}
-                          {result.details.gold} Or
+                          {eventResult.details.gold > 0 ? '+' : ''}
+                          {eventResult.details.gold} Or
                         </span>
                       </div>
                     )}
 
-                    {result.details.healing && (
+                    {eventResult.details.healing && (
                       <div className="flex items-center">
                         <span className="text-red-500 mr-2">❤️</span>
                         <span className="text-green-400">
-                          +{result.details.healing} PV
+                          +{eventResult.details.healing} PV
                         </span>
                       </div>
                     )}
 
-                    {result.details.item && (
+                    {eventResult.details.item && (
                       <div className="flex items-center">
                         <span className="text-blue-500 mr-2">🎒</span>
                         <span className="text-blue-400">
-                          Obtenu: {result.details.item.name}
+                          Obtenu: {eventResult.details.item.name}
                         </span>
                       </div>
                     )}
 
-                    {result.details.card && (
+                    {eventResult.details.card && (
                       <div className="flex items-center">
                         <span className="text-purple-500 mr-2">🃏</span>
                         <span className="text-purple-400">
-                          Nouvelle carte bonus: {result.details.card.name}
+                          Nouvelle carte bonus: {eventResult.details.card.name}
                         </span>
                       </div>
                     )}

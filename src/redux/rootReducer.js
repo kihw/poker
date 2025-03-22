@@ -6,6 +6,7 @@ import combatReducer from './slices/combatSlice';
 import bonusCardsReducer from './slices/bonusCardsSlice';
 import mapReducer from './slices/mapSlice';
 import shopReducer from './slices/shopSlice';
+import eventReducer from './slices/eventSlice';
 import uiReducer from './slices/uiSlice';
 
 const rootReducer = combineReducers({
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
   bonusCards: bonusCardsReducer,
   map: mapReducer,
   shop: shopReducer,
+  event: eventReducer, // Ajouté la nouvelle slice d'événements
   ui: uiReducer,
 });
 
