@@ -59,11 +59,10 @@ const CombatInterface = () => {
   // Gestion du tutoriel
   const handleNextTutorialStep = () => {
     // Logique pour faire avancer les étapes du tutoriel
-    // Vous pouvez ajouter une logique plus complexe ici si nécessaire
     const currentStep = gameState.tutorialStep || 0;
     const nextStep = currentStep + 1;
 
-    // TODO: Mettre à jour l'état du tutoriel dans le contexte de jeu
+    // Mise à jour fictive - dans une implémentation réelle, vous mettriez à jour gameState
     console.log(`Étape de tutoriel suivante: ${nextStep}`);
   };
 
@@ -75,50 +74,54 @@ const CombatInterface = () => {
 
   // Gestion locale de la sélection en mode attaque
   const handleAttackSelection = (index) => {
-    console.log(
-      `CombatInterface: handleAttackSelection called with index ${index}`
-    );
-
-    // Appel direct à toggleCardSelection de l'état de jeu
-    if (gameState && gameState.hand && gameState.hand[index] !== undefined) {
-      // Vérifier si on a déjà 5 cartes sélectionnées
-      const currentSelectedCount = gameState.hand.filter(
-        (card) => card.isSelected
-      ).length;
-
-      // Si la carte n'est pas sélectionnée et qu'on a déjà 5 cartes, ne rien faire sauf si on désélectionne
-      if (currentSelectedCount >= 5 && !gameState.hand[index].isSelected) {
-        console.log('Maximum de 5 cartes déjà sélectionnées');
-        return;
-      }
-
-      // Appliquer le changement directement à l'état de la carte
-      const isCurrentlySelected = gameState.hand[index].isSelected;
-      gameState.hand[index].isSelected = !isCurrentlySelected;
-
-      // Mettre à jour selectedCards dans l'état de jeu
-      gameState.selectedCards = gameState.hand
-        .map((card, idx) => (card.isSelected ? idx : -1))
-        .filter((idx) => idx !== -1);
-
-      // Synchroniser notre état local
-      setSelectedAttackCards(gameState.selectedCards);
-
-      console.log(
-        'Cartes sélectionnées après mise à jour:',
-        gameState.selectedCards
-      );
-    } else {
+    if (!gameState || !gameState.hand || gameState.hand[index] === undefined) {
       console.error('Index de carte invalide ou main non disponible:', index);
+      return;
     }
+
+    // Créer une copie de la main actuelle pour la modifier de manière immutable
+    const updatedHand = [...gameState.hand];
+
+    // Compter les cartes actuellement sélectionnées
+    const currentSelectedCount = updatedHand.filter(
+      (card) => card.isSelected
+    ).length;
+
+    // Si la carte n'est pas sélectionnée et qu'on a déjà 5 cartes, ne rien faire
+    if (currentSelectedCount >= 5 && !updatedHand[index].isSelected) {
+      console.log('Maximum de 5 cartes déjà sélectionnées');
+      return;
+    }
+
+    // Inverser l'état de sélection
+    updatedHand[index] = {
+      ...updatedHand[index],
+      isSelected: !updatedHand[index].isSelected,
+    };
+
+    // Mettre à jour gameState.hand de manière immutable
+    if (gameState.hand !== updatedHand) {
+      gameState.hand = updatedHand;
+    }
+
+    // Recalculer selectedCards
+    const newSelectedCards = updatedHand
+      .map((card, idx) => (card.isSelected ? idx : -1))
+      .filter((idx) => idx !== -1);
+
+    // Mettre à jour gameState.selectedCards
+    gameState.selectedCards = newSelectedCards;
+
+    // Synchroniser notre état local
+    setSelectedAttackCards(newSelectedCards);
   };
 
   const handleDiscardSelection = (index) => {
-    console.log(
-      `CombatInterface: handleDiscardSelection called with index ${index}`
-    );
+    if (!gameState || !gameState.hand || gameState.hand[index] === undefined) {
+      console.error('Index de carte invalide ou main non disponible:', index);
+      return;
+    }
 
-    // On ne modifie pas directement l'état isSelected ici, uniquement notre état local
     setSelectedDiscards((prevSelected) => {
       if (prevSelected.includes(index)) {
         // Si la carte est déjà sélectionnée, la désélectionner
@@ -144,11 +147,11 @@ const CombatInterface = () => {
 
       // Si l'état des cartes a changé, mettre à jour l'état local pour refléter les nouvelles cartes
       if (gameState && gameState.hand) {
-        setSelectedAttackCards(
-          gameState.hand
-            .map((card, idx) => (card.isSelected ? idx : -1))
-            .filter((idx) => idx !== -1)
-        );
+        const updatedSelectedCards = gameState.hand
+          .map((card, idx) => (card.isSelected ? idx : -1))
+          .filter((idx) => idx !== -1);
+
+        setSelectedAttackCards(updatedSelectedCards);
       }
     }
     setDiscardMode(false);
@@ -235,6 +238,12 @@ const CombatInterface = () => {
           : selectedAttackCards.includes(idx), // Sinon utiliser notre état local
     }));
   };
+
+  if (!gameState) {
+    return (
+      <div className="text-white text-center p-4">Chargement du combat...</div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen">
@@ -355,15 +364,17 @@ const CombatInterface = () => {
             ) : (
               <>
                 {/* EnhancedHand avec tri intégré */}
-                <EnhancedHand
-                  cards={getDisplayCards()}
-                  onToggleSelect={handleAttackSelection}
-                  maxSelectable={5}
-                  selectionMode={
-                    gameState.turnPhase === 'select' ? 'attack' : 'view'
-                  }
-                  bestHandCards={gameState.bestHandCards || []}
-                />
+                <div className="combat-hand">
+                  <EnhancedHand
+                    cards={getDisplayCards()}
+                    onToggleSelect={handleAttackSelection}
+                    maxSelectable={5}
+                    selectionMode={
+                      gameState.turnPhase === 'select' ? 'attack' : 'view'
+                    }
+                    bestHandCards={gameState.bestHandCards || []}
+                  />
+                </div>
 
                 {gameState.turnPhase === 'select' && (
                   <div className="text-center mt-3 mb-2 hand-ranking">

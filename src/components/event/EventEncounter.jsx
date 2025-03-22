@@ -70,7 +70,7 @@ const EventEncounter = ({ event, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 event-popup">
       <AnimatePresence>
         <motion.div
           className="bg-gray-900 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden"

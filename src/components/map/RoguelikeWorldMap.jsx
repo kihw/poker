@@ -138,33 +138,11 @@ const RoguelikeWorldMap = ({
     // Find the current node
     const currentNode = safeNodes.find((node) => node.id === currentNodeId);
 
-    // Debug logging - keep this to help with troubleshooting
-    console.log('Checking node accessibility:', {
-      nodeId,
-      currentNodeId,
-      currentNode,
-      targetNode: safeNodes.find((node) => node.id === nodeId),
-    });
-
     // A node is accessible if it's a child of the current node
-    const isAccessible =
+    return (
       currentNode &&
       currentNode.childIds &&
-      currentNode.childIds.includes(nodeId);
-
-    console.log('Node accessibility result:', isAccessible);
-    return isAccessible;
-  };
-
-  // Afficher le premier message de guide
-  const renderFirstTimeGuide = () => {
-    return (
-      <div className="bg-gray-800 rounded-lg p-4 mb-4 text-sm text-gray-300">
-        <p>
-          Bienvenue à votre première exploration ! Commencez par cliquer sur le
-          nœud de départ (🏁). Chaque nœud représente une rencontre différente.
-        </p>
-      </div>
+      currentNode.childIds.includes(nodeId)
     );
   };
 
@@ -365,7 +343,7 @@ const RoguelikeWorldMap = ({
                   cx={position.x}
                   cy={position.y}
                   r={25}
-                  className={`bg-gradient-${nodeColors[nodeType] || 'from-gray-700 to-gray-900'} ${
+                  className={`${
                     isCurrent ? 'stroke-yellow-400 stroke-[3px]' : 'stroke-none'
                   } ${isAccessible && !isCurrent ? 'animate-pulse' : ''}`}
                   opacity={isAccessible || isCurrent ? 1 : 0.5}
@@ -404,19 +382,43 @@ const RoguelikeWorldMap = ({
 
           {/* Define gradients for node types */}
           <defs>
-            {Object.entries(nodeColors).map(([type, gradient]) => (
-              <linearGradient
-                key={`gradient-${type}`}
-                id={`gradient-${type}`}
-                x1="0%"
-                y1="0%"
-                x2="0%"
-                y2="100%"
-              >
-                <stop offset="0%" stopColor={gradient.split('-')[1]} />
-                <stop offset="100%" stopColor={gradient.split('-')[2]} />
-              </linearGradient>
-            ))}
+            {Object.entries(nodeColors).map(([type, gradient]) => {
+              const [fromClass, toClass] = gradient.split(' ');
+              const fromColor = fromClass.replace('from-', '');
+              const toColor = toClass.replace('to-', '');
+
+              // Ces valeurs sont simplifiées pour la démo - il faudrait les remplacer par les vraies couleurs Tailwind
+              const colorMap = {
+                'blue-700': '#1d4ed8',
+                'blue-900': '#1e3a8a',
+                'red-700': '#b91c1c',
+                'red-900': '#7f1d1d',
+                'red-950': '#450a0a',
+                'purple-700': '#7e22ce',
+                'purple-900': '#581c87',
+                'green-700': '#15803d',
+                'green-900': '#14532d',
+                'yellow-700': '#a16207',
+                'yellow-900': '#713f12',
+              };
+
+              const startColor = colorMap[fromColor] || '#374151';
+              const endColor = colorMap[toColor] || '#111827';
+
+              return (
+                <linearGradient
+                  key={`gradient-${type}`}
+                  id={`gradient-${type}`}
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor={startColor} />
+                  <stop offset="100%" stopColor={endColor} />
+                </linearGradient>
+              );
+            })}
           </defs>
         </svg>
 
@@ -431,19 +433,42 @@ const RoguelikeWorldMap = ({
 
       {/* Legend */}
       <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-gray-700">
-        {Object.entries(nodeIcons).map(([type, icon]) => (
-          <div key={type} className="flex items-center">
-            <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center bg-gradient-${nodeColors[type]}`}
-              style={{
-                background: `linear-gradient(to bottom, ${nodeColors[type].split('-')[1].replace('from-', '')}, ${nodeColors[type].split('-')[2].replace('to-', '')})`,
-              }}
-            >
-              <span className="text-xs">{icon}</span>
+        {Object.entries(nodeIcons).map(([type, icon]) => {
+          const gradient = nodeColors[type] || 'from-gray-700 to-gray-900';
+          const [fromClass, toClass] = gradient.split(' ');
+
+          // Ces valeurs sont simplifiées pour la démo - il faudrait les remplacer par les vraies couleurs Tailwind
+          const colorMap = {
+            'blue-700': '#1d4ed8',
+            'blue-900': '#1e3a8a',
+            'red-700': '#b91c1c',
+            'red-900': '#7f1d1d',
+            'purple-700': '#7e22ce',
+            'purple-900': '#581c87',
+            'green-700': '#15803d',
+            'green-900': '#14532d',
+            'yellow-700': '#a16207',
+            'yellow-900': '#713f12',
+          };
+
+          const startColor =
+            colorMap[fromClass.replace('from-', '')] || '#374151';
+          const endColor = colorMap[toClass.replace('to-', '')] || '#111827';
+
+          return (
+            <div key={type} className="flex items-center">
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(to bottom, ${startColor}, ${endColor})`,
+                }}
+              >
+                <span className="text-xs">{icon}</span>
+              </div>
+              <span className="ml-2 text-sm text-white capitalize">{type}</span>
             </div>
-            <span className="ml-2 text-sm text-white capitalize">{type}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

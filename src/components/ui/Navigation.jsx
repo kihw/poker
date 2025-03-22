@@ -8,7 +8,7 @@ const Navigation = () => {
   const { gameState } = useGame();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-2 flex justify-center space-x-2 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 p-2 flex justify-center space-x-2 z-50 nav-bar">
       <Link
         to="/"
         className={`px-3 py-1 rounded-md text-sm ${

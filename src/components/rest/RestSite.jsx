@@ -1,3 +1,4 @@
+// src/components/rest/RestSite.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 

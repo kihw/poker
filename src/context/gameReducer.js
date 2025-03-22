@@ -116,12 +116,24 @@ export function gameReducer(state, action) {
         // Déterminer l'action en fonction du type de nœud
         switch (selectedNode.type) {
           case 'combat':
-            // Générer un ennemi standard et démarrer le combat
+            // Initialiser un nouveau combat avec un ennemi standard
             if (state.combatSystem) {
-              state.combatSystem.startCombat();
+              const enemy = state.combatSystem.generateEnemy(false, false);
+              state.combatSystem.startCombat(enemy);
+
+              // Phase de jeu: combat, phase de tour: select (le dealHand est déjà fait dans startCombat)
+              state.game.gamePhase = 'combat';
+              state.game.turnPhase = 'select';
+
+              // Ajoutez un message au journal de combat
+              if (state.game.combatLog) {
+                state.game.combatLog.unshift(
+                  `Début du combat contre ${enemy.name}!`
+                );
+              }
+
+              console.log('Combat démarré contre:', enemy);
             }
-            state.game.gamePhase = 'combat';
-            state.game.turnPhase = 'draw';
             break;
 
           case 'elite':

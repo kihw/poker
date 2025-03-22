@@ -97,7 +97,7 @@ export class CombatSystem {
 
     // Reset combat-related state
     this.gameState.gamePhase = 'combat';
-    this.gameState.turnPhase = 'draw';
+    this.gameState.turnPhase = 'select'; // Directement en phase select
     this.gameState.heldCards = [];
     this.gameState.bestHandCards = [];
     this.gameState.handResult = null;
@@ -118,6 +118,37 @@ export class CombatSystem {
     this.gameState.combatLog = [
       `Combat début! Vous affrontez un ${enemy.name}.`,
     ];
+
+    // Distribuons IMMÉDIATEMENT les cartes au début du combat
+    // Soit en utilisant la méthode existante
+    if (typeof this.gameState.dealHand === 'function') {
+      this.gameState.dealHand();
+      console.log('Cartes distribuées automatiquement via dealHand');
+    }
+    // Soit en implémentant la logique directement ici
+    else if (this.gameState.initializeDeck && this.gameState.deck) {
+      // S'assurer que le deck est initialisé
+      if (this.gameState.deck.length === 0) {
+        this.gameState.initializeDeck();
+      }
+
+      // Tirer 7 cartes
+      if (this.gameState.deck.length >= 7) {
+        this.gameState.hand = this.gameState.deck.slice(0, 7);
+        this.gameState.deck = this.gameState.deck.slice(7);
+
+        // S'assurer que isSelected est false pour toutes les cartes
+        this.gameState.hand.forEach((card) => {
+          card.isSelected = false;
+        });
+
+        console.log('Cartes distribuées automatiquement via logique directe');
+      } else {
+        console.error(
+          'Pas assez de cartes dans le deck pour distribuer la main'
+        );
+      }
+    }
 
     return enemy;
   }

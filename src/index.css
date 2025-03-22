@@ -87,3 +87,59 @@
     @apply h-full bg-red-500 transition-all duration-300;
   }
 }
+
+/* Ajouter ceci à src/index.css */
+
+/* Z-index hierarchy */
+:root {
+  --z-background: 1;
+  --z-ui-base: 10;
+  --z-combat-interface: 20;
+  --z-navigation: 30;
+  --z-tutorial: 40;
+  --z-popup: 100;
+  --z-modal: 200;
+  --z-notification: 300;
+}
+
+/* Combat interface */
+.combat-interface {
+  position: relative;
+  z-index: var(--z-combat-interface);
+}
+
+/* Navigation */
+.nav-bar {
+  position: fixed;
+  z-index: var(--z-navigation);
+}
+
+/* Save/Load popup */
+.save-load-popup {
+  position: fixed;
+  z-index: var(--z-popup) !important;
+}
+
+/* Modal overlays */
+.modal-overlay {
+  position: fixed;
+  z-index: var(--z-modal) !important;
+}
+
+/* Event popups */
+.event-popup {
+  position: fixed;
+  z-index: var(--z-popup) !important;
+}
+
+/* Rest site */
+.rest-popup {
+  position: fixed;
+  z-index: var(--z-popup) !important;
+}
+
+/* Notifications and feedback */
+.notification {
+  position: fixed;
+  z-index: var(--z-notification) !important;
+}
