@@ -1,4 +1,5 @@
-// src/pages/MapPage.jsx - Migré vers Redux
+// Voici comment corriger src/pages/MapPage.jsx
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -23,8 +24,9 @@ const MapPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mapLoading, setMapLoading] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
-  // Sélecteurs Redux
+  // Regroupez tous les sélecteurs ici, ne les utilisez pas conditionnellement
   const path = useSelector(selectMapPath);
   const currentNodeId = useSelector(selectCurrentNodeId);
   const isGameOver = useSelector(selectIsGameOver);
@@ -32,9 +34,8 @@ const MapPage = () => {
   const playerHealth = useSelector(selectPlayerHealth);
   const playerMaxHealth = useSelector(selectPlayerMaxHealth);
   const playerGold = useSelector(selectPlayerGold);
-
-  // État local pour le feedback
-  const [feedback, setFeedback] = useState(null);
+  const currentFloor = useSelector((state) => state.game.currentFloor) || 1;
+  const maxFloors = useSelector((state) => state.game.maxFloors) || 10;
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(path) ? path : [];
@@ -103,7 +104,7 @@ const MapPage = () => {
     tryGenerateMap();
   }, [safePath, dispatch]);
 
-  // Afficher un écran de chargement si la carte est en cours de génération
+  // Render logic remains the same...
   if (mapLoading) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
@@ -113,7 +114,6 @@ const MapPage = () => {
     );
   }
 
-  // Si pas de données de carte, afficher un message d'attente
   if (safePath.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
@@ -171,8 +171,8 @@ const MapPage = () => {
       {/* Carte roguelike avec z-index élevé */}
       <div className="relative z-10 w-full">
         <RoguelikeWorldMap
-          currentFloor={useSelector((state) => state.game.currentFloor) || 1}
-          maxFloors={useSelector((state) => state.game.maxFloors) || 10}
+          currentFloor={currentFloor}
+          maxFloors={maxFloors}
           nodes={safePath}
           currentNodeId={currentNodeId}
           playerStats={safePlayer}
