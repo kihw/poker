@@ -495,6 +495,16 @@ const CombatInterface = () => {
             bonusEffects={gameState.handResult.bonusEffects}
             cards={gameState.handResult.cards}
           />
+          {gameState.turnPhase === 'result' &&
+            gameState.selectedCards &&
+            gameState.selectedCards.length > 0 && (
+              <div className="mt-2 text-sm text-gray-400">
+                <p>
+                  Les cartes utilisées dans cette attaque seront remplacées, les
+                  autres resteront en main.
+                </p>
+              </div>
+            )}
         </motion.div>
       )}
 

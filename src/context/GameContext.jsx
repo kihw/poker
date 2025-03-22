@@ -21,6 +21,7 @@ import { gameReducer, initialGameState } from './gameReducer';
 import { AutoSaveHandler } from '../modules/save-system';
 import { applyCombatFixes } from '../modules/combat-fixes';
 import { generateRoguelikeMap, validateMap } from '../modules/map-generator.js';
+import { applyCardConservationFixes } from '../modules/card-conservation-fix';
 // Création du contexte
 export const GameContext = createContext();
 
@@ -51,6 +52,8 @@ export function GameProvider({ children }) {
 
         // Appliquer les correctifs au système de combat
         applyCombatFixes(gameState);
+        applyCardConservationFixes(gameState);
+        console.log('Correctifs de conservation des cartes appliqués');
         if (gameState.discardCards) {
           // Importer la fonction améliorée de défausse depuis le module
           const { improvedDiscardCards } = await import(
