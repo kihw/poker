@@ -1,24 +1,14 @@
 // src/components/card/BonusCardManager.jsx
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
-=======
-import React, { useState } from 'react';
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 import { motion } from 'framer-motion';
 import { useGame } from '../../context/GameContext';
 
 const BonusCardManager = () => {
-<<<<<<< HEAD
   const { gameState, equipBonusCard, unequipBonusCard } = useGame();
-=======
-  const { gameState, bonusCardSystem, equipBonusCard, unequipBonusCard } =
-    useGame();
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   const [selectedTab, setSelectedTab] = useState('equipped');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [filterRarity, setFilterRarity] = useState('all');
-<<<<<<< HEAD
   const [displayedCards, setDisplayedCards] = useState([]);
 
   // Loading state
@@ -26,18 +16,6 @@ const BonusCardManager = () => {
     return <div className="text-white">Loading bonus cards...</div>;
   }
 
-=======
-
-  // No bonus cards collection or equipped cards yet
-  if (!gameState?.bonusCardCollection || !gameState?.activeBonusCards) {
-    return <div>Loading bonus cards...</div>;
-  }
-
-  const playerCards = gameState.bonusCardCollection;
-  const equippedCards = gameState.activeBonusCards;
-  const maxSlots = gameState.maxBonusCardSlots || 3;
-
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   // Define colors for each rarity
   const rarityColors = {
     common: 'bg-gray-600',
@@ -47,13 +25,8 @@ const BonusCardManager = () => {
     legendary: 'bg-orange-600',
   };
 
-<<<<<<< HEAD
   // Update displayed cards whenever filters, sort or selected tab changes
   useEffect(() => {
-    if (!gameState?.bonusCardCollection || !gameState?.activeBonusCards) {
-      return;
-    }
-
     let cards;
     if (selectedTab === 'equipped') {
       cards = [...gameState.activeBonusCards];
@@ -99,7 +72,6 @@ const BonusCardManager = () => {
     }
 
     setDisplayedCards(cards);
-    console.log('Updated displayed cards:', cards.length, 'cards');
   }, [
     selectedTab,
     searchTerm,
@@ -108,49 +80,6 @@ const BonusCardManager = () => {
     gameState?.activeBonusCards,
     gameState?.bonusCardCollection,
   ]);
-=======
-  // Filter and sort cards
-  const filterAndSortCards = (cards) => {
-    return cards
-      .filter((card) => {
-        // Search filter
-        const matchesSearch =
-          card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          card.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-        // Rarity filter
-        const matchesRarity =
-          filterRarity === 'all' || card.rarity === filterRarity;
-
-        return matchesSearch && matchesRarity;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'name') {
-          return a.name.localeCompare(b.name);
-        } else if (sortBy === 'rarity') {
-          const rarityOrder = {
-            common: 0,
-            uncommon: 1,
-            rare: 2,
-            epic: 3,
-            legendary: 4,
-          };
-          return rarityOrder[a.rarity] - rarityOrder[b.rarity];
-        }
-        return 0;
-      });
-  };
-
-  // Cards to display based on selected tab
-  const displayedCards =
-    selectedTab === 'equipped'
-      ? filterAndSortCards(equippedCards)
-      : filterAndSortCards(
-          playerCards.filter(
-            (card) => !equippedCards.some((ec) => ec.id === card.id)
-          )
-        );
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
   const handleEquip = (cardId) => {
     equipBonusCard(cardId);
@@ -160,27 +89,6 @@ const BonusCardManager = () => {
     unequipBonusCard(cardId);
   };
 
-<<<<<<< HEAD
-  const handleTabChange = (tab) => {
-    setSelectedTab(tab);
-  };
-
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
-    console.log('Sort changed to:', e.target.value);
-  };
-
-  const handleRarityFilterChange = (e) => {
-    setFilterRarity(e.target.value);
-    console.log('Rarity filter changed to:', e.target.value);
-  };
-
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   return (
     <div className="bg-gray-900 rounded-xl p-4 shadow-xl">
       <div className="flex justify-between items-center mb-4">
@@ -188,12 +96,8 @@ const BonusCardManager = () => {
           Gestion des cartes bonus
         </h2>
         <div className="text-sm font-medium text-yellow-400">
-<<<<<<< HEAD
           {gameState.activeBonusCards.length}/{gameState.maxBonusCardSlots || 3}{' '}
           emplacements utilisés
-=======
-          {equippedCards.length}/{maxSlots} emplacements utilisés
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         </div>
       </div>
 
@@ -201,21 +105,13 @@ const BonusCardManager = () => {
       <div className="flex border-b border-gray-700 mb-4">
         <button
           className={`px-4 py-2 ${selectedTab === 'equipped' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-<<<<<<< HEAD
-          onClick={() => handleTabChange('equipped')}
-=======
           onClick={() => setSelectedTab('equipped')}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         >
           Cartes équipées
         </button>
         <button
           className={`px-4 py-2 ${selectedTab === 'collection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-<<<<<<< HEAD
-          onClick={() => handleTabChange('collection')}
-=======
           onClick={() => setSelectedTab('collection')}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         >
           Collection
         </button>
@@ -226,22 +122,14 @@ const BonusCardManager = () => {
         <input
           type="text"
           value={searchTerm}
-<<<<<<< HEAD
-          onChange={handleSearchChange}
-=======
           onChange={(e) => setSearchTerm(e.target.value)}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
           placeholder="Rechercher une carte..."
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm flex-grow text-white"
         />
 
         <select
           value={sortBy}
-<<<<<<< HEAD
-          onChange={handleSortChange}
-=======
           onChange={(e) => setSortBy(e.target.value)}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm text-white"
         >
           <option value="name">Trier par nom</option>
@@ -250,11 +138,7 @@ const BonusCardManager = () => {
 
         <select
           value={filterRarity}
-<<<<<<< HEAD
-          onChange={handleRarityFilterChange}
-=======
           onChange={(e) => setFilterRarity(e.target.value)}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm text-white"
         >
           <option value="all">Toutes les raretés</option>
@@ -266,14 +150,6 @@ const BonusCardManager = () => {
         </select>
       </div>
 
-<<<<<<< HEAD
-      {/* Debug info */}
-      <div className="mb-2 text-xs text-gray-500">
-        {`Filtres: ${selectedTab}, ${sortBy}, ${filterRarity || 'all'}, ${searchTerm || 'no search'}`}
-      </div>
-
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       {/* Card list */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
         {displayedCards.length === 0 ? (
@@ -321,7 +197,6 @@ const BonusCardManager = () => {
                 ) : (
                   <button
                     onClick={() => handleEquip(card.id)}
-<<<<<<< HEAD
                     disabled={
                       gameState.activeBonusCards.length >=
                       (gameState.maxBonusCardSlots || 3)
@@ -329,11 +204,6 @@ const BonusCardManager = () => {
                     className={`text-xs px-2 py-1 rounded ${
                       gameState.activeBonusCards.length >=
                       (gameState.maxBonusCardSlots || 3)
-=======
-                    disabled={equippedCards.length >= maxSlots}
-                    className={`text-xs px-2 py-1 rounded ${
-                      equippedCards.length >= maxSlots
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}

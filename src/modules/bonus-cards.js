@@ -17,7 +17,6 @@ export class BonusCardSystem {
     // Starting bonus cards - can be customized later
     const startingCardIds = [1, 2, 10, 14, 18];
 
-<<<<<<< HEAD
     this.gameState.bonusCardCollection = startingCardIds
       .map((id) => {
         const card = this.allBonusCards.find((card) => card.id === id);
@@ -28,16 +27,6 @@ export class BonusCardSystem {
     // Initially equip first 3 cards
     this.gameState.activeBonusCards = this.gameState.bonusCardCollection
       .slice(0, Math.min(3, this.gameState.maxBonusCardSlots))
-=======
-    this.gameState.bonusCardCollection = startingCardIds.map((id) => {
-      const card = this.allBonusCards.find((card) => card.id === id);
-      return { ...card, owned: true };
-    });
-
-    // Initially equip first 3 cards
-    this.gameState.activeBonusCards = this.gameState.bonusCardCollection
-      .slice(0, 3)
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       .map((card) => ({ ...card, usesRemaining: card.uses || 0 }));
   }
 
@@ -48,7 +37,6 @@ export class BonusCardSystem {
 
   // Add a bonus card to the collection
   addBonusCardToCollection(cardId) {
-<<<<<<< HEAD
     // Check if the card exists
     const newCardTemplate = this.allBonusCards.find(
       (card) => card.id === cardId
@@ -58,15 +46,12 @@ export class BonusCardSystem {
       return false;
     }
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     const cardIndex = this.gameState.bonusCardCollection.findIndex(
       (card) => card.id === cardId
     );
 
     if (cardIndex === -1) {
       // If the card is not in the collection, add it
-<<<<<<< HEAD
       const newCard = { ...newCardTemplate, owned: true, level: 1 };
       this.gameState.bonusCardCollection.push(newCard);
 
@@ -105,29 +90,12 @@ export class BonusCardSystem {
         );
       }
 
-=======
-      const newCard = this.allBonusCards.find((card) => card.id === cardId);
-      if (newCard) {
-        this.gameState.bonusCardCollection.push({ ...newCard, owned: true });
-        this.gameState.combatLog.unshift(
-          `New bonus card obtained: ${newCard.name}!`
-        );
-        return true;
-      }
-    } else if (!this.gameState.bonusCardCollection[cardIndex].owned) {
-      // If the card exists but is not owned, mark it as owned
-      this.gameState.bonusCardCollection[cardIndex].owned = true;
-      this.gameState.combatLog.unshift(
-        `New bonus card obtained: ${this.gameState.bonusCardCollection[cardIndex].name}!`
-      );
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       return true;
     }
 
     return false;
   }
 
-<<<<<<< HEAD
   // Méthodes updatées de src/modules/bonus-cards.js
 
   // Méthode equipBonusCard corrigée
@@ -151,16 +119,6 @@ export class BonusCardSystem {
 
     if (isAlreadyEquipped) {
       console.warn('Card is already equipped:', cardId);
-=======
-  // Equip a bonus card
-  equipBonusCard(cardId) {
-    // Check if the player owns this card
-    const card = this.gameState.bonusCardCollection.find(
-      (card) => card.id === cardId && card.owned
-    );
-
-    if (!card) {
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       return false;
     }
 
@@ -168,10 +126,7 @@ export class BonusCardSystem {
     if (
       this.gameState.activeBonusCards.length >= this.gameState.maxBonusCardSlots
     ) {
-<<<<<<< HEAD
       console.warn('No space for more cards');
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       return false;
     }
 
@@ -180,7 +135,6 @@ export class BonusCardSystem {
       ...card,
       usesRemaining: card.uses || 0,
     });
-<<<<<<< HEAD
 
     console.log('Card equipped successfully', card.name);
     return true;
@@ -190,19 +144,11 @@ export class BonusCardSystem {
   unequipBonusCard(cardId) {
     console.log('BonusCardSystem.unequipBonusCard', cardId);
 
-=======
-    return true;
-  }
-
-  // Unequip a bonus card
-  unequipBonusCard(cardId) {
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     const cardIndex = this.gameState.activeBonusCards.findIndex(
       (card) => card.id === cardId
     );
 
     if (cardIndex !== -1) {
-<<<<<<< HEAD
       // Récupère la carte pour le log
       const removedCard = this.gameState.activeBonusCards[cardIndex];
 
@@ -214,21 +160,12 @@ export class BonusCardSystem {
     }
 
     console.warn('Card not found in active cards:', cardId);
-=======
-      this.gameState.activeBonusCards.splice(cardIndex, 1);
-      return true;
-    }
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     return false;
   }
 
   // Generate a bonus card reward after combat
   generateBonusCardReward() {
-<<<<<<< HEAD
     const stage = this.gameState.stage || 1;
-=======
-    const stage = this.gameState.stage;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     const stageMultiplier = Math.min(stage / 10, 1);
 
     // Determine card rarity based on stage progression
@@ -253,7 +190,6 @@ export class BonusCardSystem {
       return card.rarity === rarity && !isOwned;
     });
 
-<<<<<<< HEAD
     // If no unowned cards of this rarity, try a different rarity
     if (possibleCards.length === 0) {
       // Try all rarities in order of increasing rarity
@@ -284,10 +220,6 @@ export class BonusCardSystem {
       }
 
       // If still no cards available, return null
-=======
-    // If no unowned cards of this rarity, return null
-    if (possibleCards.length === 0) {
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       return null;
     }
 
@@ -297,11 +229,7 @@ export class BonusCardSystem {
     return randomCard.id;
   }
 
-<<<<<<< HEAD
   // Maps hand types to bonus card conditions
-=======
-  // Maps hand types to bonus card conditions - VERSION CORRIGÉE
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   mapHandTypeToCondition(handName) {
     const conditionMap = {
       // Noms anglais
@@ -408,7 +336,6 @@ export class BonusCardSystem {
       }
     }
 
-<<<<<<< HEAD
     // Apply pending damage bonus if any
     if (this.gameState.pendingDamageBonus) {
       damage += this.gameState.pendingDamageBonus;
@@ -429,8 +356,6 @@ export class BonusCardSystem {
       this.gameState.pendingDamageMultiplier = 1;
     }
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     return { damage, bonusEffects };
   }
 
@@ -439,18 +364,13 @@ export class BonusCardSystem {
     if (index < 0 || index >= this.gameState.activeBonusCards.length) {
       return {
         success: false,
-<<<<<<< HEAD
         message: 'Carte bonus invalide',
-=======
-        message: 'Invalid bonus card index',
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       };
     }
 
     const bonusCard = this.gameState.activeBonusCards[index];
 
     // Check if the card is active and has uses left
-<<<<<<< HEAD
     if (bonusCard.effect !== 'active') {
       return {
         success: false,
@@ -462,23 +382,13 @@ export class BonusCardSystem {
       return {
         success: false,
         message: 'Cette carte a déjà été utilisée',
-=======
-    if (bonusCard.effect !== 'active' || bonusCard.usesRemaining <= 0) {
-      return {
-        success: false,
-        message: 'This bonus card cannot be used',
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       };
     }
 
     // Apply the effect based on the card type
     let result = {
       success: true,
-<<<<<<< HEAD
       message: `${bonusCard.name} utilisée`,
-=======
-      message: `Used ${bonusCard.name}`,
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     };
 
     switch (bonusCard.bonus.type) {
@@ -486,21 +396,13 @@ export class BonusCardSystem {
         // Add damage to the current or next attack
         this.gameState.pendingDamageBonus =
           (this.gameState.pendingDamageBonus || 0) + bonusCard.bonus.value;
-<<<<<<< HEAD
         result.message = `Ajouté ${bonusCard.bonus.value} dégâts à votre prochaine attaque`;
-=======
-        result.message = `Added ${bonusCard.bonus.value} damage to your next attack`;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         break;
 
       case 'damageMultiplier':
         // Will multiply the damage of the next attack
         this.gameState.pendingDamageMultiplier = bonusCard.bonus.value;
-<<<<<<< HEAD
         result.message = `Votre prochaine attaque infligera ${bonusCard.bonus.value}x dégâts`;
-=======
-        result.message = `Your next attack will deal ${bonusCard.bonus.value}x damage`;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         break;
 
       case 'heal':
@@ -510,40 +412,24 @@ export class BonusCardSystem {
           this.gameState.player.maxHealth - this.gameState.player.health
         );
         this.gameState.player.health += healAmount;
-<<<<<<< HEAD
         result.message = `Récupéré ${healAmount} PV`;
-=======
-        result.message = `Recovered ${healAmount} HP`;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         break;
 
       case 'discard':
         // Allow player to discard more cards
         this.gameState.discardLimit = bonusCard.bonus.value;
-<<<<<<< HEAD
         result.message = `Vous pouvez maintenant défausser jusqu'à ${bonusCard.bonus.value} cartes ce tour`;
-=======
-        result.message = `You can now discard up to ${bonusCard.bonus.value} cards this turn`;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         break;
 
       case 'invulnerable':
         // Set invulnerability for the next enemy attack
         this.gameState.invulnerableNextTurn = true;
-<<<<<<< HEAD
         result.message = `Vous serez invulnérable à la prochaine attaque ennemie`;
-=======
-        result.message = `You will be invulnerable to the next enemy attack`;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         break;
 
       default:
         result.success = false;
-<<<<<<< HEAD
         result.message = 'Effet de carte bonus inconnu';
-=======
-        result.message = 'Unknown bonus card effect';
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
         return result;
     }
 
@@ -551,23 +437,15 @@ export class BonusCardSystem {
     bonusCard.usesRemaining--;
 
     // Add to combat log
-<<<<<<< HEAD
     if (this.gameState.combatLog) {
       this.gameState.combatLog.unshift(result.message);
     }
-=======
-    this.gameState.combatLog.unshift(result.message);
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
     return result;
   }
 
   // Upgrade a bonus card
-<<<<<<< HEAD
   upgradeCard(cardId, upgradeMaterials = { goldCost: 50 }) {
-=======
-  upgradeCard(cardId, upgradeMaterials) {
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     // Find the card to upgrade
     const cardIndex = this.gameState.bonusCardCollection.findIndex(
       (card) => card.id === cardId && card.owned
@@ -576,11 +454,7 @@ export class BonusCardSystem {
     if (cardIndex === -1) {
       return {
         success: false,
-<<<<<<< HEAD
         message: 'Carte introuvable.',
-=======
-        message: 'Card not found.',
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       };
     }
 
@@ -590,11 +464,7 @@ export class BonusCardSystem {
     if (card.level && card.level >= 3) {
       return {
         success: false,
-<<<<<<< HEAD
         message: 'Cette carte est déjà au niveau maximum.',
-=======
-        message: 'Card is already at maximum level.',
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       };
     }
 
@@ -602,11 +472,7 @@ export class BonusCardSystem {
     if (this.gameState.player.gold < upgradeMaterials.goldCost) {
       return {
         success: false,
-<<<<<<< HEAD
         message: "Pas assez d'or pour l'amélioration.",
-=======
-        message: 'Not enough gold for upgrade.',
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       };
     }
 
@@ -631,7 +497,6 @@ export class BonusCardSystem {
       );
     }
 
-<<<<<<< HEAD
     // Update active card if equipped
     const activeCardIndex = this.gameState.activeBonusCards.findIndex(
       (activeCard) => activeCard.id === cardId
@@ -647,11 +512,6 @@ export class BonusCardSystem {
     return {
       success: true,
       message: `${card.name} améliorée au niveau ${card.level}!`,
-=======
-    return {
-      success: true,
-      message: `${card.name} upgraded to level ${card.level}!`,
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       upgradedCard: card,
     };
   }

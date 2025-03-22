@@ -23,7 +23,6 @@ import {
   hasSave,
   AutoSaveHandler,
 } from '../modules/save-system';
-
 // Initial state
 const initialGameState = {
   game: null,
@@ -663,5 +662,27 @@ function useBonusCards() {
     maxSlots: gameState?.maxBonusCardSlots || 3,
   };
 }
+function useSaveGame() {
+  const {
+    saveGame: contextSaveGame,
+    loadGame: contextLoadGame,
+    deleteSave: contextDeleteSave,
+    hasSave: contextHasSave,
+  } = useGame();
 
-export { GameProvider, useGame, useGameStats, useBonusCards, ACTIONS };
+  return {
+    saveGame: contextSaveGame,
+    loadGame: contextLoadGame,
+    deleteSave: contextDeleteSave,
+    hasSave: contextHasSave,
+  };
+}
+
+export {
+  GameProvider,
+  useGame,
+  useGameStats,
+  useBonusCards,
+  ACTIONS,
+  useSaveGame, // Add this export
+};

@@ -1,5 +1,4 @@
 // src/components/combat/EnemyStatus.jsx
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
@@ -101,10 +100,9 @@ const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
         {/* Barre de PV actuelle */}
         <motion.div
           className="bg-red-500 h-full"
-          initial={{ width: prevHp === hp ? 0 : `${(prevHp / maxHp) * 100}%` }}
-          animate={{ width: `${hpPercent}%` }}
-          transition={{ duration: 0.5 }}
+          style={{ width: `${hpPercent}%` }}
           animate={controls}
+          transition={{ duration: 0.5 }}
         ></motion.div>
       </div>
 
@@ -144,28 +142,3 @@ const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
 
 // Optimisation avec React.memo pour éviter les re-rendus inutiles
 export default React.memo(EnemyStatus);
-=======
-import React from 'react';
-
-const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
-  const hpPercent = (hp / maxHp) * 100;
-
-  return (
-    <div className="p-4 bg-gray-800 text-white rounded-md">
-      <h2 className="text-lg font-bold mb-2">Ennemi : {name}</h2>
-      <div className="mb-1">
-        PV : {hp} / {maxHp}
-      </div>
-      <div className="w-full bg-red-900 rounded-full h-2 mb-2">
-        <div
-          className="bg-red-500 h-2 rounded-full"
-          style={{ width: `${hpPercent}%` }}
-        ></div>
-      </div>
-      {nextAttack && <div>Prochaine attaque : {nextAttack}</div>}
-    </div>
-  );
-};
-
-export default EnemyStatus;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c

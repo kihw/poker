@@ -29,11 +29,7 @@ export class GameState {
 
     // Path/map state
     this.path = null;
-<<<<<<< HEAD
     this.currentNodeId = null;
-=======
-    this.currentNode = null;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
     // Combat state
     this.enemy = {
@@ -60,22 +56,16 @@ export class GameState {
 
     // Current event
     this.currentEvent = null;
-<<<<<<< HEAD
     this.eventResult = null;
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
     // Shop state
     this.shopItems = [];
 
-<<<<<<< HEAD
     // UI feedback states
     this.actionFeedback = null;
     this.tutorialStep = 0;
     this.showTutorial = false;
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     // Initialize the deck
     this.initializeDeck();
   }
@@ -89,7 +79,6 @@ export class GameState {
   }
 
   /**
-<<<<<<< HEAD
    * Ajoute un feedback d'action temporaire
    * @param {string} message - Message à afficher
    * @param {string} type - Type de feedback ('success', 'error', 'info')
@@ -107,134 +96,10 @@ export class GameState {
         this.actionFeedback = null;
       }
     }, duration);
-=======
-   * Distribue une nouvelle main jusqu'à avoir 7 cartes
-   */
-  dealHand() {
-    // Garder les cartes non sélectionnées du tour précédent
-    const keptCards = [];
-    if (this.hand.length > 0 && this.selectedCards.length > 0) {
-      // Filtrer les cartes qui n'ont pas été sélectionnées
-      for (let i = 0; i < this.hand.length; i++) {
-        if (!this.selectedCards.includes(i)) {
-          keptCards.push(this.hand[i]);
-        }
-      }
-    }
-
-    // Nombre de nouvelles cartes à tirer
-    const drawCount = 7 - keptCards.length;
-
-    // Si le deck est vide ou n'a pas assez de cartes, recréer un deck
-    if (this.deck.length < drawCount) {
-      this.deck = [...this.deck, ...this.discard];
-      this.discard = [];
-      this.deck = shuffleDeck(this.deck);
-
-      // Si le deck est toujours trop petit, on le recrée complètement
-      if (this.deck.length < drawCount) {
-        this.initializeDeck();
-      }
-    }
-
-    // Tirer les nouvelles cartes
-    const drawnCards = drawCards(this.deck, drawCount);
-
-    // Mettre à jour la main avec les cartes gardées et les nouvelles cartes
-    this.hand = [...keptCards, ...drawnCards];
-
-    // Retirer les cartes du deck
-    this.deck = this.deck.slice(drawCount);
-
-    // Reset des cartes sélectionnées et des résultats
-    this.selectedCards = [];
-    this.bestHandCards = [];
-    this.handResult = null;
-    this.discardUsed = false;
-
-    // Passer en phase "select"
-    this.turnPhase = 'select';
-
-    return this.hand;
-  }
-
-  // Refonte de la méthode toggleCardSelection dans game-state.js
-
-  /**
-   * Marque une carte comme sélectionnée ou non
-   * @param {number} index L'index de la carte dans la main
-   */
-  toggleCardSelection(index) {
-    console.log(`GameState: toggleCardSelection called with index ${index}`);
-
-    // Vérification de la validité de l'index
-    if (index < 0 || index >= this.hand.length) {
-      console.error(`Invalid card index: ${index}`);
-      return;
-    }
-
-    // CHANGEMENT MAJEUR: On ajoute directement une propriété isSelected à la carte
-    // au lieu de maintenir un tableau séparé d'indices
-
-    // Si la carte n'a pas de propriété isSelected, on l'initialise à false
-    if (this.hand[index].isSelected === undefined) {
-      this.hand[index].isSelected = false;
-    }
-
-    // On inverse l'état de sélection de la carte
-    this.hand[index].isSelected = !this.hand[index].isSelected;
-
-    // Mise à jour du tableau selectedCards pour maintenir la compatibilité
-    // avec le reste du code
-    if (this.hand[index].isSelected) {
-      // Vérifier si on peut ajouter une autre carte (max 5)
-      const selectedCount = this.hand.filter((card) => card.isSelected).length;
-      if (selectedCount > 5) {
-        // Si on dépasse 5 cartes, on annule la sélection
-        this.hand[index].isSelected = false;
-        console.log('Cannot select more than 5 cards');
-        return;
-      }
-
-      // Ajouter la carte aux cartes sélectionnées
-      if (!this.selectedCards.includes(index)) {
-        this.selectedCards.push(index);
-      }
-    } else {
-      // Retirer la carte des cartes sélectionnées
-      const cardIndex = this.selectedCards.indexOf(index);
-      if (cardIndex > -1) {
-        this.selectedCards.splice(cardIndex, 1);
-      }
-    }
-
-    console.log(
-      `Card ${index} is now ${this.hand[index].isSelected ? 'selected' : 'deselected'}`
-    );
-    console.log(`Selected cards indices: ${this.selectedCards}`);
-    return true; // Indique que l'opération a réussi
-  }
-
-  /**
-   * Réinitialise les sélections de cartes
-   */
-  resetCardSelections() {
-    // Réinitialiser les propriétés isSelected de toutes les cartes
-    this.hand.forEach((card) => {
-      card.isSelected = false;
-    });
-
-    // Vider le tableau des indices
-    this.selectedCards = [];
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   }
 
   /**
    * Distribue une nouvelle main jusqu'à avoir 7 cartes
-<<<<<<< HEAD
-=======
-   * Version modifiée pour maintenir la cohérence des sélections
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
    */
   dealHand() {
     // Garder les cartes non sélectionnées du tour précédent
@@ -288,17 +153,13 @@ export class GameState {
     // Passer en phase "select"
     this.turnPhase = 'select';
 
-<<<<<<< HEAD
     // Feedback
     this.setActionFeedback('Nouvelles cartes distribuées', 'info');
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     return this.hand;
   }
 
   /**
-<<<<<<< HEAD
    * Marque une carte comme sélectionnée ou non
    * @param {number} index L'index de la carte dans la main
    */
@@ -352,22 +213,6 @@ export class GameState {
     this.selectedCards = this.hand
       .map((card, index) => (card.isSelected ? index : -1))
       .filter((index) => index !== -1);
-=======
-   * Évalue la main sélectionnée et calcule les dégâts
-   * Version modifiée pour utiliser les propriétés isSelected directement
-   */
-  evaluateSelectedHand() {
-    // Récupérer les cartes sélectionnées en utilisant leur propriété isSelected
-    const selectedCardsIndices = [];
-    this.hand.forEach((card, index) => {
-      if (card.isSelected) {
-        selectedCardsIndices.push(index);
-      }
-    });
-
-    // Mettre à jour le tableau d'indices pour maintenir la cohérence
-    this.selectedCards = selectedCardsIndices;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
     // Vérifier qu'on a entre 1 et 5 cartes sélectionnées
     if (this.selectedCards.length < 1 || this.selectedCards.length > 5) {
@@ -518,14 +363,11 @@ export class GameState {
     // Tirer de nouvelles cartes
     const newCards = drawCards(this.deck, drawCount);
 
-<<<<<<< HEAD
     // S'assurer que les nouvelles cartes ont isSelected = false
     newCards.forEach((card) => {
       card.isSelected = false;
     });
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     // Mettre à jour le deck
     this.deck = this.deck.slice(drawCount);
 
@@ -535,12 +377,9 @@ export class GameState {
     // Reset des cartes sélectionnées
     this.selectedCards = [];
 
-<<<<<<< HEAD
     // Feedback
     this.setActionFeedback(`${indices.length} cartes défaussées`, 'info');
 
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     return this.hand;
   }
 }

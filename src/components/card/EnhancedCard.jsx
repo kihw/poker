@@ -11,12 +11,8 @@ const EnhancedCard = ({
   selectionType = 'attack', // 'attack', 'discard', 'view'
   disabled = false,
 }) => {
-<<<<<<< HEAD
-=======
-  const [isFlipped, setIsFlipped] = useState(false);
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isProcessingClick, setIsProcessingClick] = useState(false); // Flag pour éviter les doubles clics
+  const [isProcessingClick, setIsProcessingClick] = useState(false);
 
   // Dictionnaire pour afficher les symboles des couleurs
   const suitSymbols = {
@@ -62,20 +58,13 @@ const EnhancedCard = ({
     // Réinitialiser le drapeau après un court délai
     setTimeout(() => {
       setIsProcessingClick(false);
-<<<<<<< HEAD
-    }, 200); // Augmenter le délai pour s'assurer que tout traitement est terminé
-=======
     }, 100);
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
   };
 
   return (
     <motion.div
       className={`relative w-16 h-24 cursor-pointer perspective-500 transform-gpu ${isSelected ? 'z-10' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-<<<<<<< HEAD
-=======
       onClick={handleClick}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
@@ -85,10 +74,6 @@ const EnhancedCard = ({
                      ${isSelected ? selectionStyles : 'border-gray-300'}
                      ${isHighlighted ? 'ring-2 ring-blue-500' : ''}
                      preserve-3d`}
-<<<<<<< HEAD
-        onClick={handleClick} // Gérer le clic uniquement ici, pas de onClick dans le parent
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       >
         {/* Face avant (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">

@@ -1,16 +1,12 @@
 // src/components/card/BonusCards.jsx
 import React from 'react';
-<<<<<<< HEAD
 import { motion } from 'framer-motion';
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
 const BonusCards = ({ bonusCards, onUseBonus }) => {
   if (!bonusCards || bonusCards.length === 0) {
     return null;
   }
 
-<<<<<<< HEAD
   // Animation des cartes bonus
   const container = {
     hidden: { opacity: 0 },
@@ -72,7 +68,7 @@ const BonusCards = ({ bonusCards, onUseBonus }) => {
   };
 
   return (
-    <div className="p-4 bg-gray-800 rounded-md shadow-lg">
+    <div className="p-4 bg-gray-800 rounded-md">
       <h2 className="font-bold mb-2 text-white">Cartes Bonus</h2>
       <motion.div
         className="flex flex-wrap gap-2"
@@ -128,31 +124,9 @@ const BonusCards = ({ bonusCards, onUseBonus }) => {
           Les effets passifs (🔄) s'activent automatiquement. Cliquez sur les
           effets actifs pour les utiliser.
         </p>
-=======
-  return (
-    <div className="p-4 bg-gray-800 rounded-md">
-      <h2 className="font-bold mb-2 text-white">Bonus</h2>
-      <div className="flex space-x-2">
-        {bonusCards.map((bonus, index) => (
-          <button
-            key={index}
-            onClick={() => onUseBonus(index)}
-            className={`px-2 py-1 text-xs font-semibold rounded 
-                        ${bonus.available ? 'bg-green-500 text-white' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
-            disabled={!bonus.available}
-            title={bonus.effect}
-          >
-            {bonus.name}
-          </button>
-        ))}
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
       </div>
     </div>
   );
 };
 
-<<<<<<< HEAD
 export default React.memo(BonusCards);
-=======
-export default BonusCards;
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
