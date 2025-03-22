@@ -1,21 +1,12 @@
 // src/pages/MapPage.jsx
-<<<<<<< HEAD
 import React, { useEffect } from 'react';
 import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
 import Navigation from '../components/ui/Navigation';
 import { useGame } from '../context/GameContext';
-// import DebugOverlay from '../components/map/DebugOverlay'; // Décommenter pour le débogage
-=======
-import React from 'react';
-import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
-import Navigation from '../components/ui/Navigation';
-import { useGame } from '../context/GameContext';
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
 
 const MapPage = () => {
-  const { gameState } = useGame();
+  const { gameState, generateMap } = useGame();
 
-<<<<<<< HEAD
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(gameState?.path) ? gameState.path : [];
 
@@ -26,9 +17,22 @@ const MapPage = () => {
     gold: 0,
   };
 
+  // Générer une carte si aucune n'existe encore
+  useEffect(() => {
+    if (gameState && (!gameState.path || gameState.path.length === 0)) {
+      // Si generateMap est disponible, l'utiliser
+      if (generateMap) {
+        console.log('Génération automatique de la carte roguelike');
+        generateMap();
+      } else {
+        console.warn('Fonction generateMap non disponible');
+      }
+    }
+  }, [gameState, generateMap]);
+
   // Nettoyer tous les overlays potentiels au chargement de la page
   useEffect(() => {
-    // Solution 1: Désactiver les événements pointer sur les éléments fixed/absolute
+    // Solution: Désactiver les événements pointer sur les éléments fixed/absolute
     const cleanup = () => {
       // Rechercher des éléments fixed ou absolute qui pourraient bloquer
       const potentialBlockers = document.querySelectorAll(
@@ -71,24 +75,23 @@ const MapPage = () => {
 
   // Si pas de données de carte, afficher un message d'attente
   if (!gameState || safePath.length === 0) {
-=======
-  // If there's no map data yet
-  if (!gameState?.path) {
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
-          <h2 className="text-2xl mb-4">Carte non disponible</h2>
-          <p>La carte du jeu se chargera ici une fois disponible</p>
-<<<<<<< HEAD
+          <h2 className="text-2xl mb-4">Carte en cours de génération...</h2>
+          <p>La carte du jeu se charge, veuillez patienter</p>
           <div className="mt-4 p-4 bg-gray-800 rounded-md max-w-md">
             <p className="text-sm text-gray-400">
               Si la carte ne se charge pas, essayez de retourner au combat pour
               réinitialiser le jeu.
             </p>
           </div>
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
+          <button
+            onClick={() => generateMap && generateMap()}
+            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Générer une nouvelle carte
+          </button>
         </div>
         <Navigation />
       </div>
@@ -96,7 +99,6 @@ const MapPage = () => {
   }
 
   return (
-<<<<<<< HEAD
     <div
       className="min-h-screen bg-gray-900 p-4 flex flex-col items-center map-page-container"
       style={{ position: 'relative', zIndex: 1 }}
@@ -113,20 +115,6 @@ const MapPage = () => {
       </div>
 
       <Navigation />
-
-      {/* Décommenter pour activer le débogage des overlays */}
-      {/* <DebugOverlay /> */}
-=======
-    <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center">
-      <RoguelikeWorldMap
-        currentFloor={gameState.currentFloor || 1}
-        maxFloors={gameState.maxFloors || 10}
-        nodes={gameState.path || []}
-        currentNodeId={gameState.currentNode}
-        playerStats={gameState.player}
-      />
-      <Navigation />
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
     </div>
   );
 };

@@ -54,26 +54,26 @@ const CombatInterface = () => {
       `CombatInterface: handleAttackSelection called with index ${index}`
     );
 
-    setSelectedAttackCards((prevSelected) => {
-      if (prevSelected.includes(index)) {
-        // Si la carte est déjà sélectionnée, la désélectionner
-        return prevSelected.filter((i) => i !== index);
-      } else {
-        // Sinon, l'ajouter aux cartes sélectionnées (max 5)
-        if (prevSelected.length < 5) {
-          return [...prevSelected, index];
-        }
-        return prevSelected;
-      }
-    });
+    // Approche directe qui reflète l'état actuel de sélection
+    if (gameState && gameState.hand && gameState.hand[index]) {
+      // La propriété isSelected sera inversée dans cette fonction
+      gameState.toggleCardSelection(index);
+
+      // Reconstruire le tableau local selectedAttackCards à partir de l'état isSelected des cartes
+      setSelectedAttackCards(
+        gameState.hand
+          .map((card, idx) => (card.isSelected ? idx : -1))
+          .filter((idx) => idx !== -1)
+      );
+    }
   };
 
-  // Gestion locale de la sélection en mode défausse
   const handleDiscardSelection = (index) => {
     console.log(
       `CombatInterface: handleDiscardSelection called with index ${index}`
     );
 
+    // On ne modifie pas directement l'état isSelected ici, uniquement notre état local
     setSelectedDiscards((prevSelected) => {
       if (prevSelected.includes(index)) {
         // Si la carte est déjà sélectionnée, la désélectionner
@@ -87,14 +87,25 @@ const CombatInterface = () => {
       }
     });
   };
-
   // Confirmer la défausse
   const confirmDiscard = () => {
     if (selectedDiscards.length > 0) {
+      // Appeler la fonction de défausse avec notre état local
       discardCards(selectedDiscards);
+
+      // Après la défausse, réinitialiser notre état local et mettre à jour l'UI
+      setSelectedDiscards([]);
+
+      // Si l'état des cartes a changé, mettre à jour l'état local pour refléter les nouvelles cartes
+      if (gameState && gameState.hand) {
+        setSelectedAttackCards(
+          gameState.hand
+            .map((card, idx) => (card.isSelected ? idx : -1))
+            .filter((idx) => idx !== -1)
+        );
+      }
     }
     setDiscardMode(false);
-    setSelectedDiscards([]);
   };
 
   // Annuler la défausse
@@ -123,16 +134,23 @@ const CombatInterface = () => {
       return;
     }
 
-    // Important: Mettre à jour gameState.selectedCards avant d'évaluer la main
-    // Cette approche évite les problèmes de toggle
-    const newGameState = { ...gameState };
-    newGameState.selectedCards = [...selectedAttackCards];
-
-    // Pour chaque carte dans la main, mettre à jour isSelected
-    if (newGameState.hand) {
-      newGameState.hand.forEach((card, index) => {
-        card.isSelected = selectedAttackCards.includes(index);
+    // Important: S'assurer que l'état visuel correspond à l'état interne avant d'évaluer
+    // Mettre à jour l'état isSelected dans gameState.hand
+    if (gameState && gameState.hand) {
+      // Réinitialiser toutes les cartes
+      gameState.hand.forEach((card) => {
+        card.isSelected = false;
       });
+
+      // Sélectionner uniquement les cartes dans selectedAttackCards
+      selectedAttackCards.forEach((index) => {
+        if (gameState.hand[index]) {
+          gameState.hand[index].isSelected = true;
+        }
+      });
+
+      // Mettre à jour selectedCards dans gameState
+      gameState.selectedCards = [...selectedAttackCards];
     }
 
     // Évaluer la main sélectionnée
@@ -155,17 +173,14 @@ const CombatInterface = () => {
     return gameState.hand.map((card, idx) => ({
       ...card,
       // En mode défausse, utiliser selectedDiscards
-      // En mode attaque, utiliser selectedAttackCards
+      // En mode attaque, synchroniser avec l'état isSelected
       isSelected: discardMode
         ? selectedDiscards.includes(idx)
-        : selectedAttackCards.includes(idx),
+        : gameState.turnPhase === 'result'
+          ? card.isSelected // En mode résultat, utiliser l'état enregistré
+          : selectedAttackCards.includes(idx), // Sinon utiliser notre état local
     }));
   };
-
-  // État de chargement
-  if (!gameState) {
-    return <div>Loading combat...</div>;
-  }
 
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden">
@@ -245,10 +260,7 @@ const CombatInterface = () => {
                   </p>
                 </div>
 
-<<<<<<< HEAD
                 {/* EnhancedHand avec tri intégré */}
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
                 <EnhancedHand
                   cards={getDisplayCards()}
                   onToggleSelect={handleDiscardSelection}
@@ -274,10 +286,7 @@ const CombatInterface = () => {
               </div>
             ) : (
               <>
-<<<<<<< HEAD
                 {/* EnhancedHand avec tri intégré */}
-=======
->>>>>>> 0057e418c4c4321fe4644761f151a2c134a2087c
                 <EnhancedHand
                   cards={getDisplayCards()}
                   onToggleSelect={handleAttackSelection}
