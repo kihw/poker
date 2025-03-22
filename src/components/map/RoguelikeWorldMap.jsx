@@ -1,7 +1,9 @@
-// src/components/map/RoguelikeWorldMap.jsx
+// src/components/map/RoguelikeWorldMap.jsx - Migré vers Redux
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { useGame } from '../../context/gameHooks';
+import { handleNodeSelection } from '../../redux/thunks/mapThunks';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const RoguelikeWorldMap = ({
   currentFloor,
@@ -10,7 +12,7 @@ const RoguelikeWorldMap = ({
   currentNodeId,
   playerStats = {}, // Valeur par défaut pour éviter les erreurs
 }) => {
-  const { selectNode } = useGame();
+  const dispatch = useDispatch();
   const svgRef = useRef(null);
   const [nodePositions, setNodePositions] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
@@ -235,6 +237,36 @@ const RoguelikeWorldMap = ({
     }
   };
 
+  // Handle node selection via Redux
+  const handleNodeClick = (nodeId) => {
+    if (!isNodeAccessible(nodeId) && nodeId !== currentNodeId) {
+      // Afficher un message si le nœud n'est pas accessible
+      dispatch(
+        setActionFeedback({
+          message:
+            "Ce lieu n'est pas accessible depuis votre position actuelle",
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    // Feedback visuel immédiat
+    if (nodeId !== currentNodeId) {
+      // Ajout d'un feedback visuel
+      const nodeElement = document.getElementById(`node-${nodeId}`);
+      if (nodeElement) {
+        nodeElement.classList.add('node-flash');
+        setTimeout(() => {
+          nodeElement.classList.remove('node-flash');
+        }, 300);
+      }
+    }
+
+    // Appel de la fonction Redux pour sélectionner le nœud
+    dispatch(handleNodeSelection(nodeId));
+  };
+
   if (!safeNodes || safeNodes.length === 0) {
     return (
       <div className="bg-gray-900 rounded-xl p-4 shadow-xl w-full max-w-4xl mx-auto text-center text-gray-400 py-12">
@@ -303,34 +335,7 @@ const RoguelikeWorldMap = ({
                 key={nodeId}
                 onMouseEnter={() => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
-                onClick={() => {
-                  if (isAccessible || nodeId === currentNodeId) {
-                    console.log(`Clicking node ${nodeId} of type ${nodeType}`);
-
-                    // Feedback visuel immédiat
-                    if (nodeId !== currentNodeId) {
-                      // Ajout d'un feedback visuel
-                      const nodeElement = document.getElementById(
-                        `node-${nodeId}`
-                      );
-                      if (nodeElement) {
-                        nodeElement.classList.add('node-flash');
-                        setTimeout(() => {
-                          nodeElement.classList.remove('node-flash');
-                        }, 300);
-                      }
-                    }
-
-                    // Appel de la fonction de sélection
-                    if (selectNode) {
-                      selectNode(nodeId);
-                    } else {
-                      console.warn('selectNode function is not available');
-                    }
-                  } else {
-                    console.log(`Node ${nodeId} is not accessible`);
-                  }
-                }}
+                onClick={() => handleNodeClick(nodeId)}
                 className={`cursor-${isAccessible || nodeId === currentNodeId ? 'pointer' : 'not-allowed'}`}
                 whileHover={{ scale: 1.1 }}
                 initial={{ opacity: 0, scale: 0.5 }}

@@ -1,17 +1,22 @@
-// src/components/event/EventEncounter.jsx
+// src/components/event/EventEncounter.jsx - Migré vers Redux
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../../context/gameHooks';
+import { addGold, heal, takeDamage } from '../../redux/slices/playerSlice';
+import { addCard } from '../../redux/slices/bonusCardsSlice';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const EventEncounter = ({ event, onClose }) => {
-  const { gameState, makeEventChoice } = useGame();
+  const dispatch = useDispatch();
+
+  // Sélectionner les données du joueur depuis Redux
+  const player = useSelector((state) => state.player);
+
   const [selectedChoice, setSelectedChoice] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [result, setResult] = useState(null);
 
-  if (!event || !gameState) return null;
-
-  const playerStats = gameState.player;
+  if (!event) return null;
 
   // Animation for the event card
   const cardVariants = {
@@ -33,16 +38,15 @@ const EventEncounter = ({ event, onClose }) => {
 
   // Check if a choice is available (e.g., enough gold, HP, etc.)
   const isChoiceAvailable = (choice) => {
-    if (choice.goldCost && playerStats.gold < choice.goldCost) {
+    if (choice.goldCost && player.gold < choice.goldCost) {
       return false;
     }
-    if (choice.healthCost && playerStats.health <= choice.healthCost) {
+    if (choice.healthCost && player.health <= choice.healthCost) {
       return false;
     }
     if (
       choice.requiresItem &&
-      (!playerStats.inventory ||
-        !playerStats.inventory.includes(choice.requiresItem))
+      (!player.inventory || !player.inventory.includes(choice.requiresItem))
     ) {
       return false;
     }
@@ -67,10 +71,84 @@ const EventEncounter = ({ event, onClose }) => {
 
     // Wait a bit for animation
     setTimeout(() => {
-      // Simulate API call or game logic
-      const choiceResult = makeEventChoice(choiceIndex);
+      // Get the selected choice
+      const choice = event.choices[choiceIndex];
+
+      // Determine if the choice succeeds or fails based on chance
+      const isSuccess = Math.random() <= (choice.chance || 1.0);
+
+      // Create result object
+      const choiceResult = {
+        success: isSuccess,
+        message: isSuccess
+          ? choice.resultText
+          : choice.failText ||
+            "Le résultat n'est pas celui que vous espériez...",
+        details: isSuccess
+          ? { ...(choice.resultDetails || {}) }
+          : { ...(choice.failDetails || {}) },
+      };
+
+      // Apply effects to the player via Redux
+      const details = choiceResult.details;
+
+      if (details) {
+        // Handle gold changes
+        if (details.gold) {
+          if (details.gold > 0) {
+            dispatch(addGold(details.gold));
+          } else if (details.gold < 0) {
+            dispatch(addGold(details.gold)); // negative value will be handled in the reducer
+          }
+        }
+
+        // Handle healing
+        if (details.healing && details.healing > 0) {
+          dispatch(heal(details.healing));
+        }
+
+        // Handle damage (health cost)
+        if (details.healthCost && details.healthCost > 0) {
+          dispatch(takeDamage(details.healthCost));
+        }
+
+        // Handle bonus card rewards
+        if (details.card && details.card.id) {
+          dispatch(addCard(details.card.id));
+        } else if (details.card && details.card.name === 'Carte mystérieuse') {
+          // Generate a random card ID between 1 and 31 (from the available bonus cards)
+          const randomCardId = Math.floor(Math.random() * 31) + 1;
+          dispatch(addCard(randomCardId));
+
+          // Update the result with the card info for UI
+          details.card = {
+            ...details.card,
+            id: randomCardId,
+          };
+        }
+
+        // Handle item rewards
+        if (details.item) {
+          // Add item to inventory (would require a dedicated action)
+          dispatch(
+            setActionFeedback({
+              message: `Obtenu: ${details.item.name}`,
+              type: 'success',
+            })
+          );
+        }
+      }
+
       setResult(choiceResult);
       setShowResult(true);
+
+      // Send feedback
+      dispatch(
+        setActionFeedback({
+          message: choiceResult.message,
+          type: choiceResult.success ? 'success' : 'warning',
+        })
+      );
     }, 500);
   };
 
@@ -171,14 +249,14 @@ const EventEncounter = ({ event, onClose }) => {
                       {!isAvailable && (
                         <div className="text-xs text-red-400 mt-1">
                           {choice.goldCost &&
-                            playerStats.gold < choice.goldCost &&
+                            player.gold < choice.goldCost &&
                             "Pas assez d'or. "}
                           {choice.healthCost &&
-                            playerStats.health <= choice.healthCost &&
+                            player.health <= choice.healthCost &&
                             'Pas assez de PV. '}
                           {choice.requiresItem &&
-                            (!playerStats.inventory ||
-                              !playerStats.inventory.includes(
+                            (!player.inventory ||
+                              !player.inventory.includes(
                                 choice.requiresItem
                               )) &&
                             'Objet requis manquant.'}

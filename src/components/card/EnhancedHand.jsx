@@ -1,5 +1,6 @@
-// src/components/card/EnhancedHand.jsx
+// src/components/card/EnhancedHand.jsx - Migré vers Redux
 import React, { useState, useMemo, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import EnhancedCard from './EnhancedCard';
 import { motion } from 'framer-motion';
 

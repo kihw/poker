@@ -1,7 +1,9 @@
-// src/components/combat/CombatInterface.jsx
+// src/components/combat/CombatInterface.jsx - Migré vers Redux
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../../context/gameHooks';
+import { useNavigate } from 'react-router-dom';
+import { useGameActions, useGameData } from '../../hooks/useGameActions';
 
 // Import sub-components
 import PlayerStatus from './PlayerStatus';
@@ -11,22 +13,45 @@ import HandCombinationDisplay from './HandCombinationDisplay';
 import BonusCards from '../card/BonusCards';
 import TutorialOverlay from '../ui/TutorialOverlay';
 
-const CombatInterface = () => {
-  const {
-    gameState,
-    dealHand,
-    evaluateSelectedHand,
-    useBonus,
-    discardCards,
-    nextStage,
-  } = useGame();
+// Import Redux actions
+import {
+  toggleCardSelection,
+  setTurnPhase,
+} from '../../redux/slices/combatSlice';
+import {
+  dealHand,
+  attackEnemy,
+  continueAfterVictory,
+} from '../../redux/thunks/combatThunks';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
+import { setGamePhase } from '../../redux/slices/gameSlice';
 
+const CombatInterface = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const gameActions = useGameActions();
+  const gameData = useGameData();
+
+  // Extraire les données nécessaires du Redux store
+  const enemy = useSelector((state) => state.combat.enemy);
+  const hand = useSelector((state) => state.combat.hand);
+  const selectedCards = useSelector((state) => state.combat.selectedCards);
+  const turnPhase = useSelector((state) => state.combat.turnPhase);
+  const discardLimit = useSelector((state) => state.combat.discardLimit);
+  const discardUsed = useSelector((state) => state.combat.discardUsed);
+  const handResult = useSelector((state) => state.combat.handResult);
+  const combatLog = useSelector((state) => state.combat.combatLog);
+  const gamePhase = useSelector((state) => state.game.gamePhase);
+  const activeBonusCards = useSelector((state) => state.bonusCards.active);
+
+  // États locaux pour les animations et la gestion d'UI
   const [showDamageEffect, setShowDamageEffect] = useState(false);
   const [showHealEffect, setShowHealEffect] = useState(false);
   const [discardMode, setDiscardMode] = useState(false);
   const [selectedAttackCards, setSelectedAttackCards] = useState([]);
   const [selectedDiscards, setSelectedDiscards] = useState([]);
   const [showTutorial, setShowTutorial] = useState(true);
+  const [isProcessingContinue, setIsProcessingContinue] = useState(false);
 
   // Vérifier si le tutoriel a déjà été vu
   useEffect(() => {
@@ -36,33 +61,30 @@ const CombatInterface = () => {
 
   // Reset local selection when a new hand is dealt
   useEffect(() => {
-    if (gameState?.turnPhase === 'select') {
+    if (turnPhase === 'select') {
       setSelectedAttackCards([]);
       setSelectedDiscards([]);
       setDiscardMode(false);
     }
-  }, [gameState?.turnPhase]);
+  }, [turnPhase]);
 
   // Détecter les changements d'état qui déclenchent des animations
   useEffect(() => {
-    if (
-      gameState?.turnPhase === 'result' &&
-      gameState.enemy &&
-      gameState.enemy.health > 0
-    ) {
+    if (turnPhase === 'result' && enemy && enemy.health > 0) {
       // Animation de dégâts
       setShowDamageEffect(true);
       setTimeout(() => setShowDamageEffect(false), 700);
     }
-  }, [gameState?.turnPhase, gameState?.enemy?.health, gameState?.enemy]);
-  // pour détecter si l'ennemi est vaincu pendant le rendu
+  }, [turnPhase, enemy]);
+
+  // Pour détecter si l'ennemi est vaincu pendant le rendu
   useEffect(() => {
     // Si l'ennemi est vaincu mais que nous sommes encore en phase combat
     if (
-      gameState?.enemy &&
-      gameState.enemy.health <= 0 &&
-      gameState.gamePhase === 'combat' &&
-      gameState.turnPhase === 'result'
+      enemy &&
+      enemy.health <= 0 &&
+      gamePhase === 'combat' &&
+      turnPhase === 'result'
     ) {
       console.log('Détection automatique de victoire');
 
@@ -74,14 +96,13 @@ const CombatInterface = () => {
 
       return () => clearTimeout(victoryTimer);
     }
-  }, [gameState?.enemy?.health, gameState?.gamePhase, gameState?.turnPhase]);
+  }, [enemy?.health, gamePhase, turnPhase, dispatch, navigate]);
+
   // Gestion du tutoriel
   const handleNextTutorialStep = () => {
-    // Logique pour faire avancer les étapes du tutoriel
-    const currentStep = gameState.tutorialStep || 0;
+    // Mise à jour du state tutorialStep dans le Redux store
+    const currentStep = gameData.tutorialStep || 0;
     const nextStep = currentStep + 1;
-
-    // Mise à jour fictive - dans une implémentation réelle, vous mettriez à jour gameState
     console.log(`Étape de tutoriel suivante: ${nextStep}`);
   };
 
@@ -93,50 +114,35 @@ const CombatInterface = () => {
 
   // Gestion locale de la sélection en mode attaque
   const handleAttackSelection = (index) => {
-    if (!gameState || !gameState.hand || gameState.hand[index] === undefined) {
+    if (!hand || hand[index] === undefined) {
       console.error('Index de carte invalide ou main non disponible:', index);
       return;
     }
 
-    // Créer une copie de la main actuelle pour la modifier de manière immutable
-    const updatedHand = [...gameState.hand];
+    // Dispatcher l'action Redux pour modifier la sélection
+    dispatch(toggleCardSelection(index));
 
-    // Compter les cartes actuellement sélectionnées
-    const currentSelectedCount = updatedHand.filter(
-      (card) => card.isSelected
-    ).length;
+    // Mettre à jour l'état local pour refléter le changement
+    const newSelectedCards = [...selectedAttackCards];
 
-    // Si la carte n'est pas sélectionnée et qu'on a déjà 5 cartes, ne rien faire
-    if (currentSelectedCount >= 5 && !updatedHand[index].isSelected) {
-      console.log('Maximum de 5 cartes déjà sélectionnées');
-      return;
+    if (newSelectedCards.includes(index)) {
+      // Si la carte est déjà sélectionnée, la désélectionner
+      const cardIndex = newSelectedCards.indexOf(index);
+      newSelectedCards.splice(cardIndex, 1);
+    } else {
+      // Sinon, l'ajouter (si moins de 5 cartes sont déjà sélectionnées)
+      if (newSelectedCards.length < 5) {
+        newSelectedCards.push(index);
+      } else {
+        return; // Ne pas sélectionner plus de 5 cartes
+      }
     }
 
-    // Inverser l'état de sélection
-    updatedHand[index] = {
-      ...updatedHand[index],
-      isSelected: !updatedHand[index].isSelected,
-    };
-
-    // Mettre à jour gameState.hand de manière immutable
-    if (gameState.hand !== updatedHand) {
-      gameState.hand = updatedHand;
-    }
-
-    // Recalculer selectedCards
-    const newSelectedCards = updatedHand
-      .map((card, idx) => (card.isSelected ? idx : -1))
-      .filter((idx) => idx !== -1);
-
-    // Mettre à jour gameState.selectedCards
-    gameState.selectedCards = newSelectedCards;
-
-    // Synchroniser notre état local
     setSelectedAttackCards(newSelectedCards);
   };
 
   const handleDiscardSelection = (index) => {
-    if (!gameState || !gameState.hand || gameState.hand[index] === undefined) {
+    if (!hand || hand[index] === undefined) {
       console.error('Index de carte invalide ou main non disponible:', index);
       return;
     }
@@ -147,7 +153,7 @@ const CombatInterface = () => {
         return prevSelected.filter((i) => i !== index);
       } else {
         // Sinon, l'ajouter aux cartes sélectionnées (max discardLimit)
-        if (prevSelected.length < (gameState?.discardLimit || 2)) {
+        if (prevSelected.length < (discardLimit || 2)) {
           return [...prevSelected, index];
         }
         return prevSelected;
@@ -158,22 +164,13 @@ const CombatInterface = () => {
   // Confirmer la défausse
   const confirmDiscard = () => {
     if (selectedDiscards.length > 0) {
-      // Appeler la fonction de défausse avec notre état local
-      discardCards(selectedDiscards);
+      // Appeler l'action Redux pour défausser les cartes
+      gameActions.discardCards(selectedDiscards);
 
-      // Après la défausse, réinitialiser notre état local et mettre à jour l'UI
+      // Après la défausse, réinitialiser notre état local
       setSelectedDiscards([]);
-
-      // Si l'état des cartes a changé, mettre à jour l'état local pour refléter les nouvelles cartes
-      if (gameState && gameState.hand) {
-        const updatedSelectedCards = gameState.hand
-          .map((card, idx) => (card.isSelected ? idx : -1))
-          .filter((idx) => idx !== -1);
-
-        setSelectedAttackCards(updatedSelectedCards);
-      }
+      setDiscardMode(false);
     }
-    setDiscardMode(false);
   };
 
   // Annuler la défausse
@@ -188,59 +185,43 @@ const CombatInterface = () => {
     setSelectedDiscards([]);
   };
 
-  // Lancer l'attaque en passant les cartes sélectionnées localement
-  // Pour handleAttack
+  // Lancer l'attaque
   const handleAttack = () => {
     // Vérifier qu'au moins 1 carte est sélectionnée
-    if (gameState.selectedCards.length === 0) {
-      // Utiliser le système de feedback si disponible
-      if (gameState.setActionFeedback) {
-        gameState.setActionFeedback(
-          'Vous devez sélectionner au moins 1 carte pour attaquer',
-          'warning'
-        );
-      } else {
-        alert('Vous devez sélectionner au moins 1 carte pour attaquer');
-      }
+    if (selectedCards.length === 0) {
+      dispatch(
+        setActionFeedback({
+          message: 'Vous devez sélectionner au moins 1 carte pour attaquer',
+          type: 'warning',
+        })
+      );
       return;
     }
 
     // Vérifier qu'au maximum 5 cartes sont sélectionnées
-    if (gameState.selectedCards.length > 5) {
-      // Utiliser le système de feedback si disponible
-      if (gameState.setActionFeedback) {
-        gameState.setActionFeedback(
-          'Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer',
-          'warning'
-        );
-      } else {
-        alert('Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer');
-      }
+    if (selectedCards.length > 5) {
+      dispatch(
+        setActionFeedback({
+          message:
+            'Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer',
+          type: 'warning',
+        })
+      );
       return;
     }
 
-    // Vérifier que les propriétés isSelected des cartes correspondent à selectedCards
-    if (gameState && gameState.hand) {
-      // Réinitialiser toutes les cartes
-      gameState.hand.forEach((card, index) => {
-        card.isSelected = gameState.selectedCards.includes(index);
-      });
-    }
-
-    // Évaluer la main sélectionnée
-    evaluateSelectedHand();
+    // Évaluer la main sélectionnée via Redux
+    dispatch(attackEnemy());
   };
-
-  const [isProcessingContinue, setIsProcessingContinue] = useState(false);
 
   const handleContinue = () => {
     // Identifiant unique pour ce cycle de traitement
     const callId = Date.now() + Math.random().toString(16).slice(2);
     console.log(
       `[DEBUG ${callId}] handleContinue appelé - État actuel:`,
-      gameState?.gamePhase,
+      gamePhase,
       'Ennemi santé:',
-      gameState?.enemy?.health
+      enemy?.health
     );
 
     // Vérifier si un traitement est déjà en cours
@@ -255,34 +236,21 @@ const CombatInterface = () => {
     setIsProcessingContinue(true);
 
     try {
-      if (gameState?.enemy && gameState.enemy.health <= 0) {
+      if (enemy && enemy.health <= 0) {
         // L'ennemi est vaincu, on passe à l'étape suivante
         console.log(
           `[DEBUG ${callId}] Ennemi vaincu, transition vers la phase suivante`
         );
 
-        // Appeler nextStage pour traiter la victoire
-        nextStage();
+        // Appeler l'action Redux pour traiter la victoire
+        dispatch(continueAfterVictory());
 
-        console.log(
-          `[DEBUG ${callId}] Après nextStage, nouveau gamePhase:`,
-          gameState.gamePhase
-        );
-
-        // Forcer le passage en mode exploration et la redirection
-        // quelle que soit la phase actuelle
+        // Forcer le passage en mode exploration et la redirection après un délai
         setTimeout(() => {
           console.log(
             `[DEBUG ${callId}] Redirection vers la carte après délai`
           );
-
-          // Forcer la phase d'exploration avant la redirection
-          if (gameState.gamePhase !== 'exploration') {
-            console.log(`[DEBUG ${callId}] Forçage de la phase 'exploration'`);
-            gameState.gamePhase = 'exploration';
-          }
-
-          // Rediriger manuellement vers la page de carte
+          dispatch(setGamePhase('exploration'));
           navigate('/map');
         }, 500);
       } else {
@@ -294,7 +262,7 @@ const CombatInterface = () => {
           window._dealHandLock = true;
 
           // Appeler dealHand pour distribuer une nouvelle main
-          dealHand();
+          dispatch(dealHand());
 
           // Libérer le verrou après un délai
           setTimeout(() => {
@@ -319,14 +287,14 @@ const CombatInterface = () => {
 
   // Styles et messages conditionnels pour l'interface
   const getInterfaceMessage = () => {
-    if (gameState?.turnPhase === 'draw') {
+    if (turnPhase === 'draw') {
       return "Cliquez sur 'Distribuer les cartes' pour commencer";
     }
-    if (gameState?.turnPhase === 'select') {
+    if (turnPhase === 'select') {
       return "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
     }
-    if (gameState?.turnPhase === 'result') {
-      return gameState.enemy?.health <= 0
+    if (turnPhase === 'result') {
+      return enemy?.health <= 0
         ? 'Victoire ! Cliquez sur Continuer'
         : 'Regardez les résultats de votre attaque';
     }
@@ -335,21 +303,21 @@ const CombatInterface = () => {
 
   // Préparation des cartes à afficher selon le mode
   const getDisplayCards = () => {
-    if (!gameState?.hand) return [];
+    if (!hand) return [];
 
-    return gameState.hand.map((card, idx) => ({
+    return hand.map((card, idx) => ({
       ...card,
       // En mode défausse, utiliser selectedDiscards
       // En mode attaque, synchroniser avec l'état isSelected
       isSelected: discardMode
         ? selectedDiscards.includes(idx)
-        : gameState.turnPhase === 'result'
+        : turnPhase === 'result'
           ? card.isSelected // En mode résultat, utiliser l'état enregistré
           : selectedAttackCards.includes(idx), // Sinon utiliser notre état local
     }));
   };
 
-  if (!gameState) {
+  if (!enemy) {
     return (
       <div className="text-white text-center p-4">Chargement du combat...</div>
     );
@@ -360,7 +328,7 @@ const CombatInterface = () => {
       {/* Tutoriel */}
       {showTutorial && (
         <TutorialOverlay
-          step={gameState?.tutorialStep || 0}
+          step={0}
           onNextStep={handleNextTutorialStep}
           onComplete={completeTutorial}
         />
@@ -387,11 +355,11 @@ const CombatInterface = () => {
       {/* En-tête de combat */}
       <div className="mb-6 text-center relative">
         <h2 className="text-2xl font-bold text-white">
-          Niveau {gameState.stage} -{' '}
-          {gameState.gamePhase === 'combat' ? 'Combat' : 'Récompense'}
+          Niveau {gameData.stage} -{' '}
+          {gamePhase === 'combat' ? 'Combat' : 'Récompense'}
         </h2>
         <div className="absolute right-0 top-0 bg-yellow-600 text-black font-bold px-3 py-1 rounded-full text-sm">
-          {gameState.player.gold} <span className="text-xs">or</span>
+          {gameData.player.gold} <span className="text-xs">or</span>
         </div>
       </div>
 
@@ -401,12 +369,12 @@ const CombatInterface = () => {
         animate={{ y: 0, opacity: 1 }}
         className="mb-4"
       >
-        {gameState.enemy && (
+        {enemy && (
           <EnemyStatus
-            name={gameState.enemy.name}
-            hp={gameState.enemy.health}
-            maxHp={gameState.enemy.maxHealth}
-            nextAttack={gameState.enemy.attack}
+            name={enemy.name}
+            hp={enemy.health}
+            maxHp={enemy.maxHealth}
+            nextAttack={enemy.attack}
           />
         )}
       </motion.div>
@@ -416,14 +384,14 @@ const CombatInterface = () => {
         <h3 className="text-gray-400 uppercase text-xs font-bold mb-2">
           Journal de combat
         </h3>
-        {gameState.combatLog &&
-          gameState.combatLog.map((entry, index) => (
+        {combatLog &&
+          combatLog.map((entry, index) => (
             <motion.div
               key={index}
               initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: index * 0.1, duration: 0.3 }}
-              className={`mb-1 pb-1 ${index !== gameState.combatLog.length - 1 ? 'border-b border-gray-700' : ''}`}
+              className={`mb-1 pb-1 ${index !== combatLog.length - 1 ? 'border-b border-gray-700' : ''}`}
             >
               {entry}
             </motion.div>
@@ -432,17 +400,17 @@ const CombatInterface = () => {
 
       {/* Main du joueur */}
       <div className="mb-6">
-        {gameState.hand && gameState.hand.length > 0 && (
+        {hand && hand.length > 0 && (
           <>
             {discardMode ? (
               <div className="text-center mb-2">
                 <div className="bg-amber-700 text-white rounded-md p-2 mb-4">
                   <p className="font-bold">
-                    Mode défausse - Sélectionnez jusqu'à{' '}
-                    {gameState.discardLimit} cartes à remplacer
+                    Mode défausse - Sélectionnez jusqu'à {discardLimit} cartes à
+                    remplacer
                   </p>
                   <p className="text-sm">
-                    {selectedDiscards.length}/{gameState.discardLimit} cartes
+                    {selectedDiscards.length}/{discardLimit} cartes
                     sélectionnées
                   </p>
                 </div>
@@ -451,7 +419,7 @@ const CombatInterface = () => {
                 <EnhancedHand
                   cards={getDisplayCards()}
                   onToggleSelect={handleDiscardSelection}
-                  maxSelectable={gameState.discardLimit}
+                  maxSelectable={discardLimit}
                   selectionMode="discard"
                 />
 
@@ -479,14 +447,12 @@ const CombatInterface = () => {
                     cards={getDisplayCards()}
                     onToggleSelect={handleAttackSelection}
                     maxSelectable={5}
-                    selectionMode={
-                      gameState.turnPhase === 'select' ? 'attack' : 'view'
-                    }
-                    bestHandCards={gameState.bestHandCards || []}
+                    selectionMode={turnPhase === 'select' ? 'attack' : 'view'}
+                    bestHandCards={[]} // À remplacer par la vraie valeur une fois disponible
                   />
                 </div>
 
-                {gameState.turnPhase === 'select' && (
+                {turnPhase === 'select' && (
                   <div className="text-center mt-3 mb-2 hand-ranking">
                     <p className="text-gray-300 mb-2">
                       Sélectionnez 1 à 5 cartes pour attaquer.
@@ -529,22 +495,22 @@ const CombatInterface = () => {
       </div>
 
       {/* Résultat de la main (si disponible) */}
-      {gameState.turnPhase === 'result' && gameState.handResult && (
+      {turnPhase === 'result' && handResult && (
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="mb-6"
         >
           <HandCombinationDisplay
-            handName={gameState.handResult.handName}
-            baseDamage={gameState.handResult.baseDamage}
-            totalDamage={gameState.handResult.totalDamage}
-            bonusEffects={gameState.handResult.bonusEffects}
-            cards={gameState.handResult.cards}
+            handName={handResult.handName}
+            baseDamage={handResult.baseDamage}
+            totalDamage={handResult.totalDamage}
+            bonusEffects={handResult.bonusEffects}
+            cards={handResult.cards}
           />
-          {gameState.turnPhase === 'result' &&
-            gameState.selectedCards &&
-            gameState.selectedCards.length > 0 && (
+          {turnPhase === 'result' &&
+            selectedCards &&
+            selectedCards.length > 0 && (
               <div className="mt-2 text-sm text-gray-400">
                 <p>
                   Les cartes utilisées dans cette attaque seront remplacées, les
@@ -558,26 +524,26 @@ const CombatInterface = () => {
       {/* Actions du joueur */}
       <div className="flex justify-between items-center mb-6">
         <PlayerStatus
-          hp={gameState.player.health}
-          maxHp={gameState.player.maxHealth}
-          gold={gameState.player.gold}
-          xp={gameState.player.experience || 0}
-          level={gameState.player.level}
+          hp={gameData.player.health}
+          maxHp={gameData.player.maxHealth}
+          gold={gameData.player.gold}
+          xp={gameData.player.experience || 0}
+          level={gameData.player.level}
         />
 
         <div className="flex flex-col space-y-3">
-          {gameState.turnPhase === 'draw' && (
+          {turnPhase === 'draw' && (
             <button
-              onClick={dealHand}
+              onClick={() => dispatch(dealHand())}
               className="distribute-cards-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg"
             >
               Distribuer les cartes
             </button>
           )}
 
-          {gameState.turnPhase === 'select' && (
+          {turnPhase === 'select' && (
             <>
-              {!gameState.discardUsed && (
+              {!discardUsed && (
                 <button
                   onClick={toggleDiscardMode}
                   className={`${
@@ -588,7 +554,7 @@ const CombatInterface = () => {
                 >
                   {discardMode
                     ? 'Annuler défausse'
-                    : `Défausser (${gameState.discardLimit} max.)`}
+                    : `Défausser (${discardLimit} max.)`}
                 </button>
               )}
 
@@ -612,7 +578,7 @@ const CombatInterface = () => {
             </>
           )}
 
-          {gameState.turnPhase === 'result' && (
+          {turnPhase === 'result' && (
             <button
               onClick={(e) => {
                 // Empêcher la propagation de l'événement
@@ -643,11 +609,7 @@ const CombatInterface = () => {
       </div>
 
       {/* Cartes bonus */}
-      <BonusCards
-        className="bonus-cards"
-        bonusCards={gameState.activeBonusCards || []}
-        onUseBonus={useBonus}
-      />
+      <BonusCards className="bonus-cards" />
     </div>
   );
 };

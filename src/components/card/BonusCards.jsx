@@ -1,15 +1,15 @@
 // src/components/card/BonusCards.jsx - Migré vers Redux
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectActiveBonusCards } from '../../redux/selectors/gameSelectors';
+import { useDispatch, useSelector } from 'react-redux';
 import { useCard } from '../../redux/slices/bonusCardsSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const BonusCards = () => {
   const dispatch = useDispatch();
+
   // Utiliser le sélecteur pour obtenir les cartes bonus actives
-  const bonusCards = useSelector(selectActiveBonusCards);
+  const bonusCards = useSelector((state) => state.bonusCards.active);
 
   if (!bonusCards || bonusCards.length === 0) {
     return null;

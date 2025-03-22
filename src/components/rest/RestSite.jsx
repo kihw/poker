@@ -1,8 +1,14 @@
-// src/components/rest/RestSite.jsx
+// src/components/rest/RestSite.jsx - Migré vers Redux
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
+import { heal, addShield } from '../../redux/slices/playerSlice';
+import { upgradeCard } from '../../redux/slices/bonusCardsSlice';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const RestSite = ({ playerStats, bonusCards, onRestComplete, onClose }) => {
+  const dispatch = useDispatch();
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [showCardUpgrade, setShowCardUpgrade] = useState(false);
   const [selectedCardForUpgrade, setSelectedCardForUpgrade] = useState(null);
@@ -86,6 +92,10 @@ const RestSite = ({ playerStats, bonusCards, onRestComplete, onClose }) => {
             option.effect.value,
             playerStats.maxHealth - playerStats.health
           );
+
+          // Dispatch pour soigner le joueur via Redux
+          dispatch(heal(healAmount));
+
           result = {
             message: `Vous vous reposez et récupérez ${healAmount} points de vie.`,
             effect: {
@@ -97,29 +107,34 @@ const RestSite = ({ playerStats, bonusCards, onRestComplete, onClose }) => {
 
         case 'upgrade':
           if (option.card) {
-            // Simuler une amélioration de carte
-            const upgradedCard = {
-              ...option.card,
-              level: (option.card.level || 1) + 1,
-              bonus: {
-                ...option.card.bonus,
-                value: option.card.bonus
-                  ? Math.floor(option.card.bonus.value * 1.2)
-                  : 0,
-              },
-            };
+            // Dispatch pour améliorer la carte via Redux
+            dispatch(upgradeCard({ cardId: option.card.id }));
+
+            // Simuler une carte améliorée pour l'affichage
+            const upgradedLevel = (option.card.level || 1) + 1;
 
             result = {
-              message: `Vous avez amélioré ${option.card.name} au niveau ${upgradedCard.level}.`,
+              message: `Vous avez amélioré ${option.card.name} au niveau ${upgradedLevel}.`,
               effect: {
                 type: 'upgrade',
-                card: upgradedCard,
+                card: {
+                  ...option.card,
+                  level: upgradedLevel,
+                },
               },
             };
           }
           break;
 
         case 'remove_weakness':
+          // Dispatch pour ajouter un buff au joueur
+          dispatch(
+            setActionFeedback({
+              message: 'Vous êtes plus concentré pour le prochain combat',
+              type: 'success',
+            })
+          );
+
           result = {
             message:
               'Vous méditez et vous sentez plus concentré pour le prochain combat.',
