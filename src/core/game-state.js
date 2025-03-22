@@ -130,7 +130,13 @@ export class GameState {
    * Version améliorée de dealHand() qui conserve les cartes non utilisées
    * Cette fonction remplace celle de game-state.js
    */
-  improvedDealHand() {
+  dealHand() {
+    if (this._isDistributingCards) {
+      console.warn('Distribution déjà en cours, ignoré');
+      return this.hand;
+    }
+
+    this._isDistributingCards = true;
     // S'assurer que les tableaux nécessaires existent
     if (!this.hand) this.hand = [];
     if (!this.deck) this.initializeDeck();
@@ -284,6 +290,10 @@ export class GameState {
       this.hand.length,
       'cartes'
     );
+
+    setTimeout(() => {
+      this._isDistributingCards = false;
+    }, 500);
 
     return this.hand;
   }

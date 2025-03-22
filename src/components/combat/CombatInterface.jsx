@@ -231,42 +231,89 @@ const CombatInterface = () => {
     evaluateSelectedHand();
   };
 
+  const [isProcessingContinue, setIsProcessingContinue] = useState(false);
+
   const handleContinue = () => {
+    // Identifiant unique pour ce cycle de traitement
+    const callId = Date.now() + Math.random().toString(16).slice(2);
     console.log(
-      'handleContinue appelé - État actuel:',
+      `[DEBUG ${callId}] handleContinue appelé - État actuel:`,
       gameState?.gamePhase,
       'Ennemi santé:',
       gameState?.enemy?.health
     );
 
-    if (gameState?.enemy && gameState.enemy.health <= 0) {
-      // L'ennemi est vaincu, on passe à l'étape suivante
-      console.log('Ennemi vaincu, transition vers la phase suivante');
+    // Vérifier si un traitement est déjà en cours
+    if (isProcessingContinue) {
+      console.warn(
+        `[DEBUG ${callId}] handleContinue déjà en cours d'exécution, ignoré`
+      );
+      return;
+    }
 
-      // Appeler nextStage pour traiter la victoire
-      nextStage();
+    // Définir le drapeau de traitement
+    setIsProcessingContinue(true);
 
-      console.log('Après nextStage, nouveau gamePhase:', gameState.gamePhase);
+    try {
+      if (gameState?.enemy && gameState.enemy.health <= 0) {
+        // L'ennemi est vaincu, on passe à l'étape suivante
+        console.log(
+          `[DEBUG ${callId}] Ennemi vaincu, transition vers la phase suivante`
+        );
 
-      // Forcer le passage en mode exploration et la redirection
-      // quelle que soit la phase actuelle
-      setTimeout(() => {
-        console.log('Redirection vers la carte après délai');
+        // Appeler nextStage pour traiter la victoire
+        nextStage();
 
-        // Forcer la phase d'exploration avant la redirection
-        if (gameState.gamePhase !== 'exploration') {
-          console.log("Forçage de la phase 'exploration'");
-          gameState.gamePhase = 'exploration';
+        console.log(
+          `[DEBUG ${callId}] Après nextStage, nouveau gamePhase:`,
+          gameState.gamePhase
+        );
+
+        // Forcer le passage en mode exploration et la redirection
+        // quelle que soit la phase actuelle
+        setTimeout(() => {
+          console.log(
+            `[DEBUG ${callId}] Redirection vers la carte après délai`
+          );
+
+          // Forcer la phase d'exploration avant la redirection
+          if (gameState.gamePhase !== 'exploration') {
+            console.log(`[DEBUG ${callId}] Forçage de la phase 'exploration'`);
+            gameState.gamePhase = 'exploration';
+          }
+
+          // Rediriger manuellement vers la page de carte
+          navigate('/map');
+        }, 500);
+      } else {
+        // S'assurer que toutes les cartes sont correctement marquées avant de distribuer
+        console.log(`[DEBUG ${callId}] Distribution d'une nouvelle main`);
+
+        // Définir un verrou pour dealHand au niveau local
+        if (!window._dealHandLock) {
+          window._dealHandLock = true;
+
+          // Appeler dealHand pour distribuer une nouvelle main
+          dealHand();
+
+          // Libérer le verrou après un délai
+          setTimeout(() => {
+            window._dealHandLock = false;
+          }, 500);
+        } else {
+          console.warn(`[DEBUG ${callId}] Distribution déjà en cours, ignorée`);
         }
-
-        // Utiliser window.location pour une redirection complète
-        // ce qui force le rechargement de la page et un état propre
-        window.location.href = '/map';
-      }, 500);
-    } else {
-      // S'assurer que toutes les cartes sont correctement marquées avant de distribuer
-      console.log("Distribution d'une nouvelle main");
-      dealHand();
+      }
+    } catch (error) {
+      console.error(`[DEBUG ${callId}] Erreur dans handleContinue:`, error);
+    } finally {
+      // Réinitialiser le drapeau après un court délai pour éviter les problèmes d'état
+      setTimeout(() => {
+        setIsProcessingContinue(false);
+        console.log(
+          `[DEBUG ${callId}] Traitement terminé, drapeau réinitialisé`
+        );
+      }, 1000);
     }
   };
 
@@ -567,7 +614,26 @@ const CombatInterface = () => {
 
           {gameState.turnPhase === 'result' && (
             <button
-              onClick={handleContinue}
+              onClick={(e) => {
+                // Empêcher la propagation de l'événement
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Désactiver le bouton immédiatement pour éviter les doubles clics
+                e.currentTarget.disabled = true;
+
+                // Délai court avant de traiter le clic
+                setTimeout(() => {
+                  handleContinue();
+
+                  // Réactiver le bouton après un délai plus long
+                  setTimeout(() => {
+                    if (e.currentTarget) {
+                      e.currentTarget.disabled = false;
+                    }
+                  }, 1000);
+                }, 50);
+              }}
               className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg"
             >
               Continuer
