@@ -146,25 +146,8 @@ export class GameState {
     // Nombre de nouvelles cartes à tirer
     const drawCount = 7 - keptCards.length;
 
-    // Si le deck est vide ou n'a pas assez de cartes, recréer un deck
-    if (this.deck.length < drawCount) {
-      this.deck = [...this.deck, ...this.discard];
-      this.discard = [];
-      this.deck = shuffleDeck(this.deck);
-
-      // Si le deck est toujours trop petit, on le recrée complètement
-      if (this.deck.length < drawCount) {
-        this.initializeDeck();
-      }
-    }
-
     // Tirer les nouvelles cartes
     const drawnCards = drawCards(this.deck, drawCount);
-
-    // S'assurer que toutes les nouvelles cartes ont isSelected = false
-    drawnCards.forEach((card) => {
-      card.isSelected = false;
-    });
 
     // Mettre à jour la main avec les cartes gardées et les nouvelles cartes
     this.hand = [...keptCards, ...drawnCards];
