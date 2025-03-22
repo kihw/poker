@@ -213,13 +213,33 @@ export function GameProvider({ children }) {
 
     resetGame: useCallback(() => {
       console.log('Réinitialisation complète du jeu');
+
+      // 1. Supprimer la sauvegarde
+      try {
+        if (typeof deleteSave === 'function') {
+          deleteSave();
+          console.log('Sauvegarde supprimée avec succès');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la suppression de la sauvegarde:', error);
+      }
+
+      // 2. Dispatch l'action RESET_GAME
       dispatch({ type: ACTIONS.RESET_GAME });
 
-      // Recharger la page après un court délai pour s'assurer que tout est bien réinitialisé
+      // 3. Vider le localStorage complètement - solution radicale mais efficace
+      try {
+        localStorage.removeItem('pokerSoloRpgSave');
+        console.log('Sauvegarde supprimée du localStorage');
+      } catch (error) {
+        console.error('Erreur lors de la suppression du localStorage:', error);
+      }
+
+      // 4. Forcer un rechargement complet de la page
       setTimeout(() => {
-        window.location.href = '/';
+        window.location.reload();
       }, 100);
-    }, []),
+    }, [dispatch]),
 
     evaluateSelectedHand: useCallback(() => {
       dispatch({ type: ACTIONS.EVALUATE_SELECTED_HAND });

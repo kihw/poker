@@ -12,9 +12,10 @@ import {
   deleteSave,
 } from '../modules/save-system';
 
-export const ACTIONS = {
-  RESET_GAME: 'RESET_GAME',
-};
+// Add the RESET_GAME action to the imported ACTIONS
+// Instead of redeclaring ACTIONS, we'll add our new action
+const RESET_GAME = 'RESET_GAME';
+
 // Initial state
 export const initialGameState = {
   game: null,
@@ -40,7 +41,7 @@ export function gameReducer(state, action) {
           loading: false,
           lastUpdate: Date.now(),
         };
-      case ACTIONS.RESET_GAME:
+      case RESET_GAME:
         // Supprimer la sauvegarde si elle existe
         if (typeof deleteSave === 'function') {
           deleteSave();
