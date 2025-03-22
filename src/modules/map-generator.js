@@ -131,7 +131,9 @@ function getRandomSubset(array, count) {
   return shuffled.slice(0, Math.min(count, array.length));
 }
 
-// Validation de la carte
+/**
+ * Valide la carte pour s'assurer que tous les nœuds sont accessibles
+ */
 export function validateMap(nodes) {
   const startNode = nodes.find((node) => node.type === 'start');
   const bossNode = nodes.find((node) => node.type === 'boss');
@@ -212,14 +214,6 @@ function getRandomWeightedChoice(probabilities) {
 
   // Par défaut, retourner le type combat
   return 'combat';
-}
-
-/**
- * Sélectionne un sous-ensemble aléatoire d'éléments
- */
-function getRandomSubset(array, count) {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, Math.min(count, array.length));
 }
 
 /**
@@ -378,58 +372,4 @@ function generateCombatRewards(nodeType, stage) {
   rewards.push(`${xpBase} XP`);
 
   return rewards;
-}
-
-/**
- * Valide la carte pour s'assurer que tous les nœuds sont accessibles
- */
-export function validateMap(nodes) {
-  // Vérifier que tous les nœuds ont au moins un parent (sauf le nœud de départ)
-  const startNode = nodes.find((node) => node.type === 'start');
-  const invalidNodes = nodes.filter(
-    (node) => node.type !== 'start' && node.parentIds.length === 0
-  );
-
-  if (invalidNodes.length > 0) {
-    console.error(
-      "Carte invalide - certains nœuds n'ont pas de parents:",
-      invalidNodes
-    );
-    return false;
-  }
-
-  // Vérifier que tous les chemins mènent au boss
-  const bossNode = nodes.find((node) => node.type === 'boss');
-  if (!bossNode) {
-    console.error('Carte invalide - pas de nœud boss');
-    return false;
-  }
-
-  // Vérifier la connectivité (que tous les nœuds mènent éventuellement au boss)
-  const visited = new Set();
-  const toVisit = [startNode.id];
-
-  while (toVisit.length > 0) {
-    const currentId = toVisit.shift();
-    if (visited.has(currentId)) continue;
-
-    visited.add(currentId);
-    const currentNode = nodes.find((node) => node.id === currentId);
-
-    if (currentNode && currentNode.childIds) {
-      toVisit.push(...currentNode.childIds.filter((id) => !visited.has(id)));
-    }
-  }
-
-  // S'assurer que tous les nœuds sont visités
-  const unreachableNodes = nodes.filter((node) => !visited.has(node.id));
-  if (unreachableNodes.length > 0) {
-    console.error(
-      'Carte invalide - certains nœuds sont inaccessibles:',
-      unreachableNodes
-    );
-    return false;
-  }
-
-  return true;
 }
