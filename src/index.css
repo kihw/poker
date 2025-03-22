@@ -1,0 +1,63 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom classes for card animations */
+.perspective-500 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+/* Additional custom styles */
+@layer base {
+  body {
+    @apply bg-gray-900 text-white;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-bold transition-colors;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white;
+  }
+
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white;
+  }
+
+  .card-base {
+    @apply rounded-lg border p-3;
+  }
+
+  .health-bar {
+    @apply w-full h-2 bg-red-900 rounded-full overflow-hidden;
+  }
+
+  .health-bar-fill {
+    @apply h-full bg-red-500 transition-all duration-300;
+  }
+}
