@@ -1,9 +1,7 @@
-// src/modules/save-system.js
-/**
- * Système de sauvegarde et chargement
- * Ce module gère la sauvegarde de la progression du joueur et son chargement
- */
-import React from 'react';
+// src/modules/save-system.js - Système de sauvegarde unifié
+
+import React, { useEffect } from 'react';
+
 const SAVE_KEY = 'pokerSoloRpgSave';
 
 /**
@@ -20,7 +18,7 @@ export function saveGame(gameState) {
   try {
     // Créer un objet de sauvegarde avec les données essentielles
     const saveData = {
-      version: '1.0',
+      version: '1.1', // Incrémenté pour indiquer le nouveau format
       timestamp: Date.now(),
       player: {
         health: gameState.player.health,
@@ -29,19 +27,28 @@ export function saveGame(gameState) {
         level: gameState.player.level,
         experience: gameState.player.experience,
         inventory: gameState.player.inventory || [],
+        shield: gameState.player.shield || 0,
       },
       progression: {
         stage: gameState.stage,
-        currentFloor: gameState.currentFloor,
-        maxFloors: gameState.maxFloors,
+        currentFloor: gameState.currentFloor || 1,
+        maxFloors: gameState.maxFloors || 10,
+        gamePhase: gameState.gamePhase || 'exploration',
+        currentNodeId: gameState.currentNodeId,
+      },
+      map: {
+        path: gameState.path || [],
       },
       bonusCards: {
         collection: gameState.bonusCardCollection.map((card) => ({
           id: card.id,
-          owned: card.owned !== false, // Par défaut true si non spécifié
+          owned: card.owned !== false,
           level: card.level || 1,
         })),
-        active: gameState.activeBonusCards.map((card) => card.id),
+        active: gameState.activeBonusCards.map((card) => ({
+          id: card.id,
+          usesRemaining: card.usesRemaining || 0,
+        })),
         maxSlots: gameState.maxBonusCardSlots,
       },
       stats: gameState.stats || {
@@ -51,6 +58,7 @@ export function saveGame(gameState) {
         goldEarned: 0,
         cardsPlayed: 0,
       },
+      itemsPurchased: gameState.itemsPurchased || {},
     };
 
     // Sauvegarder dans le localStorage
@@ -105,23 +113,42 @@ export function applySaveData(gameState, saveData) {
       gameState.player.level = saveData.player.level;
       gameState.player.experience = saveData.player.experience;
       gameState.player.inventory = saveData.player.inventory || [];
+      gameState.player.shield = saveData.player.shield || 0;
     }
 
     // Appliquer les données de progression
     if (saveData.progression) {
       gameState.stage = saveData.progression.stage;
-      gameState.currentFloor = saveData.progression.currentFloor;
-      gameState.maxFloors = saveData.progression.maxFloors;
+      gameState.currentFloor = saveData.progression.currentFloor || 1;
+      gameState.maxFloors = saveData.progression.maxFloors || 10;
+      gameState.gamePhase = saveData.progression.gamePhase || 'exploration';
+      gameState.currentNodeId = saveData.progression.currentNodeId;
+    }
 
-      // Forcer le mode exploration si ce n'est pas défini dans la sauvegarde
-      if (!saveData.gamePhase) {
-        gameState.gamePhase = 'exploration';
+    // Charger la carte du jeu si elle est présente
+    if (saveData.map && saveData.map.path && saveData.map.path.length > 0) {
+      gameState.path = saveData.map.path;
+    } else {
+      // Générer une nouvelle carte si nécessaire
+      if (!gameState.path || gameState.path.length === 0) {
+        // Importer la fonction de génération de carte si nécessaire
+        let generateRoguelikeMap;
+        try {
+          // Version dynamique de l'import (fonctionne uniquement dans certains environnements)
+          const mapGenerator = require('./map-generator.js');
+          generateRoguelikeMap = mapGenerator.generateRoguelikeMap;
+        } catch (error) {
+          console.error("Impossible d'importer generateRoguelikeMap:", error);
+          // Utiliser la version du contexte si disponible
+          if (gameState.generateMap) {
+            gameState.generateMap();
+          } else {
+            console.error('Impossible de générer une nouvelle carte');
+          }
+          return false;
+        }
 
-        // Générer une nouvelle carte si nécessaire
-        if (!gameState.path || gameState.path.length === 0) {
-          // Importer directement la fonction de génération de carte
-          const { generateRoguelikeMap } = require('./map-generator.js');
-
+        if (generateRoguelikeMap) {
           const mapOptions = {
             width: 3 + Math.min(2, Math.floor(gameState.currentFloor / 3)),
             depth: 5 + Math.min(3, Math.floor(gameState.currentFloor / 2)),
@@ -176,17 +203,22 @@ export function applySaveData(gameState, saveData) {
         }
       }
 
-      // Equipper les cartes actives
+      // Équiper les cartes actives
       gameState.activeBonusCards = [];
+
       if (saveData.bonusCards.active) {
-        for (const cardId of saveData.bonusCards.active) {
+        for (const activeCard of saveData.bonusCards.active) {
           const card = gameState.bonusCardCollection.find(
-            (c) => c.id === cardId && c.owned
+            (c) => c.id === activeCard.id && c.owned
           );
+
           if (card) {
             gameState.activeBonusCards.push({
               ...card,
-              usesRemaining: card.uses || 0,
+              usesRemaining:
+                activeCard.usesRemaining !== undefined
+                  ? activeCard.usesRemaining
+                  : card.uses || 0,
             });
           }
         }
@@ -201,6 +233,11 @@ export function applySaveData(gameState, saveData) {
     // Appliquer les statistiques
     if (saveData.stats) {
       gameState.stats = { ...saveData.stats };
+    }
+
+    // Appliquer les achats d'objets
+    if (saveData.itemsPurchased) {
+      gameState.itemsPurchased = { ...saveData.itemsPurchased };
     }
 
     console.log('Données de sauvegarde appliquées avec succès');
@@ -238,106 +275,40 @@ export function hasSave() {
 }
 
 /**
- * Gère la sauvegarde automatique
- * @param {Object} gameState - L'état du jeu à sauvegarder
- * @param {number} interval - Intervalle en millisecondes entre chaque sauvegarde
- */
-export class AutoSaveManager {
-  constructor(gameState, interval = 60000) {
-    this.gameState = gameState;
-    this.interval = interval;
-    this.timerId = null;
-    this.lastSaveTime = 0;
-  }
-
-  /**
-   * Démarre la sauvegarde automatique
-   */
-  start() {
-    // Arrêter le timer existant s'il y en a un
-    this.stop();
-
-    // Démarrer un nouveau timer
-    this.timerId = setInterval(() => {
-      this.save();
-    }, this.interval);
-
-    console.log(
-      `AutoSave démarré (intervalle: ${this.interval / 1000} secondes)`
-    );
-  }
-
-  /**
-   * Arrête la sauvegarde automatique
-   */
-  stop() {
-    if (this.timerId) {
-      clearInterval(this.timerId);
-      this.timerId = null;
-      console.log('AutoSave arrêté');
-    }
-  }
-
-  /**
-   * Effectue une sauvegarde
-   * @returns {boolean} - true si la sauvegarde a réussi, false sinon
-   */
-  save() {
-    if (!this.gameState) {
-      console.warn('AutoSave: gameState non défini');
-      return false;
-    }
-
-    this.lastSaveTime = Date.now();
-    const result = saveGame(this.gameState);
-
-    if (result) {
-      console.log(
-        `AutoSave: jeu sauvegardé à ${new Date(this.lastSaveTime).toLocaleTimeString()}`
-      );
-    }
-
-    return result;
-  }
-}
-
-/**
  * Composant React pour gérer la sauvegarde automatique
+ * Version unifiée qui remplace AutoSaveHandler et AutoSaveManager
  */
-export function AutoSaveHandler({ gameState, saveInterval, lastUpdate }) {
-  React.useEffect(() => {
-    // Fonction pour sauvegarder l'état du jeu
-    const saveGame = () => {
-      try {
-        // Créer une version simplifiée pour la sauvegarde
-        const saveData = {
-          player: gameState.player,
-          stage: gameState.stage,
-          currentFloor: gameState.currentFloor,
-          bonusCardCollection: gameState.bonusCardCollection,
-          activeBonusCards: gameState.activeBonusCards.map((card) => card.id),
-          maxBonusCardSlots: gameState.maxBonusCardSlots,
-          stats: gameState.stats,
-          timestamp: Date.now(),
-        };
+export function AutoSaveHandler({
+  gameState,
+  saveInterval = 60000,
+  lastUpdate = null,
+}) {
+  useEffect(() => {
+    if (!gameState) return;
 
-        // Sauvegarder dans le localStorage
-        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-        console.log(
-          'Jeu sauvegardé automatiquement',
-          new Date().toLocaleTimeString()
-        );
+    // Fonction pour sauvegarder l'état du jeu
+    const performSave = () => {
+      try {
+        const success = saveGame(gameState);
+        if (success) {
+          console.log(
+            'Sauvegarde automatique effectuée',
+            new Date().toLocaleTimeString()
+          );
+        } else {
+          console.error('Échec de la sauvegarde automatique');
+        }
       } catch (error) {
         console.error('Erreur lors de la sauvegarde automatique:', error);
       }
     };
 
     // Configurer la sauvegarde périodique
-    const saveTimer = setInterval(saveGame, saveInterval);
+    const saveTimer = setInterval(performSave, saveInterval);
 
     // Sauvegarder lors des changements importants
     if (lastUpdate) {
-      saveGame();
+      performSave();
     }
 
     // Nettoyage

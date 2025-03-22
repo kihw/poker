@@ -15,9 +15,9 @@ export const HAND_TYPES = {
 };
 
 /**
- * Évalue une main de poker et retourne le type de main
- * @param {Array} hand Un tableau de cartes
- * @returns {Object} Le type de main et les cartes qui composent cette main
+ * Évalue une main de poker de manière plus robuste
+ * @param {Array} hand - Un tableau de 5 cartes
+ * @returns {Object} - Le type de main et les cartes qui composent cette main
  */
 export function evaluateHand(hand) {
   // Vérifications de sécurité
@@ -33,14 +33,8 @@ export function evaluateHand(hand) {
   // Vérifier que les cartes ont les propriétés nécessaires
   for (let i = 0; i < hand.length; i++) {
     const card = hand[i];
-    if (!card || !card.value || !card.suit || card.numericValue === undefined) {
-      console.warn(`Carte invalide à l'index ${i}:`, card);
-      // Créer une carte valide par défaut si nécessaire
-      hand[i] = hand[i] || {
-        value: '2',
-        suit: 'spades',
-        numericValue: 2,
-      };
+    if (!isValidCard(card)) {
+      throw new Error(`Carte invalide à l'index ${i}: ${JSON.stringify(card)}`);
     }
   }
 
@@ -157,28 +151,39 @@ function isFlush(hand) {
   return hand.every((card) => card && card.suit === firstSuit);
 }
 
-function isStraight(hand) {
-  if (!hand || !Array.isArray(hand) || hand.length < 5) return false;
-
-  // Vérifier que toutes les cartes ont une valeur numérique
-  if (hand.some((card) => card.numericValue === undefined)) {
+/**
+ * Version corrigée de la fonction isStraight qui gère correctement
+ * le cas particulier de la suite A-5-4-3-2
+ */
+export function isStraight(hand) {
+  if (!hand || !Array.isArray(hand) || hand.length !== 5) {
     return false;
   }
 
+  // Vérifier que toutes les cartes ont une valeur numérique
+  for (const card of hand) {
+    if (card.numericValue === undefined) {
+      return false;
+    }
+  }
+
+  // Trier les cartes par valeur numérique décroissante
+  const sortedHand = [...hand].sort((a, b) => b.numericValue - a.numericValue);
+
   // Cas spécial: A-5-4-3-2 (As bas)
   if (
-    hand[0].numericValue === 14 &&
-    hand[1].numericValue === 5 &&
-    hand[2].numericValue === 4 &&
-    hand[3].numericValue === 3 &&
-    hand[4].numericValue === 2
+    sortedHand[0].numericValue === 14 && // As (haut)
+    sortedHand[1].numericValue === 5 &&
+    sortedHand[2].numericValue === 4 &&
+    sortedHand[3].numericValue === 3 &&
+    sortedHand[4].numericValue === 2
   ) {
     return true;
   }
 
-  // Vérifier si les cartes se suivent
-  for (let i = 0; i < hand.length - 1; i++) {
-    if (hand[i].numericValue !== hand[i + 1].numericValue + 1) {
+  // Cas standard: vérifier que les cartes se suivent
+  for (let i = 0; i < 4; i++) {
+    if (sortedHand[i].numericValue !== sortedHand[i + 1].numericValue + 1) {
       return false;
     }
   }
@@ -285,11 +290,11 @@ function findFullHouse(hand) {
 
   return { threeOfAKind, pair };
 }
-
 /**
  * Calcule les dégâts en fonction du type de main
- * @param {Object} handResult Le résultat de l'évaluation de la main
- * @returns {number} Les dégâts calculés
+ * Version améliorée qui évite les NaN ou les valeurs invalides
+ * @param {Object} handResult - Le résultat de l'évaluation de la main
+ * @returns {number} - Les dégâts calculés
  */
 export function calculateDamage(handResult) {
   if (!handResult || !handResult.type || handResult.type.rank === undefined) {
@@ -297,15 +302,21 @@ export function calculateDamage(handResult) {
     return 1; // Valeur par défaut
   }
 
-  // Base damage is 2^rank
-  const baseDamage = Math.pow(2, handResult.type.rank);
-  return baseDamage;
+  // Valeur doit être un nombre valide entre 0 et 9
+  const rank =
+    typeof handResult.type.rank === 'number' && !isNaN(handResult.type.rank)
+      ? Math.max(0, Math.min(9, handResult.type.rank))
+      : 0;
+
+  // Dégâts de base: 2^rang
+  const baseDamage = Math.pow(2, rank);
+  return Math.max(1, Math.floor(baseDamage)); // Au moins 1 point de dégât
 }
 
 /**
- * Trouve la meilleure main de 5 cartes parmi un ensemble de cartes
- * @param {Array} cards Les cartes disponibles
- * @returns {Object} La meilleure main trouvée et les indices des cartes qui la composent
+ * Version améliorée de findBestHand avec une gestion plus robuste des erreurs
+ * @param {Array} cards - Les cartes disponibles
+ * @returns {Object} - La meilleure main trouvée et les indices des cartes qui la composent
  */
 export function findBestHand(cards) {
   // Vérifications de sécurité
@@ -313,46 +324,103 @@ export function findBestHand(cards) {
     throw new Error('Les cartes doivent être un tableau valide');
   }
 
-  // S'il y a exactement 5 cartes, pas besoin de chercher
-  if (cards.length === 5) {
-    const evaluation = evaluateHand(cards);
-    return {
-      evaluation,
-      indices: [0, 1, 2, 3, 4],
-    };
+  // S'assurer que nous avons au moins 5 cartes
+  if (cards.length < 5) {
+    throw new Error(`Besoin d'au moins 5 cartes, reçu: ${cards.length}`);
   }
 
-  // S'il y a plus de 5 cartes, on doit chercher la meilleure combinaison
+  // S'il y a exactement 5 cartes, pas besoin de chercher la meilleure combinaison
+  if (cards.length === 5) {
+    // Vérifier que toutes les cartes sont valides
+    for (let i = 0; i < cards.length; i++) {
+      if (!isValidCard(cards[i])) {
+        throw new Error(
+          `Carte invalide à l'index ${i}: ${JSON.stringify(cards[i])}`
+        );
+      }
+    }
+
+    try {
+      const evaluation = evaluateHand(cards);
+      return {
+        evaluation,
+        indices: [0, 1, 2, 3, 4],
+      };
+    } catch (error) {
+      throw new Error(
+        `Erreur lors de l'évaluation de la main: ${error.message}`
+      );
+    }
+  }
+
+  // S'il y a plus de 5 cartes, chercher la meilleure combinaison
   const combinations = getCombinations(cards.length, 5);
 
   let bestEvaluation = null;
   let bestIndices = [];
 
   for (const indices of combinations) {
+    // Extraire la main actuelle
     const hand = indices.map((index) => cards[index]);
+
+    // Vérifier que toutes les cartes sont valides
+    let allValid = true;
+    for (let i = 0; i < hand.length; i++) {
+      if (!isValidCard(hand[i])) {
+        allValid = false;
+        break;
+      }
+    }
+
+    if (!allValid) {
+      continue; // Passer à la combinaison suivante si une carte est invalide
+    }
+
     try {
       const evaluation = evaluateHand(hand);
 
+      // Mettre à jour la meilleure main si celle-ci est meilleure
       if (!bestEvaluation || evaluation.type.rank > bestEvaluation.type.rank) {
         bestEvaluation = evaluation;
         bestIndices = indices;
       }
     } catch (error) {
       console.error(`Erreur d'évaluation pour les indices ${indices}:`, error);
-      continue;
+      // Continuer avec la prochaine combinaison
     }
   }
 
-  // Si aucune main valide n'a été trouvée, retourner une main par défaut
+  // Si aucune main valide n'a été trouvée, essayer de retourner une main par défaut
   if (!bestEvaluation) {
-    console.warn('Aucune main valide trouvée, retour à la valeur par défaut');
-    return {
-      evaluation: {
-        type: HAND_TYPES.HIGH_CARD,
-        cards: cards.slice(0, 5),
-      },
-      indices: [0, 1, 2, 3, 4],
-    };
+    // Trouver les 5 premières cartes valides
+    const validCards = [];
+    const validIndices = [];
+
+    for (let i = 0; i < cards.length && validCards.length < 5; i++) {
+      if (isValidCard(cards[i])) {
+        validCards.push(cards[i]);
+        validIndices.push(i);
+      }
+    }
+
+    // S'il y a au moins 5 cartes valides, créer une main par défaut
+    if (validCards.length >= 5) {
+      try {
+        const defaultEvaluation = evaluateHand(validCards.slice(0, 5));
+        return {
+          evaluation: defaultEvaluation,
+          indices: validIndices.slice(0, 5),
+        };
+      } catch (error) {
+        throw new Error(
+          `Impossible de créer une main par défaut: ${error.message}`
+        );
+      }
+    }
+
+    throw new Error(
+      'Aucune main valide trouvée, et impossible de créer une main par défaut'
+    );
   }
 
   return {
@@ -360,20 +428,48 @@ export function findBestHand(cards) {
     indices: bestIndices,
   };
 }
-
+/**
+ * Vérifie si une carte est valide
+ * @param {Object} card - La carte à vérifier
+ * @returns {boolean} - true si la carte est valide, false sinon
+ */
+function isValidCard(card) {
+  return (
+    card &&
+    typeof card === 'object' &&
+    card.value !== undefined &&
+    card.suit !== undefined &&
+    card.numericValue !== undefined
+  );
+}
 /**
  * Génère toutes les combinaisons possibles de n éléments pris k à k
- * @param {number} n Le nombre total d'éléments
- * @param {number} k Le nombre d'éléments à choisir
- * @returns {Array} Un tableau de toutes les combinaisons possibles (indices)
+ * Version optimisée pour éviter les dépassements de mémoire avec de grandes entrées
+ * @param {number} n - Le nombre total d'éléments
+ * @param {number} k - Le nombre d'éléments à choisir
+ * @returns {Array} - Un tableau de toutes les combinaisons possibles (indices)
  */
 function getCombinations(n, k) {
+  // Protection contre les entrées trop grandes
+  if (n > 20 || k > 10) {
+    console.warn(
+      `Valeurs n=${n} ou k=${k} potentiellement trop grandes, limitation appliquée`
+    );
+    n = Math.min(n, 20);
+    k = Math.min(k, 10);
+  }
+
   const result = [];
 
   // Fonction récursive pour générer les combinaisons
   function backtrack(start, combination) {
     if (combination.length === k) {
       result.push([...combination]);
+      return;
+    }
+
+    // Optimisation: arrêter la récursion si on ne peut plus atteindre k éléments
+    if (combination.length + (n - start) < k) {
       return;
     }
 

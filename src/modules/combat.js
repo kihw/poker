@@ -152,6 +152,159 @@ export class CombatSystem {
 
     return enemy;
   }
+  // src/modules/combat.js - Version corrigée de checkLevelUp
+
+/**
+ * Vérifie et applique les gains de niveau du joueur
+ * Cette version utilise une boucle while au lieu de la récursion
+ * pour éviter les risques de débordement de pile
+ */
+  export function checkLevelUp() {
+  if (!this.gameState || !this.gameState.player) {
+    console.error("État du jeu ou joueur non défini");
+    return;
+  }
+
+  // Nombre maximum de niveaux pour éviter les boucles infinies
+  const MAX_LEVELS = 100; 
+  let levelsGained = 0;
+
+  // Utiliser une boucle while au lieu de la récursion
+  while (
+    levelsGained < MAX_LEVELS && 
+    this.gameState.player.level < MAX_LEVELS
+  ) {
+    const currentLevel = this.gameState.player.level;
+    const nextLevel = currentLevel + 1;
+    const xpForNextLevel = nextLevel * 100; // Formule simple: niveau * 100
+
+    // Vérifier si le joueur a assez d'XP pour monter de niveau
+    if (this.gameState.player.experience >= xpForNextLevel) {
+      // Montée de niveau
+      this.gameState.player.level = nextLevel;
+      this.gameState.player.experience -= xpForNextLevel;
+      levelsGained++;
+
+      // Augmentation des stats
+      this.gameState.player.maxHealth += 10;
+      this.gameState.player.health += 10;
+
+      // Bonus d'emplacement de carte tous les 3 niveaux
+      if (nextLevel % 3 === 0) {
+        this.gameState.maxBonusCardSlots += 1;
+      }
+
+      // Ajouter au journal de combat
+      if (this.gameState.combatLog) {
+        this.gameState.combatLog.unshift(
+          `Niveau supérieur! Vous êtes maintenant niveau ${nextLevel}.`
+        );
+      }
+      
+      // Feedback visuel si disponible
+      if (this.gameState.setActionFeedback) {
+        this.gameState.setActionFeedback(
+          `Niveau supérieur! Vous êtes maintenant niveau ${nextLevel}.`,
+          'success',
+          3000
+        );
+      }
+    } else {
+      // Pas assez d'XP pour un autre niveau, sortir de la boucle
+      break;
+    }
+  }
+
+  // Si des niveaux ont été gagnés, logger le résultat
+  if (levelsGained > 0) {
+    console.log(`Le joueur a gagné ${levelsGained} niveau(x)!`);
+  }
+
+  return levelsGained;
+}
+
+// Alternative basée sur LEVEL_XP_REQUIREMENTS de progression.js
+// Décommenter et utiliser cette version si vous préférez utiliser une table de niveaux prédéfinie
+export function checkLevelUp() {
+  if (!this.gameState || !this.gameState.player) {
+    console.error("État du jeu ou joueur non défini");
+    return;
+  }
+
+  // Importer les exigences d'XP depuis progression.js
+  const { LEVEL_XP_REQUIREMENTS, LEVEL_REWARDS } = require('../data/progression.js');
+  
+  // Nombre maximum de niveaux pour éviter les boucles infinies
+  const MAX_LEVELS = LEVEL_XP_REQUIREMENTS.length - 1;
+  let levelsGained = 0;
+
+  // Utiliser une boucle while au lieu de la récursion
+  while (
+    levelsGained < MAX_LEVELS && 
+    this.gameState.player.level < MAX_LEVELS
+  ) {
+    const currentLevel = this.gameState.player.level;
+    const nextLevel = currentLevel + 1;
+    
+    // Obtenir l'XP requise pour le niveau suivant depuis la table
+    const xpForNextLevel = 
+      nextLevel < LEVEL_XP_REQUIREMENTS.length 
+        ? LEVEL_XP_REQUIREMENTS[nextLevel] 
+        : Number.MAX_SAFE_INTEGER; // Empêcher les montées de niveau au-delà de la table
+
+    // Vérifier si le joueur a assez d'XP pour monter de niveau
+    if (this.gameState.player.experience >= xpForNextLevel) {
+      // Montée de niveau
+      this.gameState.player.level = nextLevel;
+      this.gameState.player.experience -= xpForNextLevel;
+      levelsGained++;
+
+      // Appliquer les récompenses de niveau si disponibles
+      if (LEVEL_REWARDS && LEVEL_REWARDS[nextLevel]) {
+        const rewards = LEVEL_REWARDS[nextLevel];
+        
+        if (rewards.maxHealth) {
+          this.gameState.player.maxHealth += rewards.maxHealth;
+          this.gameState.player.health += rewards.maxHealth;
+        }
+        
+        if (rewards.gold) {
+          this.gameState.player.gold += rewards.gold;
+        }
+        
+        if (rewards.bonusCardSlot) {
+          this.gameState.maxBonusCardSlots += rewards.bonusCardSlot;
+        }
+      }
+
+      // Ajouter au journal de combat
+      if (this.gameState.combatLog) {
+        this.gameState.combatLog.unshift(
+          `Niveau supérieur! Vous êtes maintenant niveau ${nextLevel}.`
+        );
+      }
+      
+      // Feedback visuel si disponible
+      if (this.gameState.setActionFeedback) {
+        this.gameState.setActionFeedback(
+          `Niveau supérieur! Vous êtes maintenant niveau ${nextLevel}.`,
+          'success',
+          3000
+        );
+      }
+    } else {
+      // Pas assez d'XP pour un autre niveau, sortir de la boucle
+      break;
+    }
+  }
+
+  // Si des niveaux ont été gagnés, logger le résultat
+  if (levelsGained > 0) {
+    console.log(`Le joueur a gagné ${levelsGained} niveau(x)!`);
+  }
+
+  return levelsGained;
+}
 
   // Enemy's turn
   enemyAction() {
