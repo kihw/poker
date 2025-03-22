@@ -1,4 +1,4 @@
-// src/components/card/EnhancedCard.jsx
+// src/components/card/EnhancedCard.jsx - Version corrigée
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
@@ -32,6 +32,7 @@ const EnhancedCard = ({
     safeSuit === '♦';
 
   // Déterminer les couleurs en fonction du type de carte
+  // Explicitly setting text color to ensure visibility
   const cardColors = isRed ? 'bg-white text-red-600' : 'bg-white text-black';
 
   // Styles pour les différents modes de sélection
@@ -84,17 +85,31 @@ const EnhancedCard = ({
         {/* Face avant (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
           <div className="flex justify-between items-center">
-            <div className="text-lg font-bold">{safeValue}</div>
-            <div className="text-lg">{displaySuit}</div>
+            <div
+              className={`text-lg font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+            >
+              {safeValue}
+            </div>
+            <div className={`text-lg ${isRed ? 'text-red-600' : 'text-black'}`}>
+              {displaySuit}
+            </div>
           </div>
 
-          <div className="flex-grow flex justify-center items-center text-3xl font-bold">
+          <div
+            className={`flex-grow flex justify-center items-center text-3xl font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+          >
             {displaySuit}
           </div>
 
           <div className="flex justify-between items-center rotate-180">
-            <div className="text-lg font-bold">{safeValue}</div>
-            <div className="text-lg">{displaySuit}</div>
+            <div
+              className={`text-lg font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+            >
+              {safeValue}
+            </div>
+            <div className={`text-lg ${isRed ? 'text-red-600' : 'text-black'}`}>
+              {displaySuit}
+            </div>
           </div>
         </div>
       </motion.div>

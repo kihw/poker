@@ -1,4 +1,4 @@
-// src/components/core/GameManager.jsx
+// src/components/core/GameManager.jsx - Version corrigée
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { setGamePhase } from '../../redux/slices/gameSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import { loadGame } from '../../redux/thunks/saveThunks';
 import { generateNewMap } from '../../redux/thunks/mapThunks';
+import { initCollection } from '../../redux/slices/bonusCardsSlice';
 import ActionFeedback from '../ui/ActionFeedback';
 
 /**
@@ -24,6 +25,13 @@ const GameManager = ({ children }) => {
   const gamePhase = useSelector(selectGamePhase);
   const isGameOver = useSelector(selectIsGameOver);
   const playerHealth = useSelector(selectPlayerHealth);
+  const mapInitialized = useSelector(
+    (state) => state.map.path && state.map.path.length > 0
+  );
+  const bonusCardsInitialized = useSelector(
+    (state) =>
+      state.bonusCards.collection && state.bonusCards.collection.length > 0
+  );
 
   // Initialisation du jeu au premier chargement
   useEffect(() => {
@@ -33,11 +41,27 @@ const GameManager = ({ children }) => {
         const savedGame = localStorage.getItem('pokerSoloRpgSave');
 
         if (savedGame) {
+          console.log('Sauvegarde trouvée, chargement en cours...');
           // Charger la sauvegarde
-          dispatch(loadGame());
+          await dispatch(loadGame()).unwrap();
+          dispatch(
+            setActionFeedback({
+              message: 'Jeu chargé avec succès',
+              type: 'success',
+            })
+          );
         } else {
+          console.log("Pas de sauvegarde, initialisation d'un nouveau jeu");
+
+          // Initialiser les cartes bonus si nécessaire
+          if (!bonusCardsInitialized) {
+            dispatch(initCollection());
+          }
+
           // Générer une nouvelle carte si aucune n'existe
-          dispatch(generateNewMap({}));
+          if (!mapInitialized) {
+            await dispatch(generateNewMap({})).unwrap();
+          }
 
           dispatch(
             setActionFeedback({
@@ -58,7 +82,7 @@ const GameManager = ({ children }) => {
     };
 
     initGame();
-  }, [dispatch]);
+  }, [dispatch, mapInitialized, bonusCardsInitialized]);
 
   // Gestion des redirections en fonction de la phase du jeu
   useEffect(() => {
@@ -125,10 +149,10 @@ const GameManager = ({ children }) => {
   }, [playerHealth, isGameOver, dispatch]);
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-900 text-white">
       {children}
       <ActionFeedback />
-    </>
+    </div>
   );
 };
 
