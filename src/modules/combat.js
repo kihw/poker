@@ -34,7 +34,42 @@ export class CombatSystem {
 
     return enemy;
   }
+  /**
+   * Cette fonction doit être appelée après chaque attaque pour s'assurer que
+   * les cartes jouées sont correctement marquées avant la prochaine distribution
+   */
+  prepareCombatTransition() {
+    if (!this.gameState) return;
 
+    console.log('Préparation de la transition de combat');
+
+    // S'assurer que les cartes sélectionnées pour l'attaque sont correctement marquées
+    // avant la distribution de la prochaine main
+    if (
+      this.gameState.hand &&
+      Array.isArray(this.gameState.hand) &&
+      this.gameState.selectedCards &&
+      Array.isArray(this.gameState.selectedCards)
+    ) {
+      console.log(
+        'Cartes sélectionnées avant transition:',
+        this.gameState.selectedCards
+      );
+
+      // Vérifier que les propriétés isSelected des cartes correspondent à selectedCards
+      this.gameState.hand.forEach((card, index) => {
+        const isSelected = this.gameState.selectedCards.includes(index);
+
+        // Mettre à jour seulement si nécessaire pour éviter des rendus inutiles
+        if (card.isSelected !== isSelected) {
+          card.isSelected = isSelected;
+          console.log(
+            `Mise à jour de isSelected pour carte ${index}: ${isSelected}`
+          );
+        }
+      });
+    }
+  }
   // Generate an enemy with scaling difficulty
   generateEnemy(isElite = false, isBoss = false) {
     const baseEnemies = [

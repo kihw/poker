@@ -123,31 +123,83 @@ export class GameState {
    * Distribue une nouvelle main jusqu'à avoir 7 cartes
    * Version corrigée avec meilleure gestion des cartes
    */
+
   dealHand() {
     // S'assurer que les tableaux nécessaires existent
     if (!this.hand) this.hand = [];
     if (!this.deck) this.initializeDeck();
     if (!this.discard) this.discard = [];
-    if (!this.selectedCards) this.selectedCards = [];
+
+    console.log(
+      'Avant distribution - Main actuelle:',
+      this.hand.length,
+      'cartes'
+    );
+    console.log(
+      'Cartes sélectionnées:',
+      this.selectedCards ? this.selectedCards.length : 0
+    );
 
     // Garder les cartes non sélectionnées du tour précédent
     const keptCards = [];
-    if (this.hand.length > 0 && this.selectedCards.length > 0) {
+
+    // Important: vérifier si nous avons des cartes sélectionnées valides
+    const hasValidSelectedCards =
+      this.selectedCards &&
+      Array.isArray(this.selectedCards) &&
+      this.selectedCards.length > 0 &&
+      this.turnPhase === 'result'; // Ajouter cette vérification
+
+    if (this.hand.length > 0 && hasValidSelectedCards) {
       // Filtrer les cartes qui n'ont pas été sélectionnées
       for (let i = 0; i < this.hand.length; i++) {
-        if (!this.selectedCards.includes(i)) {
+        const shouldKeep = !this.selectedCards.includes(i);
+
+        if (shouldKeep) {
           // S'assurer que la carte n'est pas marquée comme sélectionnée
           const card = { ...this.hand[i], isSelected: false };
           keptCards.push(card);
+          console.log(`Gardé carte à l'index ${i}:`, card.value, card.suit);
+        } else {
+          console.log(
+            `Carte utilisée à l'index ${i}:`,
+            this.hand[i].value,
+            this.hand[i].suit
+          );
         }
       }
+    } else {
+      // Si pas de cartes sélectionnées valides ou phase incorrecte,
+      // ne garder aucune carte (distribution complète)
+      console.log('Aucune carte conservée - distribution complète');
     }
+
+    console.log('Nombre de cartes conservées:', keptCards.length);
 
     // Nombre de nouvelles cartes à tirer
     const drawCount = 7 - keptCards.length;
+    console.log('Nombre de cartes à tirer:', drawCount);
+
+    // Si le deck est vide ou n'a pas assez de cartes, recréer un deck
+    if (this.deck.length < drawCount) {
+      this.deck = [...this.deck, ...this.discard];
+      this.discard = [];
+      this.deck = shuffleDeck(this.deck);
+
+      // Si le deck est toujours trop petit, on le recrée complètement
+      if (this.deck.length < drawCount) {
+        this.initializeDeck();
+      }
+    }
 
     // Tirer les nouvelles cartes
     const drawnCards = drawCards(this.deck, drawCount);
+    console.log('Nouvelles cartes tirées:', drawnCards.length);
+
+    // S'assurer que toutes les nouvelles cartes ont isSelected = false
+    drawnCards.forEach((card) => {
+      card.isSelected = false;
+    });
 
     // Mettre à jour la main avec les cartes gardées et les nouvelles cartes
     this.hand = [...keptCards, ...drawnCards];
@@ -167,10 +219,14 @@ export class GameState {
 
     // Feedback
     this.setActionFeedback('Nouvelles cartes distribuées', 'info');
+    console.log(
+      'Après distribution - Main mise à jour:',
+      this.hand.length,
+      'cartes'
+    );
 
     return this.hand;
   }
-
   /**
    * Marque une carte comme sélectionnée ou non
    * Version corrigée avec synchronisation des états

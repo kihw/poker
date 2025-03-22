@@ -172,30 +172,46 @@ const CombatInterface = () => {
   // Lancer l'attaque en passant les cartes sélectionnées localement
   const handleAttack = () => {
     // Vérifier qu'au moins 1 carte est sélectionnée
-    if (selectedAttackCards.length === 0) {
-      alert('Vous devez sélectionner au moins 1 carte pour attaquer');
+    if (this.gameState.selectedCards.length === 0) {
+      // Utiliser le système de feedback si disponible
+      if (this.gameState.setActionFeedback) {
+        this.gameState.setActionFeedback(
+          'Vous devez sélectionner au moins 1 carte pour attaquer',
+          'warning'
+        );
+      } else {
+        alert('Vous devez sélectionner au moins 1 carte pour attaquer');
+      }
       return;
     }
 
     // Vérifier qu'au maximum 5 cartes sont sélectionnées
-    if (selectedAttackCards.length > 5) {
-      alert('Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer');
+    if (this.gameState.selectedCards.length > 5) {
+      // Utiliser le système de feedback si disponible
+      if (this.gameState.setActionFeedback) {
+        this.gameState.setActionFeedback(
+          'Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer',
+          'warning'
+        );
+      } else {
+        alert('Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer');
+      }
       return;
     }
 
-    // S'assurer que selectedAttackCards et gameState.selectedCards sont synchronisés
-    gameState.selectedCards = [...selectedAttackCards];
-
     // Vérifier que les propriétés isSelected des cartes correspondent à selectedCards
-    if (gameState && gameState.hand) {
+    if (this.gameState && this.gameState.hand) {
       // Réinitialiser toutes les cartes
-      gameState.hand.forEach((card, index) => {
-        card.isSelected = selectedAttackCards.includes(index);
+      this.gameState.hand.forEach((card, index) => {
+        card.isSelected = this.gameState.selectedCards.includes(index);
       });
     }
 
     // Évaluer la main sélectionnée
-    evaluateSelectedHand();
+    this.gameState.evaluateSelectedHand();
+
+    // IMPORTANT: Appeler notre nouvelle fonction pour préparer la transition
+    this.prepareCombatTransition();
   };
 
   // Continuer au prochain tour/étage
@@ -203,6 +219,15 @@ const CombatInterface = () => {
     if (gameState?.enemy && gameState.enemy.health <= 0) {
       nextStage();
     } else {
+      // S'assurer que les cartes sélectionnées sont correctement marquées avant de distribuer
+      // Si le composant a accès au combatSystem, utiliser:
+      if (
+        combatSystem &&
+        typeof combatSystem.prepareCombatTransition === 'function'
+      ) {
+        combatSystem.prepareCombatTransition();
+      }
+
       dealHand();
     }
   };
