@@ -427,38 +427,29 @@ export class CombatSystem {
   nextStage() {
     if (this.gameState.gamePhase !== 'reward') return;
 
-    // Progress to next stage
+    // Ne pas générer automatiquement un nouvel ennemi ou shop
+    // Simplement revenir au mode exploration pour permettre la sélection via la carte
+    this.gameState.gamePhase = 'exploration';
+
+    // Pour le debug
+    console.log("Combat terminé, retour à l'exploration (carte)");
+
+    if (this.gameState.combatLog) {
+      this.gameState.combatLog.unshift(`Combat terminé! Retour à la carte.`);
+    }
+
+    // Augmenter l'étage si nécessaire
     this.gameState.stage++;
 
-    // Decide if next screen will be a shop
-    const goToShop = Math.random() < 0.3;
+    // Soins légers entre les étages (conserver cette fonctionnalité)
+    const healAmount = Math.floor(this.gameState.player.maxHealth * 0.2);
+    this.gameState.player.health = Math.min(
+      this.gameState.player.maxHealth,
+      this.gameState.player.health + healAmount
+    );
 
-    if (goToShop) {
-      // Initialize shop
-      this.gameState.gamePhase = 'shop';
-      this.gameState.combatLog.unshift(
-        `Vous avez trouvé un marchand itinérant.`
-      );
-    } else {
-      // Create a new enemy with increasing difficulty
-      this.gameState.enemy = this.generateEnemy(
-        false,
-        this.gameState.stage % 5 === 0 // Boss every 5 levels
-      );
-
-      // Reset for next combat
-      this.gameState.gamePhase = 'combat';
-      this.gameState.turnPhase = 'draw';
-      this.gameState.combatLog = [
-        `Niveau ${this.gameState.stage}: Vous rencontrez un ${this.gameState.enemy.name}!`,
-      ];
-
-      // Heal player slightly between stages
-      const healAmount = Math.floor(this.gameState.player.maxHealth * 0.2);
-      this.gameState.player.health = Math.min(
-        this.gameState.player.maxHealth,
-        this.gameState.player.health + healAmount
-      );
+    // Message de journal
+    if (this.gameState.combatLog) {
       this.gameState.combatLog.unshift(`Vous avez récupéré ${healAmount} PV.`);
     }
   }

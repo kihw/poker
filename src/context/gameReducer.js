@@ -27,7 +27,44 @@ export const initialGameState = {
   lastUpdate: Date.now(), // Timestamp to track updates
   toggleResult: false, // Flag to track the result of toggle operations
 };
-
+export function debugState(message, state) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.group(`ÉTAT DU JEU - ${message}`);
+    console.log('Phase actuelle:', state.game?.gamePhase);
+    console.log('Phase du tour:', state.game?.turnPhase);
+    console.log(
+      'Ennemi:',
+      state.game?.enemy
+        ? {
+            nom: state.game.enemy.name,
+            pv: state.game.enemy.health,
+            pvMax: state.game.enemy.maxHealth,
+          }
+        : 'Aucun'
+    );
+    console.log(
+      'Joueur:',
+      state.game?.player
+        ? {
+            pv: state.game.player.health,
+            pvMax: state.game.player.maxHealth,
+            or: state.game.player.gold,
+          }
+        : 'Non initialisé'
+    );
+    console.log(
+      'Main:',
+      state.game?.hand
+        ? state.game.hand.map(
+            (card) =>
+              `${card.value} de ${card.suit} ${card.isSelected ? '(Sélectionnée)' : ''}`
+          )
+        : 'Aucune carte'
+    );
+    console.log('Sélection:', state.game?.selectedCards);
+    console.groupEnd();
+  }
+}
 export function gameReducer(state, action) {
   try {
     switch (action.type) {
@@ -92,7 +129,46 @@ export function gameReducer(state, action) {
           ...state,
           lastUpdate: Date.now(),
         };
+      case ACTIONS.EVALUATE_SELECTED_HAND:
+        if (!state.game) {
+          throw new Error('Game state is not initialized');
+        }
+        state.game.evaluateSelectedHand();
 
+        // Ajouter le débogage ici
+        debugState('Après évaluation de la main', state);
+
+        return {
+          ...state,
+          lastUpdate: Date.now(),
+        };
+
+      case ACTIONS.NEXT_STAGE:
+        if (!state.game || !state.combatSystem) {
+          throw new Error('Combat system is not initialized');
+        }
+
+        console.log(
+          'NEXT_STAGE action appelée, phase actuelle:',
+          state.game.gamePhase
+        );
+
+        // Si nous sommes en phase de récompense, forcer le passage à l'exploration
+        if (state.game.gamePhase === 'reward') {
+          state.game.gamePhase = 'exploration';
+          console.log(
+            "Phase changée de 'reward' à 'exploration' via le reducer"
+          );
+        } else {
+          // Appeler la méthode normale pour les autres transitions
+          state.combatSystem.nextStage();
+        }
+        debugState('Après nextStage', state);
+
+        return {
+          ...state,
+          lastUpdate: Date.now(),
+        };
       case ACTIONS.DISCARD_CARDS:
         if (!state.game) {
           throw new Error('Game state is not initialized');
@@ -117,22 +193,23 @@ export function gameReducer(state, action) {
         if (!state.game || !state.combatSystem) {
           throw new Error('Combat system is not initialized');
         }
-        state.combatSystem.nextStage();
-        return {
-          ...state,
-          lastUpdate: Date.now(),
-        };
 
-      case ACTIONS.EQUIP_BONUS_CARD:
-        if (!state.game || !state.bonusCardSystem) {
-          throw new Error('Bonus card system is not initialized');
-        }
-        const equipResult = state.bonusCardSystem.equipBonusCard(
-          action.payload.cardId
+        console.log(
+          'NEXT_STAGE action appelée, phase actuelle:',
+          state.game.gamePhase
         );
-        if (equipResult && state.game.setActionFeedback) {
-          state.game.setActionFeedback('Carte équipée', 'success');
+
+        // Si nous sommes en phase de récompense, forcer le passage à l'exploration
+        if (state.game.gamePhase === 'reward') {
+          state.game.gamePhase = 'exploration';
+          console.log(
+            "Phase changée de 'reward' à 'exploration' via le reducer"
+          );
+        } else {
+          // Appeler la méthode normale pour les autres transitions
+          state.combatSystem.nextStage();
         }
+
         return {
           ...state,
           lastUpdate: Date.now(),
@@ -229,6 +306,8 @@ export function gameReducer(state, action) {
         // Mettre à jour le nœud courant
         state.game.currentNodeId = nodeId;
 
+        console.log(`Nœud sélectionné: ${selectedNode.type} (ID: ${nodeId})`);
+
         // Déterminer l'action en fonction du type de nœud
         switch (selectedNode.type) {
           case 'combat':
@@ -262,8 +341,18 @@ export function gameReducer(state, action) {
 
           case 'event':
             // Générer un événement aléatoire
-            const newEvent = generateRandomEvent(state.game.stage, state.game);
-            state.game.currentEvent = newEvent;
+            if (state.game.generateEvent) {
+              state.game.generateEvent();
+            } else {
+              const {
+                generateRandomEvent,
+              } = require('../modules/event-system');
+              const newEvent = generateRandomEvent(
+                state.game.stage,
+                state.game
+              );
+              state.game.currentEvent = newEvent;
+            }
             state.game.gamePhase = 'event';
             break;
 
@@ -282,111 +371,47 @@ export function gameReducer(state, action) {
 
           default:
             console.log(`Nœud de type ${selectedNode.type} sélectionné`);
-            // Ne rien faire pour les autres types de nœuds (start, etc.)
+            // Rester en exploration pour les autres types de nœuds (start, etc.)
             break;
         }
 
-        console.log(`Nœud ${nodeId} (${selectedNode.type}) sélectionné`);
-        return {
-          ...state,
-          lastUpdate: Date.now(),
-        };
-      case ACTIONS.MAKE_EVENT_CHOICE:
-        if (!state.game || !state.game.currentEvent) {
-          throw new Error('Aucun événement actif trouvé');
+        // Feedback après la sélection du nœud
+        if (state.game.setActionFeedback) {
+          let feedbackMessage = '';
+          switch (selectedNode.type) {
+            case 'combat':
+              feedbackMessage = `Combat contre un ${state.game.enemy ? state.game.enemy.name : 'ennemi'}`;
+              break;
+            case 'elite':
+              feedbackMessage = `Combat contre un ennemi d'élite!`;
+              break;
+            case 'boss':
+              feedbackMessage = `Combat contre le boss de l'étage!`;
+              break;
+            case 'event':
+              feedbackMessage = `Vous avez trouvé un événement`;
+              break;
+            case 'shop':
+              feedbackMessage = `Bienvenue dans la boutique`;
+              break;
+            case 'rest':
+              feedbackMessage = `Vous vous reposez au campement`;
+              break;
+            default:
+              feedbackMessage = `Lieu sélectionné: ${selectedNode.type}`;
+              break;
+          }
+
+          state.game.setActionFeedback(feedbackMessage, 'info');
         }
-
-        const choiceIndex = action.payload.choiceIndex;
-
-        if (
-          choiceIndex < 0 ||
-          choiceIndex >= state.game.currentEvent.choices.length
-        ) {
-          throw new Error('Index de choix invalide');
-        }
-
-        // Traiter le choix de l'événement
-        state.game.eventResult = processEventChoice(
-          state.game.currentEvent,
-          choiceIndex,
-          state.game
-        );
-
-        return {
-          ...state,
-          lastUpdate: Date.now(),
-        };
-
-      case ACTIONS.PROCESS_EVENT_CHOICE:
-        if (!state.game || !state.game.currentEvent) {
-          throw new Error('Aucun événement actif trouvé');
-        }
-
-        const evtChoiceIndex = action.payload.choiceIndex;
-
-        if (
-          evtChoiceIndex < 0 ||
-          evtChoiceIndex >= state.game.currentEvent.choices.length
-        ) {
-          throw new Error('Index de choix invalide');
-        }
-
-        // Traiter le choix de l'événement
-        const eventResult = processEventChoice(
-          state.game.currentEvent,
-          evtChoiceIndex,
-          state.game
-        );
-
-        // Stocker le résultat
-        state.game.eventResult = eventResult;
 
         return {
           ...state,
           lastUpdate: Date.now(),
         };
-
-      case ACTIONS.REST_COMPLETE:
         if (!state.game) {
           throw new Error('Game state is not initialized');
         }
-
-        const restResult = action.payload.result;
-
-        // Appliquer les effets du repos selon le type d'effet
-        if (restResult && restResult.effect) {
-          switch (restResult.effect.type) {
-            case 'heal':
-              if (restResult.effect.value > 0) {
-                state.game.player.health = Math.min(
-                  state.game.player.maxHealth,
-                  state.game.player.health + restResult.effect.value
-                );
-              }
-              break;
-
-            case 'upgrade':
-              // L'amélioration de la carte est déjà gérée dans RestSite
-              break;
-
-            case 'buff':
-              // Ajouter un buff temporaire
-              if (!state.game.playerBuffs) {
-                state.game.playerBuffs = [];
-              }
-              state.game.playerBuffs.push(restResult.effect.buff);
-              break;
-          }
-        }
-
-        // Revenir à la phase d'exploration
-        state.game.gamePhase = 'exploration';
-
-        return {
-          ...state,
-          lastUpdate: Date.now(),
-        };
-
       case ACTIONS.SAVE_GAME:
         if (!state.game) {
           throw new Error('Cannot save: game state is not initialized');

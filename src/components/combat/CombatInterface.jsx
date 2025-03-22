@@ -55,7 +55,26 @@ const CombatInterface = () => {
       setTimeout(() => setShowDamageEffect(false), 700);
     }
   }, [gameState?.turnPhase, gameState?.enemy?.health, gameState?.enemy]);
+  // pour détecter si l'ennemi est vaincu pendant le rendu
+  useEffect(() => {
+    // Si l'ennemi est vaincu mais que nous sommes encore en phase combat
+    if (
+      gameState?.enemy &&
+      gameState.enemy.health <= 0 &&
+      gameState.gamePhase === 'combat' &&
+      gameState.turnPhase === 'result'
+    ) {
+      console.log('Détection automatique de victoire');
 
+      // Attendre un court délai puis rediriger
+      const victoryTimer = setTimeout(() => {
+        // Appeler handleContinue pour gérer la victoire
+        handleContinue();
+      }, 1500);
+
+      return () => clearTimeout(victoryTimer);
+    }
+  }, [gameState?.enemy?.health, gameState?.gamePhase, gameState?.turnPhase]);
   // Gestion du tutoriel
   const handleNextTutorialStep = () => {
     // Logique pour faire avancer les étapes du tutoriel
@@ -212,12 +231,41 @@ const CombatInterface = () => {
     evaluateSelectedHand();
   };
 
-  // Pour handleContinue
   const handleContinue = () => {
+    console.log(
+      'handleContinue appelé - État actuel:',
+      gameState?.gamePhase,
+      'Ennemi santé:',
+      gameState?.enemy?.health
+    );
+
     if (gameState?.enemy && gameState.enemy.health <= 0) {
+      // L'ennemi est vaincu, on passe à l'étape suivante
+      console.log('Ennemi vaincu, transition vers la phase suivante');
+
+      // Appeler nextStage pour traiter la victoire
       nextStage();
+
+      console.log('Après nextStage, nouveau gamePhase:', gameState.gamePhase);
+
+      // Forcer le passage en mode exploration et la redirection
+      // quelle que soit la phase actuelle
+      setTimeout(() => {
+        console.log('Redirection vers la carte après délai');
+
+        // Forcer la phase d'exploration avant la redirection
+        if (gameState.gamePhase !== 'exploration') {
+          console.log("Forçage de la phase 'exploration'");
+          gameState.gamePhase = 'exploration';
+        }
+
+        // Utiliser window.location pour une redirection complète
+        // ce qui force le rechargement de la page et un état propre
+        window.location.href = '/map';
+      }, 500);
     } else {
       // S'assurer que toutes les cartes sont correctement marquées avant de distribuer
+      console.log("Distribution d'une nouvelle main");
       dealHand();
     }
   };

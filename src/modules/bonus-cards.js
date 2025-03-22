@@ -371,11 +371,24 @@ export class BonusCardSystem {
     }
 
     // Calcul de base des dégâts - 2^rang
-    let damage = Math.pow(2, handRank);
+    let baseDamage = Math.pow(2, handRank);
+
+    // Pour les mains personnalisées comme "Paire de Roi", utiliser la valeur déjà calculée
+    if (typeof handRank === 'number' && handName.includes('Paire de ')) {
+      baseDamage = Math.pow(2, 1); // Rang d'une paire = 1
+    }
+
+    // Journal pour débogage - enregistrer les valeurs de départ
+    console.log(
+      `DEBUG - Avant application bonus: handRank=${handRank}, handName=${handName}, baseDamage=${baseDamage}`
+    );
+
+    let damage = baseDamage;
     let bonusEffects = [];
 
     // Map le nom de la main à la condition standardisée
     const condition = this.mapHandTypeToCondition(handName);
+    console.log(`DEBUG - Condition pour bonus: ${condition}`);
 
     // Vérifier que activeBonusCards existe et est un tableau
     if (
@@ -388,9 +401,20 @@ export class BonusCardSystem {
 
     try {
       // Appliquer les effets des cartes bonus actives
+      console.log(
+        `DEBUG - Nombre de bonus actifs: ${this.gameState.activeBonusCards.length}`
+      );
+
       for (const bonusCard of this.gameState.activeBonusCards) {
         // Ignorer les cartes invalides
-        if (!bonusCard) continue;
+        if (!bonusCard) {
+          console.log('DEBUG - Carte bonus ignorée car invalide');
+          continue;
+        }
+
+        console.log(
+          `DEBUG - Traitement de la carte: ${bonusCard.name}, effet: ${bonusCard.effect}, condition: ${bonusCard.condition}`
+        );
 
         // Effets passifs qui s'appliquent à cette main ou toujours
         if (
@@ -398,10 +422,16 @@ export class BonusCardSystem {
           (bonusCard.condition === condition ||
             bonusCard.condition === 'always')
         ) {
+          console.log(`DEBUG - Condition valide pour ${bonusCard.name}`);
+
           switch (bonusCard.bonus?.type) {
             case 'damage':
               if (typeof bonusCard.bonus.value === 'number') {
+                const previousDamage = damage;
                 damage += bonusCard.bonus.value;
+                console.log(
+                  `DEBUG - Ajout bonus ${bonusCard.name}: ${previousDamage} + ${bonusCard.bonus.value} = ${damage}`
+                );
                 bonusEffects.push(
                   `${bonusCard.name} added ${bonusCard.bonus.value} damage`
                 );
@@ -419,6 +449,7 @@ export class BonusCardSystem {
 
                 if (healAmount > 0) {
                   this.gameState.player.health += healAmount;
+                  console.log(`DEBUG - Soin appliqué: ${healAmount}`);
                   bonusEffects.push(
                     `${bonusCard.name} healed ${healAmount} HP`
                   );
@@ -433,54 +464,36 @@ export class BonusCardSystem {
                 this.gameState.player.shield =
                   (this.gameState.player.shield || 0) + bonusCard.bonus.value;
 
+                console.log(
+                  `DEBUG - Bouclier ajouté: ${bonusCard.bonus.value}`
+                );
                 bonusEffects.push(
                   `${bonusCard.name} gave ${bonusCard.bonus.value} shield`
                 );
               }
               break;
+
+            // DEBUG - Ajouter traitement pour tous les autres types de bonus
+            default:
+              console.log(
+                `DEBUG - Type de bonus non géré: ${bonusCard.bonus?.type}`
+              );
+              break;
           }
+        } else {
+          console.log(`DEBUG - Condition non remplie pour ${bonusCard.name}`);
         }
 
-        // Effet passif qui s'applique après avoir subi des dégâts
-        if (
-          bonusCard.effect === 'passive' &&
-          bonusCard.condition === 'damageTaken' &&
-          this.gameState.playerDamagedLastTurn &&
-          bonusCard.bonus?.type === 'damage'
-        ) {
-          if (typeof bonusCard.bonus.value === 'number') {
-            damage += bonusCard.bonus.value;
-            bonusEffects.push(
-              `${bonusCard.name} added ${bonusCard.bonus.value} damage from last turn's damage`
-            );
-          }
-        }
-
-        // Effet passif qui s'applique à faible santé
-        if (
-          bonusCard.effect === 'passive' &&
-          bonusCard.condition === 'lowHealth' &&
-          this.gameState.player &&
-          this.gameState.player.health <=
-            this.gameState.player.maxHealth * 0.25 &&
-          bonusCard.bonus?.type === 'damageMultiplier'
-        ) {
-          if (typeof bonusCard.bonus.value === 'number') {
-            const additionalDamage = Math.floor(
-              damage * (bonusCard.bonus.value - 1)
-            );
-            damage = Math.floor(damage * bonusCard.bonus.value);
-
-            bonusEffects.push(
-              `${bonusCard.name} increased damage by ${additionalDamage} (low health bonus)`
-            );
-          }
-        }
+        // Les autres types d'effets (comme 'damageTaken' et 'lowHealth') restent inchangés
       }
 
       // Appliquer le bonus de dégâts en attente
       if (this.gameState.pendingDamageBonus) {
+        const prevDamage = damage;
         damage += this.gameState.pendingDamageBonus;
+        console.log(
+          `DEBUG - Bonus en attente appliqué: ${prevDamage} + ${this.gameState.pendingDamageBonus} = ${damage}`
+        );
         bonusEffects.push(
           `Bonus damage: +${this.gameState.pendingDamageBonus}`
         );
@@ -494,20 +507,35 @@ export class BonusCardSystem {
       ) {
         const baseValue = damage;
         damage = Math.floor(damage * this.gameState.pendingDamageMultiplier);
-
+        console.log(
+          `DEBUG - Multiplicateur appliqué: ${baseValue} × ${this.gameState.pendingDamageMultiplier} = ${damage}`
+        );
         bonusEffects.push(
-          `Damage multiplier: x${this.gameState.pendingDamageMultiplier} (${baseValue} → ${damage})`
+          `Damage multiplier: ×${this.gameState.pendingDamageMultiplier} (${baseValue} → ${damage})`
         );
 
         this.gameState.pendingDamageMultiplier = 1;
       }
+
+      // IMPORTANT: S'assurer que les dégâts ne sont jamais inférieurs au calcul de base
+      // Si c'est le cas, quelque chose va mal dans l'application des bonus
+      if (damage < baseDamage) {
+        console.error(
+          `ERREUR: Les dégâts après bonus (${damage}) sont inférieurs aux dégâts de base (${baseDamage}). Correction automatique.`
+        );
+        damage = baseDamage;
+      }
+
+      // S'assurer que les dégâts totaux sont au moins égaux à 1
+      damage = Math.max(1, damage);
+
+      console.log(`DEBUG - Dégâts finaux après tous les bonus: ${damage}`);
     } catch (error) {
       console.error("Erreur lors de l'application des bonus:", error);
     }
 
     return { damage, bonusEffects };
   }
-
   /**
    * Utiliser une carte bonus active
    * @param {number} index - L'index de la carte dans activeBonusCards

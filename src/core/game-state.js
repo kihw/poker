@@ -142,6 +142,7 @@ export class GameState {
 
     // Garder les cartes non sélectionnées du tour précédent
     const keptCards = [];
+    const keptIndices = [];
 
     // Important: vérifier si nous avons des cartes sélectionnées valides
     const hasValidSelectedCards =
@@ -159,6 +160,7 @@ export class GameState {
           // S'assurer que la carte n'est pas marquée comme sélectionnée
           const card = { ...this.hand[i], isSelected: false };
           keptCards.push(card);
+          keptIndices.push(i);
           console.log(`Gardé carte à l'index ${i}:`, card.value, card.suit);
         } else {
           console.log(
@@ -201,8 +203,35 @@ export class GameState {
       card.isSelected = false;
     });
 
+    // Créer une nouvelle main qui préserve les positions des cartes conservées
+    let newHand = new Array(7).fill(null);
+
+    // D'abord, placer les cartes conservées à leurs positions originales
+    keptIndices.forEach((originalIndex, i) => {
+      // Si l'indice original est valide, placer la carte conservée à cet emplacement
+      if (originalIndex >= 0 && originalIndex < 7) {
+        newHand[originalIndex] = keptCards[i];
+      }
+    });
+
+    // Ensuite, remplir les positions vides avec les nouvelles cartes
+    let drawnCardIndex = 0;
+    for (let i = 0; i < 7; i++) {
+      if (newHand[i] === null && drawnCardIndex < drawnCards.length) {
+        newHand[i] = drawnCards[drawnCardIndex++];
+      }
+    }
+
+    // S'assurer qu'il n'y a pas d'éléments null dans la main
+    newHand = newHand.filter((card) => card !== null);
+
+    // Si on a moins de 7 cartes (cas improbable), compléter avec des cartes supplémentaires
+    while (newHand.length < 7 && drawnCardIndex < drawnCards.length) {
+      newHand.push(drawnCards[drawnCardIndex++]);
+    }
+
     // Mettre à jour la main avec les cartes gardées et les nouvelles cartes
-    this.hand = [...keptCards, ...drawnCards];
+    this.hand = newHand;
 
     // Retirer les cartes du deck
     this.deck = this.deck.slice(drawCount);
@@ -759,6 +788,8 @@ export class GameState {
    * @returns {boolean} - true si la transition a réussi, false sinon
    */
   nextStage(options = {}) {
+    console.log('nextStage appelé, phase actuelle:', this.gamePhase);
+
     // Si nous avons un gestionnaire de phases, l'utiliser
     if (this.phaseManager) {
       return this.phaseManager.nextStage(options);
@@ -769,15 +800,28 @@ export class GameState {
       // Augmenter l'étage
       this.stage++;
 
+      // CHANGEMENT IMPORTANT: Forcer le passage à l'exploration
+      this.gamePhase = 'exploration';
+
+      console.log("Phase changée à 'exploration' depuis 'reward'");
+
+      // Message de journal pour déboguer
+      if (this.combatLog) {
+        this.combatLog.unshift(`Combat terminé ! Retour à l'exploration.`);
+      }
+
+      // Vous pouvez optionnellement conserver la logique conditionnelle ci-dessous
+      // si vous voulez parfois aller directement au shop ou au combat suivant
+      /*
       // Choix aléatoire entre shop et combat suivant
       const goToShop = Math.random() < 0.3;
-
+  
       if (goToShop) {
         this.gamePhase = 'shop';
         if (this.progressionSystem) {
           this.progressionSystem.initShop();
         }
-
+  
         // Message de journal
         if (this.combatLog) {
           this.combatLog.unshift('Vous avez trouvé un marchand itinérant.');
@@ -790,30 +834,31 @@ export class GameState {
             this.stage % 5 === 0 // Boss tous les 5 niveaux
           );
         }
-
+  
         // Réinitialiser pour le prochain combat
         this.gamePhase = 'combat';
         this.turnPhase = 'draw';
-
+  
         // Message de journal
         if (this.combatLog) {
           this.combatLog = [
             `Niveau ${this.stage}: Vous rencontrez un ${this.enemy.name}!`,
           ];
         }
-
+  
         // Soins légers entre les étages
         const healAmount = Math.floor(this.player.maxHealth * 0.2);
         this.player.health = Math.min(
           this.player.maxHealth,
           this.player.health + healAmount
         );
-
+  
         // Message de journal
         if (this.combatLog) {
           this.combatLog.unshift(`Vous avez récupéré ${healAmount} PV.`);
         }
       }
+      */
 
       return true;
     } else if (this.gamePhase === 'exploration') {

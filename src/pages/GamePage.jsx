@@ -19,6 +19,28 @@ const GamePage = () => {
   const isInCombat =
     gameState?.gamePhase === 'combat' || gameState?.gamePhase === 'reward';
 
+  React.useEffect(() => {
+    if (gameState?.gamePhase === 'reward') {
+      console.log(
+        "Phase 'reward' détectée, redirection vers la carte dans 1 seconde"
+      );
+
+      // Utiliser un timeout pour laisser le temps aux animations de se terminer
+      const timer = setTimeout(() => {
+        // Changer manuellement la phase
+        if (gameState) {
+          gameState.gamePhase = 'exploration';
+
+          // Rediriger vers la carte
+          navigate('/map');
+          console.log('Redirection vers la carte effectuée');
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState?.gamePhase, navigate, gameState]);
+
   // Si on est en mode exploration, rediriger vers la carte
   React.useEffect(() => {
     if (gameState?.gamePhase === 'exploration') {
