@@ -1,7 +1,5 @@
 // src/modules/map-generator.js - Version améliorée
 
-// src/modules/map-generator.js - Version améliorée
-
 /**
  * Génère une carte roguelike pour un étage donné
  * @param {number} stage - Niveau actuel du jeu
@@ -171,91 +169,6 @@ export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
   return nodes;
 }
 
-/**
- * Valide la carte pour s'assurer qu'elle est correctement connectée
- * @param {Array} nodes - Tableau de nœuds de la carte
- * @returns {boolean} - true si la carte est valide, false sinon
- */
-export function validateMap(nodes) {
-  if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
-    console.error('Carte invalide : aucun nœud fourni');
-    return false;
-  }
-
-  const startNode = nodes.find((node) => node.type === 'start');
-  const bossNode = nodes.find((node) => node.type === 'boss');
-
-  if (!startNode || !bossNode) {
-    console.error('Carte invalide : pas de nœud de départ ou de boss');
-    return false;
-  }
-
-  // Vérifier qu'il existe un chemin du début à la fin avec un parcours en largeur (BFS)
-  const visited = new Set();
-  const toVisit = [startNode.id];
-
-  while (toVisit.length > 0) {
-    const currentId = toVisit.shift();
-    if (visited.has(currentId)) continue;
-
-    visited.add(currentId);
-    const currentNode = nodes.find((node) => node.id === currentId);
-
-    if (currentNode && currentNode.childIds) {
-      toVisit.push(...currentNode.childIds.filter((id) => !visited.has(id)));
-    }
-  }
-
-  // Vérifier que le boss est accessible
-  if (!visited.has(bossNode.id)) {
-    console.error('Carte invalide : le boss est inaccessible');
-    return false;
-  }
-
-  // Vérifier qu'aucun nœud n'est isolé
-  const isolatedNodes = nodes.filter(
-    (node) =>
-      node.type !== 'start' &&
-      node.type !== 'boss' &&
-      (node.parentIds.length === 0 || node.childIds.length === 0)
-  );
-
-  if (isolatedNodes.length > 0) {
-    console.error('Carte invalide : nœuds isolés détectés', isolatedNodes);
-    return false;
-  }
-
-  // S'assurer qu'il y a au moins un nœud de repos avant le boss
-  const hasRestBeforeBoss = nodes.some(
-    (node) => node.type === 'rest' && node.y === nodes.length - 2
-  );
-
-  if (!hasRestBeforeBoss) {
-    console.warn('Attention : aucun site de repos avant le boss');
-  }
-
-  return true;
-}
-
-/**
- * Sélectionne un élément aléatoire en fonction des pondérations
- * @param {Object} probabilities - Objet avec les probabilités pour chaque type
- * @returns {string} - Le type sélectionné
- */
-function getRandomWeightedChoice(probabilities) {
-  const rand = Math.random();
-  let sum = 0;
-
-  for (const [type, probability] of Object.entries(probabilities)) {
-    sum += probability;
-    if (rand < sum) {
-      return type;
-    }
-  }
-
-  // Par défaut, retourner le type combat
-  return 'combat';
-}
 /**
  * Valide la carte pour s'assurer qu'elle est correctement connectée
  * @param {Array} nodes - Tableau de nœuds de la carte
