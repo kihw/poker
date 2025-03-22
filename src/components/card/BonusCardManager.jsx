@@ -1,5 +1,5 @@
-// src/components/card/BonusCardManager.jsx - Migré vers Redux
-import React, { useState, useEffect } from 'react';
+// src/components/card/BonusCardManager.jsx - Version optimisée
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -13,7 +13,7 @@ import { setActionFeedback } from '../../redux/slices/uiSlice';
 const BonusCardManager = () => {
   const dispatch = useDispatch();
 
-  // Sélecteurs Redux
+  // Sélecteurs Redux optimisés
   const bonusCardCollection = useSelector(selectBonusCardCollection);
   const activeBonusCards = useSelector(selectActiveBonusCards);
   const maxBonusCardSlots = useSelector(selectMaxBonusCardSlots);
@@ -23,24 +23,27 @@ const BonusCardManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [filterRarity, setFilterRarity] = useState('all');
-  const [displayedCards, setDisplayedCards] = useState([]);
+
+  // Éviter de recréer ce tableau à chaque render
+  const rarityColors = useMemo(
+    () => ({
+      common: 'bg-gray-600',
+      uncommon: 'bg-green-600',
+      rare: 'bg-blue-600',
+      epic: 'bg-purple-600',
+      legendary: 'bg-orange-600',
+    }),
+    []
+  );
 
   // Loading state
   if (!bonusCardCollection || !activeBonusCards) {
     return <div className="text-white">Loading bonus cards...</div>;
   }
 
-  // Define colors for each rarity
-  const rarityColors = {
-    common: 'bg-gray-600',
-    uncommon: 'bg-green-600',
-    rare: 'bg-blue-600',
-    epic: 'bg-purple-600',
-    legendary: 'bg-orange-600',
-  };
-
-  // Update displayed cards whenever filters, sort or selected tab changes
-  useEffect(() => {
+  // Création mémorisée des cartes à afficher basée sur les filtres
+  const displayedCards = useMemo(() => {
+    // Code de filtrage existant, mais mémorisé pour éviter des calculs inutiles
     let cards;
     if (selectedTab === 'equipped') {
       cards = [...activeBonusCards];
@@ -85,7 +88,7 @@ const BonusCardManager = () => {
       );
     }
 
-    setDisplayedCards(cards);
+    return cards;
   }, [
     selectedTab,
     searchTerm,
@@ -95,31 +98,55 @@ const BonusCardManager = () => {
     bonusCardCollection,
   ]);
 
-  const handleEquip = (cardId) => {
-    dispatch(equipCard(cardId));
+  // Mémoriser les handlers pour éviter les redéfinitions à chaque render
+  const handleEquip = useCallback(
+    (cardId) => {
+      dispatch(equipCard(cardId));
 
-    // Feedback
-    dispatch(
-      setActionFeedback({
-        message: 'Carte équipée',
-        type: 'success',
-        duration: 2000,
-      })
-    );
-  };
+      // Feedback
+      dispatch(
+        setActionFeedback({
+          message: 'Carte équipée',
+          type: 'success',
+          duration: 2000,
+        })
+      );
+    },
+    [dispatch]
+  );
 
-  const handleUnequip = (cardId) => {
-    dispatch(unequipCard(cardId));
+  const handleUnequip = useCallback(
+    (cardId) => {
+      dispatch(unequipCard(cardId));
 
-    // Feedback
-    dispatch(
-      setActionFeedback({
-        message: 'Carte retirée',
-        type: 'info',
-        duration: 2000,
-      })
-    );
-  };
+      // Feedback
+      dispatch(
+        setActionFeedback({
+          message: 'Carte retirée',
+          type: 'info',
+          duration: 2000,
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  // Handlers pour les changements de filtre
+  const handleTabChange = useCallback((tab) => {
+    setSelectedTab(tab);
+  }, []);
+
+  const handleSearchChange = useCallback((event) => {
+    setSearchTerm(event.target.value);
+  }, []);
+
+  const handleSortChange = useCallback((event) => {
+    setSortBy(event.target.value);
+  }, []);
+
+  const handleRarityFilterChange = useCallback((event) => {
+    setFilterRarity(event.target.value);
+  }, []);
 
   return (
     <div className="bg-gray-900 rounded-xl p-4 shadow-xl">
@@ -137,13 +164,13 @@ const BonusCardManager = () => {
       <div className="flex border-b border-gray-700 mb-4">
         <button
           className={`px-4 py-2 ${selectedTab === 'equipped' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-          onClick={() => setSelectedTab('equipped')}
+          onClick={() => handleTabChange('equipped')}
         >
           Cartes équipées
         </button>
         <button
           className={`px-4 py-2 ${selectedTab === 'collection' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-          onClick={() => setSelectedTab('collection')}
+          onClick={() => handleTabChange('collection')}
         >
           Collection
         </button>
@@ -154,14 +181,14 @@ const BonusCardManager = () => {
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
           placeholder="Rechercher une carte..."
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm flex-grow text-white"
         />
 
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
+          onChange={handleSortChange}
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm text-white"
         >
           <option value="name">Trier par nom</option>
@@ -170,7 +197,7 @@ const BonusCardManager = () => {
 
         <select
           value={filterRarity}
-          onChange={(e) => setFilterRarity(e.target.value)}
+          onChange={handleRarityFilterChange}
           className="bg-gray-800 border border-gray-700 rounded px-3 py-1 text-sm text-white"
         >
           <option value="all">Toutes les raretés</option>
@@ -258,4 +285,5 @@ const BonusCardManager = () => {
   );
 };
 
-export default BonusCardManager;
+// Utiliser React.memo pour éviter les re-renders inutiles
+export default React.memo(BonusCardManager);
