@@ -112,6 +112,36 @@ export function applySaveData(gameState, saveData) {
       gameState.stage = saveData.progression.stage;
       gameState.currentFloor = saveData.progression.currentFloor;
       gameState.maxFloors = saveData.progression.maxFloors;
+
+      // Forcer le mode exploration si ce n'est pas défini dans la sauvegarde
+      if (!saveData.gamePhase) {
+        gameState.gamePhase = 'exploration';
+
+        // Générer une nouvelle carte si nécessaire
+        if (!gameState.path || gameState.path.length === 0) {
+          // Importer directement la fonction de génération de carte
+          const { generateRoguelikeMap } = require('./map-generator.js');
+
+          const mapOptions = {
+            width: 3 + Math.min(2, Math.floor(gameState.currentFloor / 3)),
+            depth: 5 + Math.min(3, Math.floor(gameState.currentFloor / 2)),
+          };
+
+          const mapNodes = generateRoguelikeMap(
+            gameState.stage,
+            mapOptions.width,
+            mapOptions.depth
+          );
+
+          gameState.path = mapNodes;
+
+          // Définir le nœud de départ
+          const startNode = mapNodes.find((node) => node.type === 'start');
+          if (startNode) {
+            gameState.currentNodeId = startNode.id;
+          }
+        }
+      }
     }
 
     // Appliquer les données de cartes bonus si le système est initialisé

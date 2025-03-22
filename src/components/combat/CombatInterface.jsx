@@ -79,17 +79,37 @@ const CombatInterface = () => {
       `CombatInterface: handleAttackSelection called with index ${index}`
     );
 
-    // Approche directe qui reflète l'état actuel de sélection
-    if (gameState && gameState.hand && gameState.hand[index]) {
-      // La propriété isSelected sera inversée dans cette fonction
-      gameState.toggleCardSelection(index);
+    // Appel direct à toggleCardSelection de l'état de jeu
+    if (gameState && gameState.hand && gameState.hand[index] !== undefined) {
+      // Vérifier si on a déjà 5 cartes sélectionnées
+      const currentSelectedCount = gameState.hand.filter(
+        (card) => card.isSelected
+      ).length;
 
-      // Reconstruire le tableau local selectedAttackCards à partir de l'état isSelected des cartes
-      setSelectedAttackCards(
-        gameState.hand
-          .map((card, idx) => (card.isSelected ? idx : -1))
-          .filter((idx) => idx !== -1)
+      // Si la carte n'est pas sélectionnée et qu'on a déjà 5 cartes, ne rien faire sauf si on désélectionne
+      if (currentSelectedCount >= 5 && !gameState.hand[index].isSelected) {
+        console.log('Maximum de 5 cartes déjà sélectionnées');
+        return;
+      }
+
+      // Appliquer le changement directement à l'état de la carte
+      const isCurrentlySelected = gameState.hand[index].isSelected;
+      gameState.hand[index].isSelected = !isCurrentlySelected;
+
+      // Mettre à jour selectedCards dans l'état de jeu
+      gameState.selectedCards = gameState.hand
+        .map((card, idx) => (card.isSelected ? idx : -1))
+        .filter((idx) => idx !== -1);
+
+      // Synchroniser notre état local
+      setSelectedAttackCards(gameState.selectedCards);
+
+      console.log(
+        'Cartes sélectionnées après mise à jour:',
+        gameState.selectedCards
       );
+    } else {
+      console.error('Index de carte invalide ou main non disponible:', index);
     }
   };
 
@@ -160,22 +180,15 @@ const CombatInterface = () => {
       return;
     }
 
-    // Mettre à jour l'état visuel
+    // S'assurer que selectedAttackCards et gameState.selectedCards sont synchronisés
+    gameState.selectedCards = [...selectedAttackCards];
+
+    // Vérifier que les propriétés isSelected des cartes correspondent à selectedCards
     if (gameState && gameState.hand) {
       // Réinitialiser toutes les cartes
-      gameState.hand.forEach((card) => {
-        card.isSelected = false;
+      gameState.hand.forEach((card, index) => {
+        card.isSelected = selectedAttackCards.includes(index);
       });
-
-      // Sélectionner uniquement les cartes dans selectedAttackCards
-      selectedAttackCards.forEach((index) => {
-        if (gameState.hand[index]) {
-          gameState.hand[index].isSelected = true;
-        }
-      });
-
-      // Mettre à jour selectedCards dans gameState
-      gameState.selectedCards = [...selectedAttackCards];
     }
 
     // Évaluer la main sélectionnée

@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from './context/gameHooks';
 
 // Import pages
@@ -18,6 +18,7 @@ import SaveButton from './components/ui/SaveButton';
 
 function App() {
   const { gameState, loading, error } = useGame();
+  const navigate = useNavigate();
 
   // Debug logging
   useEffect(() => {
@@ -25,6 +26,13 @@ function App() {
     console.log('Loading:', loading);
     console.log('Error:', error);
   }, [gameState, loading, error]);
+
+  // Rediriger vers la carte si le jeu démarre en mode exploration
+  useEffect(() => {
+    if (gameState && gameState.gamePhase === 'exploration') {
+      navigate('/map');
+    }
+  }, [gameState, navigate]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -47,7 +55,7 @@ function App() {
         <Route path="/event" element={<EventPage />} />
         <Route path="/rest" element={<RestPage />} />
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/map" replace />} />
       </Routes>
     </>
   );

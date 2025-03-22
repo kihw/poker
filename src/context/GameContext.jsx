@@ -59,8 +59,8 @@ export function GameProvider({ children }) {
         } else {
           console.log("Aucune sauvegarde trouvée, début d'une nouvelle partie");
 
-          // Initialiser le combat initial
-          combatSystem.startCombat();
+          // Initialiser le mode exploration plutôt que combat
+          gameState.gamePhase = 'exploration';
 
           // Initialiser les cartes bonus
           bonusCardSystem.initBonusCardCollection();
@@ -132,7 +132,30 @@ export function GameProvider({ children }) {
       isMounted = false;
     };
   }, []);
+  // Système d'événements pour la communication entre composants
+  const gameEventBus = {
+    listeners: {},
 
+    subscribe(event, callback) {
+      if (!this.listeners[event]) {
+        this.listeners[event] = [];
+      }
+      this.listeners[event].push(callback);
+      return () => this.unsubscribe(event, callback);
+    },
+
+    unsubscribe(event, callback) {
+      if (!this.listeners[event]) return;
+      this.listeners[event] = this.listeners[event].filter(
+        (cb) => cb !== callback
+      );
+    },
+
+    emit(event, data) {
+      if (!this.listeners[event]) return;
+      this.listeners[event].forEach((callback) => callback(data));
+    },
+  };
   // Vérification périodique de l'état du combat
   useEffect(() => {
     if (!state.game || !state.combatSystem) return;
@@ -295,6 +318,7 @@ export function GameProvider({ children }) {
 
   // Valeur du contexte avec état dérivé supplémentaire
   const value = {
+    eventBus: gameEventBus,
     gameState: state.game,
     combatSystem: state.combatSystem,
     bonusCardSystem: state.bonusCardSystem,

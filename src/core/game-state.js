@@ -172,14 +172,11 @@ export class GameState {
       return false;
     }
 
-    // Simplification: On inverse simplement l'état isSelected de la carte
-    // Si isSelected n'existe pas, on l'initialise à false avant de l'inverser
-    if (this.hand[index].isSelected === undefined) {
-      this.hand[index].isSelected = false;
-    }
-    this.hand[index].isSelected = !this.hand[index].isSelected;
+    // IMPORTANT: S'assurer que isSelected est toujours un booléen
+    this.hand[index].isSelected = !Boolean(this.hand[index].isSelected);
 
-    // Reconstruire le tableau selectedCards pour qu'il soit toujours synchronisé
+    // IMPORTANT: Toujours reconstruire le tableau selectedCards complet
+    // pour qu'il soit correctement synchronisé
     this.selectedCards = this.hand
       .map((card, idx) => (card.isSelected ? idx : -1))
       .filter((idx) => idx !== -1);

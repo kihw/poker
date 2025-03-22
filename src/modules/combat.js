@@ -16,6 +16,25 @@ export class CombatSystem {
     }
   }
 
+  /**
+   * Démarre un combat et distribue automatiquement la première main
+   * @param {Object} enemyOverride - Ennemi spécifique à utiliser (optionnel)
+   * @returns {Object} L'ennemi créé
+   */
+  startCombatAndDeal(enemyOverride = null) {
+    // Crée l'ennemi et initialise le combat
+    const enemy = this.startCombat(enemyOverride);
+
+    // Distribue automatiquement la première main
+    if (this.gameState.dealHand) {
+      console.log('Distribution automatique de la première main');
+      this.gameState.dealHand();
+      this.gameState.turnPhase = 'select';
+    }
+
+    return enemy;
+  }
+
   // Generate an enemy with scaling difficulty
   generateEnemy(isElite = false, isBoss = false) {
     const baseEnemies = [

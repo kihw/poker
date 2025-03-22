@@ -95,6 +95,86 @@ export function gameReducer(state, action) {
           lastUpdate: Date.now(),
         };
 
+      case ACTIONS.SELECT_NODE:
+        if (!state.game) {
+          throw new Error('Game state is not initialized');
+        }
+
+        const nodeId = action.payload.nodeId;
+        const nodes = state.game.path;
+
+        // Trouver le nœud sélectionné
+        const selectedNode = nodes.find((node) => node.id === nodeId);
+
+        if (!selectedNode) {
+          throw new Error(`Node with ID ${nodeId} not found`);
+        }
+
+        // Mettre à jour le nœud courant
+        state.game.currentNodeId = nodeId;
+
+        // Déterminer l'action en fonction du type de nœud
+        switch (selectedNode.type) {
+          case 'combat':
+            // Générer un ennemi standard et démarrer le combat
+            if (state.combatSystem) {
+              state.combatSystem.startCombat();
+            }
+            state.game.gamePhase = 'combat';
+            state.game.turnPhase = 'draw';
+            break;
+
+          case 'elite':
+            // Générer un ennemi élite et démarrer le combat
+            if (state.combatSystem) {
+              const eliteEnemy = state.combatSystem.generateEnemy(true, false);
+              state.combatSystem.startCombat(eliteEnemy);
+            }
+            state.game.gamePhase = 'combat';
+            state.game.turnPhase = 'draw';
+            break;
+
+          case 'boss':
+            // Générer un boss et démarrer le combat
+            if (state.combatSystem) {
+              const bossEnemy = state.combatSystem.generateEnemy(false, true);
+              state.combatSystem.startCombat(bossEnemy);
+            }
+            state.game.gamePhase = 'combat';
+            state.game.turnPhase = 'draw';
+            break;
+
+          case 'event':
+            // Générer un événement aléatoire
+            const newEvent = generateRandomEvent(state.game.stage, state.game);
+            state.game.currentEvent = newEvent;
+            state.game.gamePhase = 'event';
+            break;
+
+          case 'shop':
+            // Initialiser la boutique
+            if (state.progressionSystem) {
+              state.progressionSystem.initShop();
+            }
+            state.game.gamePhase = 'shop';
+            break;
+
+          case 'rest':
+            // Préparer le site de repos
+            state.game.gamePhase = 'rest';
+            break;
+
+          default:
+            console.log(`Nœud de type ${selectedNode.type} sélectionné`);
+            // Ne rien faire pour les autres types de nœuds (start, etc.)
+            break;
+        }
+
+        console.log(`Nœud ${nodeId} (${selectedNode.type}) sélectionné`);
+        return {
+          ...state,
+          lastUpdate: Date.now(),
+        };
       case ACTIONS.PROCESS_EVENT_CHOICE:
         if (!state.game || !state.game.currentEvent) {
           throw new Error('Aucun événement actif trouvé');

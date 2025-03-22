@@ -1,11 +1,16 @@
 // src/pages/MapPage.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import RoguelikeWorldMap from '../components/map/RoguelikeWorldMap';
 import Navigation from '../components/ui/Navigation';
 import { useGame } from '../context/gameHooks';
+import ActionFeedback from '../components/ui/ActionFeedback';
 
 const MapPage = () => {
-  const { gameState, generateMap } = useGame();
+  const { gameState, generateMap, selectNode } = useGame();
+  const navigate = useNavigate();
+  const [feedback, setFeedback] = useState(null);
+  const [mapLoading, setMapLoading] = useState(false);
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(gameState?.path) ? gameState.path : [];
@@ -14,17 +19,39 @@ const MapPage = () => {
     maxHealth: 50,
     gold: 100,
   };
-  // Extended logging for debugging
-  console.log('MapPage Game State:', {
-    gameState,
-    safePath,
-    safePlayer,
-    generateMap: typeof generateMap,
-  });
+
+  // Navigation automatique vers la page appropriée lorsqu'un nœud est sélectionné
+  useEffect(() => {
+    if (!gameState) return;
+
+    // Redirection basée sur la phase de jeu actuelle
+    switch (gameState.gamePhase) {
+      case 'combat':
+        console.log('Redirection vers la page de combat');
+        navigate('/');
+        break;
+      case 'shop':
+        console.log('Redirection vers la boutique');
+        navigate('/shop');
+        break;
+      case 'rest':
+        console.log('Redirection vers le site de repos');
+        navigate('/rest');
+        break;
+      case 'event':
+        console.log("Redirection vers la page d'événement");
+        navigate('/event');
+        break;
+      default:
+        // Rester sur la page de carte
+        break;
+    }
+  }, [gameState?.gamePhase, navigate]);
+
   // Generate map if not exists or empty
   useEffect(() => {
-    const tryGenerateMap = () => {
-      console.log('Attempting to generate map', {
+    const tryGenerateMap = async () => {
+      console.log('Vérification de la carte', {
         gameStateExists: !!gameState,
         pathExists: gameState?.path?.length > 0,
         generateMapAvailable: typeof generateMap === 'function',
@@ -33,76 +60,121 @@ const MapPage = () => {
       // Ensure gameState exists, path is empty, and generateMap is a function
       if (gameState && (!gameState.path || gameState.path.length === 0)) {
         if (generateMap) {
-          console.log('Generating roguelike map automatically');
-          generateMap();
+          try {
+            setMapLoading(true);
+            console.log('Génération de la carte roguelike');
+            await generateMap();
+            setFeedback({
+              message: 'Carte générée avec succès',
+              type: 'success',
+            });
+          } catch (error) {
+            console.error('Erreur lors de la génération de la carte:', error);
+            setFeedback({
+              message: 'Erreur lors de la génération de la carte',
+              type: 'error',
+            });
+          } finally {
+            setMapLoading(false);
+          }
         } else {
-          console.error('Map generation function not available');
+          console.error('Fonction de génération de carte non disponible');
+          setFeedback({
+            message: 'Impossible de générer la carte',
+            type: 'error',
+          });
         }
       }
     };
 
     // Try to generate map immediately
     tryGenerateMap();
-
-    // Optional: Set a timeout to retry if first attempt fails
-    const timer = setTimeout(tryGenerateMap, 1000);
-
-    return () => clearTimeout(timer);
   }, [gameState, generateMap]);
 
-  // Nettoyer tous les overlays potentiels au chargement de la page
-  useEffect(() => {
-    // Solution: Désactiver les événements pointer sur les éléments fixed/absolute
-    const cleanup = () => {
-      // Rechercher des éléments fixed ou absolute qui pourraient bloquer
-      const potentialBlockers = document.querySelectorAll(
-        '.fixed, .absolute, [style*="position: fixed"], [style*="position:fixed"], [style*="position: absolute"], [style*="position:absolute"]'
+  // Version améliorée de la fonction de sélection de nœud
+  const handleNodeSelect = (nodeId) => {
+    console.log(`Sélection du nœud: ${nodeId}`);
+
+    try {
+      // Vérifier que le nœud existe
+      const selectedNode = safePath.find((node) => node.id === nodeId);
+
+      if (!selectedNode) {
+        setFeedback({
+          message: 'Nœud introuvable',
+          type: 'error',
+        });
+        return;
+      }
+
+      // Vérifier que le nœud est accessible
+      const currentNode = safePath.find(
+        (node) => node.id === gameState.currentNodeId
       );
+      const isAccessible =
+        currentNode &&
+        currentNode.childIds &&
+        currentNode.childIds.includes(nodeId);
 
-      // Vérifier s'ils couvrent toute la page et les désactiver si nécessaire
-      potentialBlockers.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const styles = window.getComputedStyle(el);
+      if (!isAccessible && gameState.currentNodeId !== null) {
+        setFeedback({
+          message: "Ce lieu n'est pas accessible actuellement",
+          type: 'warning',
+        });
+        return;
+      }
 
-        // Si l'élément couvre toute la page et n'est pas MapPage lui-même
-        if (
-          rect.width > window.innerWidth * 0.8 &&
-          rect.height > window.innerHeight * 0.8 &&
-          !el.classList.contains('map-page-container') &&
-          el !== document.querySelector('.map-page-container')
-        ) {
-          // Désactiver les événements de pointeur pour cet élément
-          console.log('Désactivation des événements de pointeur pour:', el);
-          el.style.pointerEvents = 'none';
-        }
+      // Afficher un feedback sur le type de nœud sélectionné
+      const nodeTypeMessages = {
+        combat: 'Combat contre un ennemi standard',
+        elite: "Combat difficile contre un ennemi d'élite",
+        boss: 'Combat de boss',
+        shop: 'Boutique de marchand',
+        rest: 'Site de repos',
+        event: 'Événement aléatoire',
+        start: 'Point de départ',
+      };
+
+      setFeedback({
+        message: nodeTypeMessages[selectedNode.type] || 'Lieu sélectionné',
+        type: 'info',
       });
-    };
 
-    // Exécuter immédiatement et après un court délai (pour les éléments qui apparaissent plus tard)
-    cleanup();
-    const timer = setTimeout(cleanup, 500);
+      // Appeler la fonction de sélection de nœud
+      selectNode(nodeId);
 
-    return () => clearTimeout(timer);
-  }, []);
+      // La redirection sera gérée par l'effet useEffect ci-dessus
+    } catch (error) {
+      console.error('Erreur lors de la sélection du nœud:', error);
+      setFeedback({
+        message: `Erreur: ${error.message}`,
+        type: 'error',
+      });
+    }
+  };
 
-  // Affichage de debug pour aider à résoudre le problème
-  console.log('MapPage rendering with: ', {
-    pathExists: Boolean(gameState?.path),
-    pathLength: safePath.length,
-    currentNodeId: gameState?.currentNodeId,
-    player: safePlayer,
-  });
+  // Afficher un écran de chargement si la carte est en cours de génération
+  if (mapLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <div className="text-white text-xl">Génération de la carte...</div>
+      </div>
+    );
+  }
 
   // Si pas de données de carte, afficher un message d'attente
   if (!gameState || safePath.length === 0) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
-          <h2 className="text-2xl mb-4">Carte en cours de génération...</h2>
-          <p>La carte du jeu se charge, veuillez patienter</p>
+          <h2 className="text-2xl mb-4">Carte non disponible</h2>
+          <p className="mb-4">
+            La carte du jeu n'a pas pu être générée ou chargée
+          </p>
           <div className="mt-4 p-4 bg-gray-800 rounded-md max-w-md">
             <p className="text-sm text-gray-400">
-              Si la carte ne se charge pas, essayez de retourner au combat pour
+              Si ce problème persiste, essayez de retourner au combat ou de
               réinitialiser le jeu.
             </p>
           </div>
@@ -110,7 +182,13 @@ const MapPage = () => {
             onClick={() => generateMap && generateMap()}
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
-            Générer une nouvelle carte
+            Essayer de générer une nouvelle carte
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 ml-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+          >
+            Retour au combat
           </button>
         </div>
         <Navigation />
@@ -123,7 +201,24 @@ const MapPage = () => {
       className="min-h-screen bg-gray-900 p-4 flex flex-col items-center map-page-container"
       style={{ position: 'relative', zIndex: 1 }}
     >
-      {/* Force z-index et rend cette div prioritaire */}
+      {/* Afficher le feedback si présent */}
+      {feedback && (
+        <ActionFeedback
+          message={feedback.message}
+          type={feedback.type}
+          duration={2000}
+        />
+      )}
+
+      {/* Titre et informations */}
+      <div className="mb-4 text-center text-white">
+        <h1 className="text-2xl font-bold mb-1">Carte de l'aventure</h1>
+        <p className="text-sm text-gray-300">
+          Choisissez votre prochain lieu à explorer
+        </p>
+      </div>
+
+      {/* Carte roguelike avec z-index élevé */}
       <div className="relative z-10 w-full">
         <RoguelikeWorldMap
           currentFloor={gameState.currentFloor || 1}
@@ -131,9 +226,28 @@ const MapPage = () => {
           nodes={safePath}
           currentNodeId={gameState.currentNodeId}
           playerStats={safePlayer}
+          // Utiliser notre fonction de sélection personnalisée
+          selectNode={handleNodeSelect}
         />
       </div>
 
+      {/* Légende de la carte (optionnel) */}
+      <div className="mt-4 bg-gray-800 p-3 rounded-md text-white text-sm max-w-md text-center">
+        <p>
+          Cliquez sur un lieu connecté pour vous y rendre. Les lieux plus
+          lumineux sont accessibles depuis votre position actuelle.
+        </p>
+        <div className="flex justify-center mt-2 space-x-4">
+          <span>⚔️ Combat</span>
+          <span>🛡️ Élite</span>
+          <span>👑 Boss</span>
+          <span>🛒 Boutique</span>
+          <span>🏕️ Repos</span>
+          <span>❗ Événement</span>
+        </div>
+      </div>
+
+      {/* Barre de navigation */}
       <Navigation />
     </div>
   );

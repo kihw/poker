@@ -325,8 +325,35 @@ const RoguelikeWorldMap = ({
                 key={nodeId}
                 onMouseEnter={() => setHoveredNode(node)}
                 onMouseLeave={() => setHoveredNode(null)}
-                onClick={() => isAccessible && selectNode && selectNode(nodeId)}
-                className={`cursor-${isAccessible ? 'pointer' : 'not-allowed'}`}
+                onClick={() => {
+                  if (isAccessible || nodeId === currentNodeId) {
+                    console.log(`Clicking node ${nodeId} of type ${nodeType}`);
+
+                    // Feedback visuel immédiat
+                    if (nodeId !== currentNodeId) {
+                      // Ajout d'un feedback visuel
+                      const nodeElement = document.getElementById(
+                        `node-${nodeId}`
+                      );
+                      if (nodeElement) {
+                        nodeElement.classList.add('node-flash');
+                        setTimeout(() => {
+                          nodeElement.classList.remove('node-flash');
+                        }, 300);
+                      }
+                    }
+
+                    // Appel de la fonction de sélection
+                    if (selectNode) {
+                      selectNode(nodeId);
+                    } else {
+                      console.warn('selectNode function is not available');
+                    }
+                  } else {
+                    console.log(`Node ${nodeId} is not accessible`);
+                  }
+                }}
+                className={`cursor-${isAccessible || nodeId === currentNodeId ? 'pointer' : 'not-allowed'}`}
                 whileHover={{ scale: 1.1 }}
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -334,10 +361,13 @@ const RoguelikeWorldMap = ({
               >
                 {/* Main node circle */}
                 <circle
+                  id={`node-${nodeId}`}
                   cx={position.x}
                   cy={position.y}
                   r={25}
-                  className={`bg-gradient-${nodeColors[nodeType] || 'from-gray-700 to-gray-900'} ${isCurrent ? 'stroke-yellow-400 stroke-[3px]' : 'stroke-none'} ${isAccessible && !isCurrent ? 'animate-pulse' : ''}`}
+                  className={`bg-gradient-${nodeColors[nodeType] || 'from-gray-700 to-gray-900'} ${
+                    isCurrent ? 'stroke-yellow-400 stroke-[3px]' : 'stroke-none'
+                  } ${isAccessible && !isCurrent ? 'animate-pulse' : ''}`}
                   opacity={isAccessible || isCurrent ? 1 : 0.5}
                   fill={`url(#gradient-${nodeType})`}
                 />
