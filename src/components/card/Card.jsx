@@ -1,5 +1,5 @@
-// src/components/card/Card.jsx
-import React, { useState } from 'react';
+// src/components/card/Card.jsx - Updated version after merging ImprovedCard.jsx
+import React from 'react';
 import { motion } from 'framer-motion';
 import { SHADOWS, COLORS, TRANSITIONS } from '../ui/DesignSystem';
 
@@ -11,33 +11,28 @@ const Card = ({
   isHighlighted = false,
   selectionType = 'attack', // 'attack', 'discard', 'view'
   disabled = false,
-  scale = 1, // Facteur d'échelle pour ajuster la taille
+  scale = 1, // Scale factor to adjust size
 }) => {
-  const [isProcessingClick, setIsProcessingClick] = useState(false);
-
-  // Vérification et normalisation des valeurs
-  const safeValue = value || 'A';
-  const safeSuit = suit || 'spades';
-
-  // Dictionnaire pour afficher les symboles des couleurs
+  // Dictionary to display color symbols
   const suitSymbols = {
     spades: '♠',
-    hearts: '♥', 
+    hearts: '♥',
     diamonds: '♦',
     clubs: '♣',
   };
-  const displaySuit = suitSymbols[safeSuit] || safeSuit;
-  const isRed = 
-    safeSuit === 'hearts' || 
-    safeSuit === 'diamonds' || 
-    safeSuit === '♥' || 
-    safeSuit === '♦';
 
-  // Couleurs avec un design plus vivant
+  // Conversion of values for display
+  const displayValue = value || 'A';
+  const displaySuit = suitSymbols[suit] || suit;
+  const isRed =
+    suit === 'hearts' || suit === 'diamonds' || suit === '♥' || suit === '♦';
+
+  // Colors with a more vibrant design
   const bgColor = isRed ? 'white' : 'white';
-  const textColor = isRed ? COLORS.danger.main : COLORS.gray[900];
+  const textColor = isRed ? '#e11d48' : '#111827'; // rose-600 for red, gray-900 for black
 
-  // Styles pour les différents modes de sélection
+  // Styles for different selection types
+  let selectionStyles = '';
   let selectionBorderColor = '';
   let selectionLabel = '';
 
@@ -51,29 +46,18 @@ const Card = ({
     }
   }
 
-  // Dimensions de base avec échelle
+  // Base dimensions with scale
   const width = 64 * scale;
   const height = 96 * scale;
-
-  // Gestion du clic sur la carte avec protection contre les doubles clics
-  const handleClick = (e) => {
-    e.stopPropagation();
-
-    if (disabled || !onToggleSelect || isProcessingClick) return;
-
-    setIsProcessingClick(true);
-    onToggleSelect();
-
-    setTimeout(() => {
-      setIsProcessingClick(false);
-    }, 100);
-  };
 
   return (
     <motion.div
       className={`relative perspective-500 transform-gpu cursor-pointer ${isSelected ? 'z-10' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       style={{ width: `${width}px`, height: `${height}px` }}
-      onClick={handleClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (!disabled && onToggleSelect) onToggleSelect();
+      }}
       whileHover={{ scale: disabled ? 1 : 1.05 }}
       whileTap={{ scale: disabled ? 1 : 0.95 }}
     >
@@ -90,11 +74,11 @@ const Card = ({
           transition: TRANSITIONS.DEFAULT,
         }}
       >
-        {/* Face avant (visible) */}
+        {/* Front face (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
           <div className="flex justify-between items-center">
             <div className={`text-lg font-bold`} style={{ color: textColor }}>
-              {safeValue}
+              {displayValue}
             </div>
             <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
@@ -110,7 +94,7 @@ const Card = ({
 
           <div className="flex justify-between items-center rotate-180">
             <div className={`text-lg font-bold`} style={{ color: textColor }}>
-              {safeValue}
+              {displayValue}
             </div>
             <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
@@ -119,7 +103,7 @@ const Card = ({
         </div>
       </motion.div>
 
-      {/* Indicateur de sélection */}
+      {/* Selection indicator */}
       {isSelected && selectionLabel && (
         <motion.div
           initial={{ opacity: 0, y: 5 }}
@@ -141,7 +125,7 @@ const Card = ({
   );
 };
 
-// Composant pour afficher une main de cartes
+// Component to display a hand of cards
 export const Hand = ({
   cards,
   onToggleSelect,
@@ -154,7 +138,7 @@ export const Hand = ({
     [cards]
   );
 
-  // Animation pour l'entrée des cartes
+  // Animation for card entry
   const container = {
     hidden: { opacity: 0 },
     show: {

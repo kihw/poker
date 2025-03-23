@@ -1,1 +1,0 @@
-# Ce fichier a été fusionné avec Card.jsx
