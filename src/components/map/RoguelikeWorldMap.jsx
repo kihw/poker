@@ -125,10 +125,71 @@ const RoguelikeWorldMap = ({
     });
   });
 
-  // Keep existing logic for node positioning...
+  // Implémentation de la logique de positionnement des nœuds
   useEffect(() => {
-    // Existing node positioning logic
-    // ...
+    if (!nodes || nodes.length === 0) return;
+
+    // Déterminer les niveaux (profondeur) du graphe
+    const levels = {};
+    nodes.forEach((node) => {
+      levels[node.y] = levels[node.y] || [];
+      levels[node.y].push(node);
+    });
+
+    // Calculer les positions pour chaque nœud
+    const positions = {};
+    const svgWidth = 1000;
+    const svgHeight = 600;
+    const paddingX = 100;
+    const paddingY = 80;
+
+    // Calculer pour chaque niveau
+    const maxLevel = Math.max(...Object.keys(levels).map(Number));
+    
+    Object.entries(levels).forEach(([level, levelNodes]) => {
+      const numNodes = levelNodes.length;
+      const availableWidth = svgWidth - (paddingX * 2);
+      const nodeSpacing = availableWidth / (numNodes + 1);
+      
+      // Position Y basée sur le niveau
+      const levelY = (parseInt(level) / maxLevel) * (svgHeight - (paddingY * 2)) + paddingY;
+      
+      // Positionner les nœuds horizontalement
+      levelNodes.forEach((node, index) => {
+        let xPos = 0;
+        
+        // Si le nœud a une position X prédéfinie, l'utiliser
+        if (node.x !== undefined) {
+          xPos = (node.x / 8) * availableWidth + paddingX; // Supposons que la valeur max de x est 8
+        } else {
+          // Sinon, distribuer uniformément
+          xPos = ((index + 1) * nodeSpacing) + paddingX;
+        }
+        
+        positions[node.id] = { x: xPos, y: levelY };
+      });
+    });
+
+    // Fixer les positions de départ et de fin
+    const startNode = nodes.find(n => n.type === 'start');
+    const bossNode = nodes.find(n => n.type === 'boss');
+    
+    if (startNode) {
+      positions[startNode.id] = { 
+        ...positions[startNode.id],
+        x: svgWidth / 2
+      };
+    }
+    
+    if (bossNode) {
+      positions[bossNode.id] = { 
+        ...positions[bossNode.id], 
+        x: svgWidth / 2
+      };
+    }
+
+    // Mettre à jour les positions
+    setNodePositions(positions);
   }, [nodes]);
 
   // Node Selection Handler
