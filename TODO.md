@@ -1,31 +1,83 @@
-# TODO - Migration Redux
+Après avoir analysé les fichiers de code fournis, voici une liste des tâches à accomplir pour implémenter le nouveau design tout en simplifiant la structure des fichiers et en éliminant les fichiers "Improved" redondants:
 
-## 1. Initialisation Redux
+# TODO: Implémentation du Design System de Poker Solo RPG
 
-- [ ] Installer les packages Redux & React-Redux.
-- [ ] Créer le dossier `store/`.
-- [ ] Configurer le `store` centralisé.
+## Nettoyage des fichiers dupliqués
 
-## 2. Création des reducers
+- [ ] Supprimer les composants "Improved" redondants et garder une seule version de chaque
+  - [ ] Fusionner `ImprovedCombatInterface.jsx` avec `CombatInterface.jsx`
+  - [ ] Fusionner `ImprovedEventEncounter.jsx` avec `EventEncounter.jsx`
+  - [ ] Fusionner `ImprovedCard.jsx` avec `EnhancedCard.jsx`
+  - [ ] Fusionner `ImprovedBonusCardManager.jsx` avec `BonusCardManager.jsx`
+  - [ ] Fusionner `ImprovedRoguelikeWorldMap.jsx` avec `RoguelikeWorldMap.jsx`
+  - [ ] Fusionner `ImprovedActionFeedback.jsx` avec `ActionFeedback.jsx`
+  - [ ] Fusionner `ImprovedGameInterface.jsx` avec un nouveau composant `GameInterface.jsx`
+  - [ ] Mettre à jour tous les imports dans les autres fichiers pour refléter ces changements
 
-- [ ] Créer un reducer pour la gestion des utilisateurs.
-- [ ] Créer un reducer pour la gestion des produits.
-- [ ] Prévoir un reducer pour les erreurs ou les notifications.
+## Implémentation du Design System
 
-## 3. Actions
+- [ ] Finaliser le composant `DesignSystem.jsx` pour inclure tous les éléments nécessaires:
+  - [ ] S'assurer que toutes les couleurs définies dans l'analyse sont présentes
+  - [ ] Créer les composants de base (Card, Button, Badge, ProgressBar)
+  - [ ] Définir les constantes pour les ombres, espacements, rayons de bordure, etc.
 
-- [ ] Créer les actions pour :
-  - [ ] Charger les données (fetch).
-  - [ ] Ajouter, modifier, supprimer des entités (CRUD).
-  - [ ] Gérer les états de chargement et d'erreur.
+## Mise à jour des composants principaux
 
-## 4. Adaptation des composants
+- [ ] Interface de combat
 
-- [ ] Connecter les composants à Redux via `useSelector` et `useDispatch`.
-- [ ] Supprimer l'état local inutile dans les composants.
-- [ ] Refactoriser les appels d'API pour passer par Redux (thunks ou middlewares).
+  - [ ] Mettre à jour la disposition verticale (ennemi en haut, joueur en bas)
+  - [ ] Améliorer les animations d'attaque et les effets visuels
+  - [ ] Ajouter des transitions fluides entre les phases de combat
 
-## 5. Tests & Debug
+- [ ] Carte du monde
 
-- [ ] Tester l'intégration Redux sur chaque composant connecté.
-- [ ] Vérifier l'absence de régressions.
+  - [ ] Ajouter des styles distinctifs pour chaque type de nœud
+  - [ ] Améliorer l'animation des chemins disponibles
+  - [ ] Ajouter des tooltips détaillés au survol des destinations
+
+- [ ] Système de cartes
+
+  - [ ] Implémenter des effets visuels différents selon la rareté
+  - [ ] Ajouter une prévisualisation des combinaisons possibles
+  - [ ] Améliorer les animations de tirage et de sélection
+
+- [ ] Interface utilisateur générale
+  - [ ] Mettre en place un header cohérent sur toutes les pages
+  - [ ] Créer un footer unifié avec les contrôles de navigation
+  - [ ] Assurer la cohérence des couleurs et styles à travers l'application
+
+## Hiérarchie de l'interface selon l'analyse
+
+- [ ] Structurer les éléments critiques (toujours visibles)
+
+  - [ ] Barre d'état du joueur avec PV, bouclier, or et niveau
+  - [ ] Indicateur de phase et progression d'étage
+  - [ ] Accès rapide aux fonctions essentielles
+
+- [ ] Organiser les éléments centraux (spécifiques à chaque phase)
+
+  - [ ] Combat: Ennemi, main de cartes, cartes bonus
+  - [ ] Exploration: Carte du monde avec chemins et nœuds
+  - [ ] Boutique, Repos, Événement: Contenus spécifiques
+
+- [ ] Intégrer les éléments secondaires
+  - [ ] Journal de combat
+  - [ ] Aperçu de la collection
+  - [ ] Navigation entre sections
+
+## Correction des imports
+
+- [ ] Mettre à jour tous les imports dans les fichiers pour refléter les nouveaux noms
+- [ ] S'assurer que les composants obsolètes ne sont plus importés nulle part
+
+## Tests et corrections
+
+- [ ] Tester chaque page pour s'assurer qu'elle utilise correctement le Design System
+- [ ] Vérifier la cohérence visuelle à travers toute l'application
+- [ ] Corriger les problèmes de z-index qui pourraient apparaître
+
+## Optimisations
+
+- [ ] Assurer que les composants utilisent bien React.memo où c'est pertinent
+- [ ] Vérifier les performances des animations complexes
+- [ ] S'assurer que les transitions sont fluides entre toutes les phases de jeu
