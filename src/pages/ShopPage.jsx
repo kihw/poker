@@ -17,13 +17,13 @@ import ProductCard from '../components/shop/ProductCard';
 const ShopPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [isLoading, setIsLoading] = useState(false);
 
   // Selectors
   const shopItems = useSelector((state) => state.shop?.items || []);
   const playerGold = useSelector(selectPlayerGold) || 0;
   const isGameOver = useSelector((state) => state.game?.isGameOver || false);
   const gamePhase = useSelector((state) => state.game?.gamePhase);
+  const shopAccessible = useSelector((state) => state.game.shopAccessible);
   const player = useSelector((state) => state.player || {
     health: 50,
     maxHealth: 50,
@@ -31,8 +31,16 @@ const ShopPage = () => {
     level: 1
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+
   // Initialiser la boutique au chargement
   useEffect(() => {
+    // Vérifier l'accessibilité de la boutique
+    if (!shopAccessible) {
+      navigate('/map');
+      return;
+    }
+
     // Vérifier si on est bien en phase de boutique
     if (gamePhase !== 'shop') {
       navigate('/map');
@@ -59,7 +67,7 @@ const ShopPage = () => {
           }));
         });
     }
-  }, [gamePhase, isGameOver, shopItems.length, dispatch, navigate]);
+  }, [gamePhase, isGameOver, shopItems.length, dispatch, navigate, shopAccessible]);
 
   // Quitter la boutique
   const handleExit = () => {
@@ -78,7 +86,7 @@ const ShopPage = () => {
   }
 
   // Si boutique vide ou indisponible
-  if (!shopItems || shopItems.length === 0) {
+  if (!shopItems || shopItems.length === 0 || !shopAccessible) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
