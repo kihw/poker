@@ -14,8 +14,8 @@ import {
   Icons,
 } from '../ui/DesignSystem';
 
-// Component Imports
-import Hand from '../card/Card';
+// Component Imports - CORRECTION DE L'IMPORT HAND
+import Hand from '../card/Hand'; // Changé de 'Card' à 'Hand'
 import BonusCards from '../card/BonusCards';
 import EnemyStatus from './EnemyStatus';
 import HandCombinationDisplay from './HandCombinationDisplay';
@@ -75,6 +75,13 @@ const CombatInterface = React.memo(() => {
     },
   };
 
+  // Ajout d'un log pour debugger
+  console.log('État de la main actuelle:', {
+    handLength: hand?.length || 0,
+    enemyName: enemy?.name,
+    phase: turnPhase,
+  });
+
   return (
     <motion.div
       {...combatAnimations}
@@ -98,12 +105,17 @@ const CombatInterface = React.memo(() => {
       {/* Combat Hand Section */}
       <div className="md:col-span-2">
         <Card variant="elevated" className="p-4">
-          <Hand
-            cards={hand}
-            onToggleSelect={handleCardSelection}
-            bestHandCards={bestHandCards}
-            maxSelectable={5}
-          />
+          {/* Vérification que hand existe et a des cartes */}
+          {hand && hand.length > 0 ? (
+            <Hand
+              cards={hand}
+              onToggleSelect={handleCardSelection}
+              bestHandCards={bestHandCards}
+              maxSelectable={5}
+            />
+          ) : (
+            <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
+          )}
 
           {/* Attack and Discard Controls with Motion */}
           <motion.div
@@ -118,7 +130,6 @@ const CombatInterface = React.memo(() => {
                 onClick={handleAttack}
                 disabled={selectedCards.length === 0}
               >
-                {/* Utiliser jsx au lieu d'emoji direct */}
                 <span className="mr-2">⚔️</span> Attack
               </Button>
             </Tooltip>
