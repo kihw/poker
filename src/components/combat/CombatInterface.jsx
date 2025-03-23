@@ -353,144 +353,7 @@ const CombatInterface = () => {
             </div>
 
             {/* Actions de combat */}
-            {turnPhase === 'select' && (
-              <div className="flex flex-col space-y-3 mt-4">
-                <div className="flex justify-center space-x-4">
-                  <button
-                    onClick={handleAttack}
-                    disabled={
-                      selectedCards.length === 0 || selectedCards.length > 5
-                    }
-                    className={`px-6 py-2 rounded-md font-bold uppercase transition-all ${
-                      selectedCards.length > 0 && selectedCards.length <= 5
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    Attaquer ({selectedCards.length})
-                  </button>
-
-                  <button
-                  onClick={() => {
-                    // Ne défausser que les cartes déjà sélectionnées
-                    if (
-                      selectedCards.length > 0 &&
-                      selectedCards.length <= discardLimit
-                    ) {
-                      dispatch(discardCards(selectedCards));
-                    } else {
-                      dispatch(
-                        setActionFeedback({
-                          message: 'Sélectionnez d\'abord les cartes à défausser',
-                          type: 'warning',
-                        })
-                      );
-                    }
-                  }}
-                  disabled={selectedCards.length === 0}
-                  className={`px-6 py-2 rounded-md font-bold uppercase ${
-                    selectedCards.length > 0
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  Défausser ({selectedCards.length})
-                </button>  return (
-    <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen combat-interface">
-      {/* Tutoriel */}
-      {showTutorial && (
-        <TutorialOverlay
-          step={tutorialStep}
-          onNextStep={handleNextTutorialStep}
-          onComplete={handleCompleteTutorial}
-        />
-      )}
-
-      {/* Message d'interface */}
-      <div className="text-center mb-4 text-white text-lg">
-        {getInterfaceMessage()}
-      </div>
-
-      {/* Effet de dommages */}
-      <AnimatePresence>
-        {showDamageEffect && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.7 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-red-600 pointer-events-none z-50"
-            style={{ mixBlendMode: 'overlay' }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* En-tête de combat */}
-      <div className="mb-6 text-center relative">
-        <h2 className="text-2xl font-bold text-white">
-          Niveau {gameData.stage} -{' '}
-          {gamePhase === 'combat' ? 'Combat' : 'Récompense'}
-        </h2>
-        <div className="absolute right-0 top-0 bg-yellow-600 text-black font-bold px-3 py-1 rounded-full text-sm">
-          {gameData.player.gold} <span className="text-xs">or</span>
-        </div>
-      </div>
-
-      {/* Zone ennemie */}
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="mb-4"
-      >
-        {enemy && (
-          <EnemyStatus
-            name={enemy.name}
-            hp={enemy.health}
-            maxHp={enemy.maxHealth}
-            nextAttack={enemy.attack}
-          />
-        )}
-      </motion.div>
-
-      {/* Journal de combat */}
-      <div className="bg-gray-800 rounded-md p-3 max-h-32 overflow-y-auto mb-6 text-sm">
-        <h3 className="text-gray-400 uppercase text-xs font-bold mb-2">
-          Journal de combat
-        </h3>
-        {combatLog &&
-          combatLog.map((entry, index) => (
-            <motion.div
-              key={index}
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.3 }}
-              className={`mb-1 pb-1 ${index !== combatLog.length - 1 ? 'border-b border-gray-700' : ''}`}
-            >
-              {entry}
-            </motion.div>
-          ))}
-      </div>
-
-      {/* Main du joueur */}
-      <div className="mb-6">
-        {hand && hand.length > 0 && (
-          <>
-            <div className="combat-hand">
-              <EnhancedHand
-                cards={getDisplayCards()}
-                onToggleSelect={handleCardAction}
-                maxSelectable={discardMode ? discardLimit : 5}
-                selectionMode={
-                  discardMode
-                    ? 'discard'
-                    : turnPhase === 'select'
-                      ? 'attack'
-                      : 'view'
-                }
-              />
-            </div>
-
-            {/* Actions de combat */}
-            {turnPhase === 'select' && (
+            {turnPhase === 'select' && !discardMode && (
               <div className="flex flex-col space-y-3 mt-4">
                 <div className="flex justify-center space-x-4">
                   <button
@@ -625,34 +488,22 @@ const CombatInterface = () => {
             </button>
           )}
 
-          {turnPhase === 'select' && (
+          {turnPhase === 'select' && !discardMode && (
             <>
               {!discardUsed && (
                 <button
                   onClick={() => dispatch(toggleDiscardMode())}
-                  className={`${
-                    discardMode
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : 'bg-amber-600 hover:bg-amber-700'
-                  } text-white font-bold py-2 px-4 rounded-md`}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md"
                 >
-                  {discardMode
-                    ? 'Annuler défausse'
-                    : `Défausser (${discardLimit} max.)`}
+                  Défausser ({discardLimit} max.)
                 </button>
               )}
 
               <button
                 onClick={handleAttack}
-                disabled={
-                  selectedCards.length < 1 ||
-                  selectedCards.length > 5 ||
-                  discardMode
-                }
+                disabled={selectedCards.length < 1 || selectedCards.length > 5}
                 className={`bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg ${
-                  selectedCards.length < 1 ||
-                  selectedCards.length > 5 ||
-                  discardMode
+                  selectedCards.length < 1 || selectedCards.length > 5
                     ? 'opacity-50 cursor-not-allowed'
                     : ''
                 }`}
@@ -697,3 +548,5 @@ const CombatInterface = () => {
     </div>
   );
 };
+
+export default CombatInterface;
