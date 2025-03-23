@@ -13,6 +13,7 @@ import { resetCombatState } from '../slices/combatSlice';
 import {
   resetBonusCards,
   LOAD_SAVED_DATA as LOAD_BONUS_CARDS_DATA,
+  initCollection
 } from '../slices/bonusCardsSlice';
 import { resetMap, LOAD_SAVED_DATA as LOAD_MAP_DATA } from '../slices/mapSlice';
 import {
@@ -36,7 +37,7 @@ export const saveGame = createAsyncThunk(
 
       // Créer un objet de sauvegarde avec les données essentielles
       const saveData = {
-        version: '1.0',
+        version: '1.1', // Version incrémentée
         timestamp: Date.now(),
         player: { ...state.player },
         game: {
@@ -51,19 +52,19 @@ export const saveGame = createAsyncThunk(
           currentNodeId: state.map.currentNodeId,
         },
         bonusCards: {
-          collection: state.bonusCards.collection.map((card) => ({
+          collection: state.bonusCards.collection?.map((card) => ({
             id: card.id,
             owned: card.owned !== false,
             level: card.level || 1,
-          })),
-          active: state.bonusCards.active.map((card) => ({
+          })) || [],
+          active: state.bonusCards.active?.map((card) => ({
             id: card.id,
             usesRemaining: card.usesRemaining || 0,
-          })),
-          maxSlots: state.bonusCards.maxSlots,
+          })) || [],
+          maxSlots: state.bonusCards.maxSlots || 3,
         },
         shop: {
-          itemsPurchased: state.shop.itemsPurchased,
+          itemsPurchased: state.shop.itemsPurchased || {},
         },
       };
 
@@ -113,6 +114,11 @@ export const loadGame = createAsyncThunk(
           })
         );
         dispatch(setLoading(false));
+        
+        // Si pas de sauvegarde, initialiser un nouveau jeu
+        dispatch(initCollection());
+        await dispatch(generateNewMap({ width: 3, depth: 5 }));
+        
         return { success: false, reason: 'no_save' };
       }
 
@@ -137,13 +143,20 @@ export const loadGame = createAsyncThunk(
       }
 
       // Charger les données de la carte
-      if (saveData.map) {
+      if (saveData.map && saveData.map.path && saveData.map.path.length > 0) {
         dispatch(LOAD_MAP_DATA(saveData.map));
+      } else {
+        // Si la carte est manquante ou vide, en générer une nouvelle
+        console.log("Carte manquante dans la sauvegarde, génération d'une nouvelle carte");
+        await dispatch(generateNewMap({ width: 3, depth: 5 }));
       }
 
       // Charger les données des cartes bonus
       if (saveData.bonusCards) {
         dispatch(LOAD_BONUS_CARDS_DATA(saveData.bonusCards));
+      } else {
+        // Initialiser une collection par défaut si manquante
+        dispatch(initCollection());
       }
 
       // Charger les données de la boutique
@@ -171,6 +184,10 @@ export const loadGame = createAsyncThunk(
           type: 'error',
         })
       );
+
+      // Si erreur, initialiser un nouveau jeu
+      dispatch(initCollection());
+      await dispatch(generateNewMap({ width: 3, depth: 5 }));
 
       return { success: false, error: error.message };
     }
@@ -227,6 +244,9 @@ export const resetEntireGame = createAsyncThunk(
 
       // Générer une nouvelle carte
       dispatch(generateNewMap({ width: 3, depth: 5 }));
+      
+      // Initialiser les cartes bonus
+      dispatch(initCollection());
 
       dispatch(
         setActionFeedback({
