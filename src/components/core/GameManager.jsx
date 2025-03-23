@@ -186,6 +186,7 @@ const GameManager = ({ children }) => {
     // Vérifier l'état du joueur toutes les secondes
     const healthCheckInterval = setInterval(checkPlayerHealth, 1000);
 
+    // Nettoyage de l'interval à la destruction du composant
     return () => clearInterval(healthCheckInterval);
   }, [playerHealth, isGameOver, dispatch]);
 
@@ -201,6 +202,7 @@ const GameManager = ({ children }) => {
       dispatch(saveGame());
     }, 60000); // Sauvegarde toutes les minutes
     
+    // Nettoyage de l'interval à la destruction du composant
     return () => clearInterval(autoSaveInterval);
   }, [dispatch, isInitialized, isGameOver]);
 
