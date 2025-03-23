@@ -1,4 +1,4 @@
-// src/components/shop/ImprovedShopInterface.jsx
+// src/components/shop/ShopInterface.jsx
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +11,7 @@ import { spendGold } from '../../redux/slices/playerSlice';
 import { setGamePhase } from '../../redux/slices/gameSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 
-const ImprovedShopInterface = () => {
+const ShopInterface = () => {
   const dispatch = useDispatch();
 
   // Sélecteurs Redux
@@ -224,9 +224,7 @@ const ImprovedShopInterface = () => {
       <div className="flex-grow">
         {filteredItems.length === 0 ? (
           <div className="text-center py-12 bg-gray-800 rounded-lg">
-            <p className="text-gray-400">
-              Aucun objet disponible dans cette catégorie
-            </p>
+            <p className="text-gray-400">Aucun objet disponible dans cette catégorie</p>
           </div>
         ) : (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -237,9 +235,7 @@ const ImprovedShopInterface = () => {
                   custom={index}
                   variants={itemVariants}
                   initial="hidden"
-                  animate={
-                    purchaseAnimation === index ? 'purchased' : 'visible'
-                  }
+                  animate={purchaseAnimation === index ? 'purchased' : 'visible'}
                   whileHover="hover"
                   exit="exit"
                   className="relative"
@@ -249,24 +245,18 @@ const ImprovedShopInterface = () => {
                   <Card className="p-4 bg-gray-800 border border-gray-700 h-full flex flex-col">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center">
-                        <span className="text-2xl mr-2">
-                          {getItemIcon(item)}
-                        </span>
+                        <span className="text-2xl mr-2">{getItemIcon(item)}</span>
                         <h3 className="font-bold text-white">{item.name}</h3>
                       </div>
                       <Badge
-                        variant={
-                          playerGold >= item.price ? 'warning' : 'danger'
-                        }
+                        variant={playerGold >= item.price ? 'warning' : 'danger'}
                         className="ml-2"
                       >
                         {item.price} or
                       </Badge>
                     </div>
 
-                    <p className="text-gray-300 text-sm mb-4 flex-grow">
-                      {item.description}
-                    </p>
+                    <p className="text-gray-300 text-sm mb-4 flex-grow">{item.description}</p>
 
                     {/* Effets détaillés pour l'objet survolé */}
                     {hoveredItem === item && (
@@ -280,15 +270,11 @@ const ImprovedShopInterface = () => {
                         <div className="text-gray-300">
                           {item.effect && (
                             <div className="flex items-center">
-                              {item.effect.type === 'heal' && (
-                                <span className="mr-1">❤️</span>
-                              )}
+                              {item.effect.type === 'heal' && <span className="mr-1">❤️</span>}
                               {item.effect.type === 'maxHealth' && (
                                 <span className="mr-1">❤️ Max</span>
                               )}
-                              {item.effect.type === 'shield' && (
-                                <span className="mr-1">🛡️</span>
-                              )}
+                              {item.effect.type === 'shield' && <span className="mr-1">🛡️</span>}
                               {item.effect.type === 'tempDamage' && (
                                 <span className="mr-1">⚔️</span>
                               )}
@@ -296,19 +282,12 @@ const ImprovedShopInterface = () => {
                                 <span className="mr-1">🃏</span>
                               )}
                               {item.effect.value && `+${item.effect.value}`}
-                              {item.effect.duration &&
-                                ` (${item.effect.duration} tours)`}
+                              {item.effect.duration && ` (${item.effect.duration} tours)`}
                             </div>
                           )}
-                          {item.count && (
-                            <div>Contient {item.count} cartes</div>
-                          )}
-                          {item.rarityPool && (
-                            <div>Raretés: {item.rarityPool.join(', ')}</div>
-                          )}
-                          {item.maxPurchases && (
-                            <div>Achat limité: {item.maxPurchases} fois</div>
-                          )}
+                          {item.count && <div>Contient {item.count} cartes</div>}
+                          {item.rarityPool && <div>Raretés: {item.rarityPool.join(', ')}</div>}
+                          {item.maxPurchases && <div>Achat limité: {item.maxPurchases} fois</div>}
                         </div>
                       </motion.div>
                     )}
@@ -351,4 +330,4 @@ const ImprovedShopInterface = () => {
   );
 };
 
-export default ImprovedShopInterface;
+export default ShopInterface;
