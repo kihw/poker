@@ -2,18 +2,15 @@
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { 
-  Card, 
-  DESIGN_TOKENS, 
-  Icons 
-} from '../ui/DesignSystem';
+import { Card, DESIGN_TOKENS, Icons } from '../ui/DesignSystem';
 
 const CombatLogEntry = React.memo(({ entry, index }) => {
   // Determine the icon and color based on the entry type
   const getEntryStyle = (entry) => {
     if (entry.includes('dégâts')) return { icon: '⚔️', color: DESIGN_TOKENS.colors.danger.main };
     if (entry.includes('récupéré')) return { icon: '❤️', color: DESIGN_TOKENS.colors.success.main };
-    if (entry.includes('Carte bonus')) return { icon: '🃏', color: DESIGN_TOKENS.colors.secondary.main };
+    if (entry.includes('Carte bonus'))
+      return { icon: '🃏', color: DESIGN_TOKENS.colors.secondary.main };
     return { icon: 'ℹ️', color: DESIGN_TOKENS.colors.neutral[500] };
   };
 
@@ -24,22 +21,19 @@ const CombatLogEntry = React.memo(({ entry, index }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      transition={{ 
-        duration: 0.3, 
-        delay: index * 0.1 
+      transition={{
+        duration: 0.3,
+        delay: index * 0.1,
       }}
       className="flex items-center space-x-2 py-2 border-b border-gray-700 last:border-b-0"
     >
-      <div 
+      <div
         className="w-8 h-8 flex items-center justify-center rounded-full"
         style={{ backgroundColor: `${color}20` }}
       >
         <span>{icon}</span>
       </div>
-      <span 
-        className="text-sm flex-grow"
-        style={{ color: DESIGN_TOKENS.colors.neutral[300] }}
-      >
+      <span className="text-sm flex-grow" style={{ color: DESIGN_TOKENS.colors.neutral[300] }}>
         {entry}
       </span>
     </motion.div>
@@ -55,34 +49,24 @@ const CombatLog = () => {
   }, [combatLog]);
 
   return (
-    <Card 
-      variant="elevated" 
-      className="h-full overflow-hidden"
-    >
+    <Card variant="elevated" className="h-full overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h3 className="text-lg font-bold flex items-center">
-          <Icons.combat className="mr-2" />
+          {/* Utilisation de span au lieu de Icons.combat directement */}
+          <span className="mr-2">⚔️</span>
           Journal de Combat
         </h3>
-        <span className="text-sm text-gray-400">
-          {visibleEntries.length} entrées
-        </span>
+        <span className="text-sm text-gray-400">{visibleEntries.length} entrées</span>
       </div>
 
       <div className="max-h-64 overflow-y-auto p-2">
         <AnimatePresence>
           {visibleEntries.length > 0 ? (
             visibleEntries.map((entry, index) => (
-              <CombatLogEntry 
-                key={`${entry}-${index}`} 
-                entry={entry} 
-                index={index} 
-              />
+              <CombatLogEntry key={`${entry}-${index}`} entry={entry} index={index} />
             ))
           ) : (
-            <div className="text-center text-gray-500 py-4">
-              Aucune entrée dans le journal
-            </div>
+            <div className="text-center text-gray-500 py-4">Aucune entrée dans le journal</div>
           )}
         </AnimatePresence>
       </div>

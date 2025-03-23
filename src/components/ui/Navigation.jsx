@@ -3,25 +3,11 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import {
-  selectStage, 
-  selectGamePhase 
-} from '../../redux/selectors/gameSelectors';
+import { selectStage, selectGamePhase } from '../../redux/selectors/gameSelectors';
 import { selectPlayerGold } from '../../redux/selectors/playerSelectors';
-import { 
-  Button, 
-  Icons, 
-  DESIGN_TOKENS, 
-  AnimationPresets 
-} from './DesignSystem';
+import { Button, Icons, DESIGN_TOKENS, AnimationPresets } from './DesignSystem';
 
-const NavigationItem = ({ 
-  to, 
-  icon, 
-  label, 
-  isActive, 
-  gamePhase 
-}) => {
+const NavigationItem = ({ to, icon, label, isActive, gamePhase }) => {
   return (
     <motion.div
       {...AnimationPresets.scaleIn}
@@ -34,12 +20,10 @@ const NavigationItem = ({
           flex flex-col items-center justify-center 
           px-3 py-2 rounded-md 
           transition-all duration-200
-          ${isActive 
-            ? 'bg-primary-600 text-white' 
-            : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-          }
+          ${isActive ? 'bg-primary-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}
         `}
       >
+        {/* Utiliser un span pour contenir l'icône */}
         <span className="text-xl mb-1">{icon}</span>
         <span className="text-xs">{label}</span>
       </Link>
@@ -54,24 +38,24 @@ const Navigation = () => {
   const gamePhase = useSelector(selectGamePhase);
 
   const navigationItems = [
-    { 
-      to: '/', 
-      icon: Icons.combat, 
-      label: 'Combat', 
-      activeRoutes: ['/']
+    {
+      to: '/',
+      icon: '⚔️',
+      label: 'Combat',
+      activeRoutes: ['/'],
     },
-    { 
-      to: '/map', 
-      icon: Icons.event, 
-      label: 'Carte', 
-      activeRoutes: ['/map']
+    {
+      to: '/map',
+      icon: '🗺️',
+      label: 'Carte',
+      activeRoutes: ['/map'],
     },
-    { 
-      to: '/collection', 
-      icon: Icons.card, 
-      label: 'Collection', 
-      activeRoutes: ['/collection']
-    }
+    {
+      to: '/collection',
+      icon: '🃏',
+      label: 'Collection',
+      activeRoutes: ['/collection'],
+    },
   ];
 
   return (
@@ -92,7 +76,7 @@ const Navigation = () => {
             />
           ))}
         </div>
-        
+
         <div className="flex items-center space-x-2 text-sm text-gray-400">
           <div className="flex items-center">
             <span className="mr-1">📊</span>

@@ -3,26 +3,60 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Icônes pour le design system
+// Icônes pour le design system - Corrigé pour utiliser des composants React au lieu d'emojis directs
 export const Icons = {
-  combat: '⚔️',
-  event: '❗',
-  card: '🃏',
+  // Utiliser des fonctions qui retournent des éléments JSX ou des strings plutôt que des emojis directs
+  combat: () => <span>⚔️</span>,
+  event: () => <span>❗</span>,
+  card: () => <span>🃏</span>,
   health: ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+      />
     </svg>
   ),
   gold: ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   ),
   level: ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M13 10V3L4 14h7v7l9-11h-7z"
+      />
     </svg>
-  )
+  ),
 };
 
 // Autres exports et composants
@@ -89,52 +123,49 @@ export const AnimationPresets = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
     exit: { opacity: 0 },
-    transition: { 
+    transition: {
       duration: DESIGN_TOKENS.animations.duration.normal,
-      ease: 'easeInOut'
-    }
+      ease: 'easeInOut',
+    },
   },
   slideUp: {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     exit: { opacity: 0, y: 20 },
-    transition: { 
+    transition: {
       type: 'spring',
       stiffness: 300,
-      damping: 20 
-    }
+      damping: 20,
+    },
   },
   scaleIn: {
     initial: { scale: 0.9, opacity: 0 },
-    animate: { 
-      scale: 1, 
+    animate: {
+      scale: 1,
       opacity: 1,
       transition: {
         type: 'spring',
         stiffness: 300,
-        damping: 10
-      }
+        damping: 10,
+      },
     },
-    exit: { 
-      scale: 0.9, 
-      opacity: 0 
-    }
-  }
+    exit: {
+      scale: 0.9,
+      opacity: 0,
+    },
+  },
 };
 
 // Ajout du composant Card qui était manquant
-export const Card = ({ children, variant = "elevated", className = "", ...props }) => {
+export const Card = ({ children, variant = 'elevated', className = '', ...props }) => {
   const variantStyles = {
-    elevated: "bg-gray-800 shadow-lg",
-    outline: "bg-gray-800 border border-gray-700",
-    flat: "bg-gray-800"
+    elevated: 'bg-gray-800 shadow-lg',
+    outline: 'bg-gray-800 border border-gray-700',
+    flat: 'bg-gray-800',
   };
 
   return (
-    <div 
-      className={`rounded-lg overflow-hidden ${variantStyles[variant]} ${className}`}
-      {...props}
-    >
+    <div className={`rounded-lg overflow-hidden ${variantStyles[variant]} ${className}`} {...props}>
       {children}
     </div>
   );
@@ -151,11 +182,11 @@ export const Button = ({ children, variant = 'primary', ...props }) => {
   };
 
   return (
-    <button 
+    <button
       className={`
         px-4 py-2 rounded-md transition-colors 
         ${variantStyles[variant] || variantStyles.primary}
-      `} 
+      `}
       {...props}
     >
       {children}
@@ -180,7 +211,7 @@ export const Badge = ({ children, variant = 'primary', size = 'md', ...props }) 
   };
 
   return (
-    <span 
+    <span
       className={`
         inline-block rounded 
         ${variantStyles[variant]} 
@@ -194,14 +225,12 @@ export const Badge = ({ children, variant = 'primary', size = 'md', ...props }) 
 };
 
 // Ajout du composant Tooltip manquant qui pourrait être utilisé ailleurs
-export const Tooltip = ({ children, content, className = "", ...props }) => {
+export const Tooltip = ({ children, content, className = '', ...props }) => {
   return (
     <div className={`relative group ${className}`} {...props}>
       {children}
       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="bg-gray-800 text-white text-xs p-2 rounded shadow">
-          {content}
-        </div>
+        <div className="bg-gray-800 text-white text-xs p-2 rounded shadow">{content}</div>
       </div>
     </div>
   );
