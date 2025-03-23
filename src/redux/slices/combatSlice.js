@@ -2,6 +2,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createDeck, shuffleDeck, drawCards } from '../../core/deck.js';
 import {
+  evaluateHand,
   evaluatePartialHand,
   calculateDamage,
   findBestHand,

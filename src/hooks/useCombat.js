@@ -69,22 +69,7 @@ export function useCombat() {
     dispatch(dealHand());
   }, [dispatch]);
   
-  /**
-   * Sélectionne/désélectionne une carte
-   * @param {number} index - Index de la carte dans la main
-   */
-  const handleCardSelection = useCallback((index) => {
-    // Vérifier si nous sommes dans la bonne phase
-    if (turnPhase !== 'select') {
-      dispatch(setActionFeedback({
-        message: 'Vous ne pouvez pas sélectionner de cartes en ce moment',
-        type: 'warning'
-      }));
-      return;
-    }
-    
-    dispatch(toggleCardSelection(index));
-  }, [dispatch, turnPhase]);
+  
   
   /**
    * Exécute l'attaque avec les cartes sélectionnées

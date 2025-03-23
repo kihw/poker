@@ -17,7 +17,7 @@ import TutorialOverlay from '../ui/TutorialOverlay';
 import {
   toggleCardSelection,
   setTurnPhase,
-  dealHand, // Import this from combatSlice directly
+  dealHand,
 } from '../../redux/slices/combatSlice';
 import {
   attackEnemy,
@@ -98,7 +98,7 @@ const CombatInterface = () => {
     }
   }, [enemy?.health, gamePhase, turnPhase, dispatch, navigate]);
 
-  // Gestion du tutoriel
+  // Gérer le tutoriel
   const handleNextTutorialStep = () => {
     // Mise à jour du state tutorialStep dans le Redux store
     const currentStep = gameData.tutorialStep || 0;
@@ -140,6 +140,7 @@ const CombatInterface = () => {
 
     setSelectedAttackCards(newSelectedCards);
   };
+
   const handleCardAction = (index) => {
     if (!hand || hand[index] === undefined) {
       console.error('Index de carte invalide ou main non disponible:', index);
@@ -187,7 +188,6 @@ const CombatInterface = () => {
   };
 
   // Basculer entre mode attaque et défausse
-
   const toggleDiscardMode = () => {
     // Vérifier si la défausse a déjà été utilisée ce tour
     if (discardUsed && !discardMode) {
@@ -360,77 +360,7 @@ const CombatInterface = () => {
       };
     });
   };
-  const useCardSelection = (hand, discardMode, discardLimit) => {
-    const [selectedDiscards, setSelectedDiscards] = useState([]);
-    const [selectedAttackCards, setSelectedAttackCards] = useState([]);
 
-    const handleCardSelection = useCallback(
-      (index) => {
-        if (!hand || hand[index] === undefined) {
-          console.error(
-            'Index de carte invalide ou main non disponible:',
-            index
-          );
-          return;
-        }
-
-        const setSelectedCards = discardMode
-          ? setSelectedDiscards
-          : setSelectedAttackCards;
-
-        const currentSelectedCards = discardMode
-          ? selectedDiscards
-          : selectedAttackCards;
-
-        const maxSelectable = discardMode ? discardLimit : 5;
-
-        const newSelectedCards = [...currentSelectedCards];
-        const cardIndex = newSelectedCards.indexOf(index);
-
-        if (cardIndex !== -1) {
-          // Désélectionner si déjà présent
-          newSelectedCards.splice(cardIndex, 1);
-        } else if (newSelectedCards.length < maxSelectable) {
-          // Ajouter si en dessous de la limite
-          newSelectedCards.push(index);
-        }
-
-        setSelectedCards(newSelectedCards);
-      },
-      [hand, discardMode, discardLimit, selectedDiscards, selectedAttackCards]
-    );
-
-    return {
-      selectedDiscards,
-      selectedAttackCards,
-      handleCardSelection,
-      setSelectedDiscards,
-      setSelectedAttackCards,
-    };
-  };
-  const confirmDiscard = () => {
-    if (selectedCards.length > 0 && selectedCards.length <= discardLimit) {
-      dispatch(discardCards(selectedCards));
-
-      // Réinitialiser les états
-      setSelectedDiscards([]);
-      setDiscardMode(false);
-
-      dispatch(
-        setActionFeedback({
-          message: `${selectedCards.length} cartes défaussées et remplacées`,
-          type: 'info',
-        })
-      );
-    } else {
-      dispatch(
-        setActionFeedback({
-          message: `Vous devez sélectionner entre 1 et ${discardLimit} cartes`,
-          type: 'warning',
-        })
-      );
-    }
-  };
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen combat-interface">
       {/* Tutoriel */}
@@ -589,7 +519,6 @@ const CombatInterface = () => {
                 </div>
               )}
             </>
-            )}
           </>
         )}
       </div>

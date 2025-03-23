@@ -1,5 +1,10 @@
 // Modification pour src/redux/thunks/combatThunks.js
+export * from './combatCycleThunks';
 // Intégrer cette fonction dans le fichier pour évaluer correctement les mains de moins de 5 cartes
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { setEnemy, startCombat } from '../slices/combatSlice';
+import { setGamePhase } from '../slices/gameSlice';
+import { generateEnemy } from '../../modules/combat-system-factory';
 
 /**
  * Évalue une main de moins de 5 cartes
@@ -168,56 +173,34 @@ function getCardNameFromValue(value) {
   return valueMap[value] || value.toString();
 }
 
-// Pour intégrer cette fonctionnalité, modifiez le code existant comme suit dans la thunk attackEnemy :
+/**
+ * Thunk pour démarrer un nouveau combat
+ * @param {Object} options - Options pour le combat
+ * @param {boolean} [options.isElite=false] - Si l'ennemi est d'élite
+ * @param {boolean} [options.isBoss=false] - Si l'ennemi est un boss
+ */
+export const startNewCombat = createAsyncThunk(
+  'combat/startNewCombat',
+  async ({ isElite = false, isBoss = false }, { dispatch, getState }) => {
+    try {
+      // Récupérer le niveau actuel
+      const stage = getState().game.stage || 1;
 
-// Remplacer ce bloc :
-// Pour moins de 5 cartes, calcul de dégâts simple
-/*
-else {
-  // Calculer la somme des valeurs numériques
-  let totalValue = selectedCards.reduce(
-    (sum, card) => sum + (card.numericValue || 0),
-    0
-  );
+      // Générer un ennemi
+      const enemy = generateEnemy(stage, isElite, isBoss);
 
-  // Appliquer les bonus
-  const { totalDamage, bonusEffects } = action.payload || {
-    totalDamage: totalValue,
-    bonusEffects: [],
-  };
+      // Dispatcher l'action pour définir l'ennemi et commencer le combat
+      dispatch(setEnemy(enemy));
+      dispatch(startCombat(enemy));
+      dispatch(setGamePhase('combat'));
 
-  // Stocker le résultat
-  state.handResult = {
-    handName: `${state.selectedCards.length} Carte${state.selectedCards.length > 1 ? 's' : ''}`,
-    handRank: 0,
-    baseDamage: totalValue,
-    totalDamage: totalDamage || totalValue,
-    bonusEffects: bonusEffects || [],
-    cards: selectedCards,
-  };
-}
-*/
+      return enemy;
+    } catch (error) {
+      console.error('Erreur lors du démarrage du combat:', error);
+      return null;
+    }
+  }
+);
 
-// Par cette version améliorée :
-/*
-else {
-  // Évaluer la main partielle pour détecter les combinaisons comme les paires
-  const partialHandResult = evaluatePartialHand(selectedCards);
-  
-  // Appliquer les bonus
-  const { totalDamage, bonusEffects } = action.payload || {
-    totalDamage: partialHandResult.baseDamage,
-    bonusEffects: [],
-  };
-
-  // Stocker le résultat
-  state.handResult = {
-    handName: partialHandResult.handName,
-    handRank: partialHandResult.handRank,
-    baseDamage: partialHandResult.baseDamage,
-    totalDamage: totalDamage || partialHandResult.baseDamage,
-    bonusEffects: bonusEffects || [],
-    cards: selectedCards,
-  };
-}
-*/
+// Exporter les autres thunks existants
+export * from './combatCycleThunks';

@@ -66,6 +66,25 @@ export const generateNewMap = createAsyncThunk(
   }
 );
 
+// Fonction utilitaire pour vérifier si un nœud est accessible
+function isNodeAccessible(currentNodeId, targetNodeId, nodes) {
+  // Si pas de nœud actuel (début de jeu), seul le nœud de départ est accessible
+  if (!currentNodeId) {
+    const startNode = nodes.find((node) => node.type === 'start');
+    return startNode && startNode.id === targetNodeId;
+  }
+
+  // Trouver le nœud actuel
+  const currentNode = nodes.find((node) => node.id === currentNodeId);
+
+  // Un nœud est accessible s'il est un enfant du nœud actuel
+  return (
+    currentNode &&
+    currentNode.childIds &&
+    currentNode.childIds.includes(targetNodeId)
+  );
+}
+
 // Thunk pour gérer la sélection d'un nœud et les actions correspondantes
 export const handleNodeSelection = createAsyncThunk(
   'map/handleNodeSelection',
@@ -154,22 +173,3 @@ export const handleNodeSelection = createAsyncThunk(
     }
   }
 );
-
-// Fonction utilitaire pour vérifier si un nœud est accessible
-function isNodeAccessible(currentNodeId, targetNodeId, nodes) {
-  // Si pas de nœud actuel (début de jeu), seul le nœud de départ est accessible
-  if (!currentNodeId) {
-    const startNode = nodes.find((node) => node.type === 'start');
-    return startNode && startNode.id === targetNodeId;
-  }
-
-  // Trouver le nœud actuel
-  const currentNode = nodes.find((node) => node.id === currentNodeId);
-
-  // Un nœud est accessible s'il est un enfant du nœud actuel
-  return (
-    currentNode &&
-    currentNode.childIds &&
-    currentNode.childIds.includes(targetNodeId)
-  );
-}

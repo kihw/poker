@@ -70,67 +70,95 @@ export function createCombatSystem(bonusCardSystem) {
 
   /**
    * Génère un ennemi avec une difficulté adaptée au niveau
+   * @param {number} stage - Le niveau actuel du jeu
    * @param {boolean} isElite - Si vrai, génère un ennemi d'élite plus puissant
    * @param {boolean} isBoss - Si vrai, génère un boss encore plus puissant
    * @returns {Object} L'ennemi généré
    */
-  function generateEnemy(isElite = false, isBoss = false) {
-    if (!gameState) {
-      throw new Error('Combat system not initialized');
-    }
+  function generateEnemy(stage = 1, isElite = false, isBoss = false) {
+    // Scaling basé sur le niveau
+    const healthMultiplier = 1 + stage * 0.1;
+    const damageMultiplier = 1 + stage * 0.1;
 
+    // Base enemies pool
     const baseEnemies = [
-      { name: 'Goblin', health: 40, attack: 8, image: '👺' },
-      { name: 'Orc', health: 50, attack: 10, image: '👹' },
-      { name: 'Skeleton', health: 35, attack: 7, image: '💀' },
+      {
+        name: 'Goblin',
+        health: Math.floor(40 * healthMultiplier),
+        maxHealth: Math.floor(40 * healthMultiplier),
+        attack: Math.floor(8 * damageMultiplier),
+        image: '👺',
+      },
+      {
+        name: 'Orc',
+        health: Math.floor(50 * healthMultiplier),
+        maxHealth: Math.floor(50 * healthMultiplier),
+        attack: Math.floor(10 * damageMultiplier),
+        image: '👹',
+      },
+      {
+        name: 'Skeleton',
+        health: Math.floor(35 * healthMultiplier),
+        maxHealth: Math.floor(35 * healthMultiplier),
+        attack: Math.floor(7 * damageMultiplier),
+        image: '💀',
+      },
     ];
 
+    // Elite enemies pool
     const eliteEnemies = [
       {
         name: 'Dark Knight',
-        health: 80,
-        attack: 14,
+        health: Math.floor(80 * healthMultiplier),
+        maxHealth: Math.floor(80 * healthMultiplier),
+        attack: Math.floor(14 * damageMultiplier),
         image: '🧟',
-        abilities: ['armor', 'doublestrike'],
+        abilities: ['armor'],
+      },
+      {
+        name: 'Troll Berserker',
+        health: Math.floor(90 * healthMultiplier),
+        maxHealth: Math.floor(90 * healthMultiplier),
+        attack: Math.floor(16 * damageMultiplier),
+        image: '👹',
+        abilities: ['rage'],
       },
     ];
 
+    // Boss enemies pool
     const bossEnemies = [
       {
         name: 'Dragon',
-        health: 150,
-        attack: 18,
+        health: Math.floor(150 * healthMultiplier),
+        maxHealth: Math.floor(150 * healthMultiplier),
+        attack: Math.floor(18 * damageMultiplier),
         image: '🐉',
-        abilities: ['firebreath', 'tailswipe'],
+        abilities: ['firebreath'],
+      },
+      {
+        name: 'Demon Lord',
+        health: Math.floor(180 * healthMultiplier),
+        maxHealth: Math.floor(180 * healthMultiplier),
+        attack: Math.floor(20 * damageMultiplier),
+        image: '👿',
+        abilities: ['darkmagic'],
       },
     ];
 
-    let enemyPool, baseMultiplier;
-
+    // Sélectionner l'ennemi en fonction du type
+    let enemyPool;
     if (isBoss) {
       enemyPool = bossEnemies;
-      baseMultiplier = 1 + gameState.stage * 0.3;
     } else if (isElite) {
       enemyPool = eliteEnemies;
-      baseMultiplier = 1 + gameState.stage * 0.2;
     } else {
       enemyPool = baseEnemies;
-      baseMultiplier = 1 + gameState.stage * 0.1;
     }
 
-    // Select a random enemy
-    const selectedEnemy = {
-      ...enemyPool[Math.floor(Math.random() * enemyPool.length)],
-    };
-
-    // Adjust stats based on stage
-    selectedEnemy.health = Math.floor(selectedEnemy.health * baseMultiplier);
-    selectedEnemy.maxHealth = selectedEnemy.health;
-    selectedEnemy.attack = Math.floor(selectedEnemy.attack * baseMultiplier);
-
-    return selectedEnemy;
+    // Sélectionner un ennemi aléatoire de la piscine
+    const randomIndex = Math.floor(Math.random() * enemyPool.length);
+    return enemyPool[randomIndex];
   }
-
   /**
    * Démarre un nouveau combat
    * @param {Object} enemyOverride - Ennemi personnalisé (optionnel)
