@@ -6,7 +6,7 @@ import { makeEventChoice } from '../../redux/thunks/eventThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import { COLORS } from '../ui/DesignSystem';
 
-const EventEncounter = ({ event, onClose }) => {
+const ImprovedEventEncounter = ({ event, onClose }) => {
   const dispatch = useDispatch();
 
   // Sélectionner les données du joueur et les résultats d'événements depuis Redux
@@ -414,4 +414,4 @@ const EventEncounter = ({ event, onClose }) => {
   );
 };
 
-export default EventEncounter;
+export default ImprovedEventEncounter;

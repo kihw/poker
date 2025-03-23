@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import EnhancedCard from './EnhancedCard';
 import { motion } from 'framer-motion';
 
-const EnhancedHand = ({
+const Hand = ({
   cards,
   onToggleSelect,
   bestHandCards = [],
@@ -187,4 +187,4 @@ const EnhancedHand = ({
   );
 };
 
-export default EnhancedHand;
+export default Hand;
