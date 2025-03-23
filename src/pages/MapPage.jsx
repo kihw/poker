@@ -1,4 +1,4 @@
-// Voici comment corriger src/pages/MapPage.jsx
+// src/pages/MapPage.jsx - Version corrigée
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +26,7 @@ const MapPage = () => {
   const [mapLoading, setMapLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  // Regroupez tous les sélecteurs ici, ne les utilisez pas conditionnellement
+  // Regroupez tous les sélecteurs ici pour éviter les problèmes
   const path = useSelector(selectMapPath);
   const currentNodeId = useSelector(selectCurrentNodeId);
   const isGameOver = useSelector(selectIsGameOver);
@@ -34,22 +34,28 @@ const MapPage = () => {
   const playerHealth = useSelector(selectPlayerHealth);
   const playerMaxHealth = useSelector(selectPlayerMaxHealth);
   const playerGold = useSelector(selectPlayerGold);
-  const currentFloor = useSelector((state) => state.game.currentFloor) || 1;
-  const maxFloors = useSelector((state) => state.game.maxFloors) || 10;
+  const currentFloor = useSelector((state) => state.game?.currentFloor) || 1;
+  const maxFloors = useSelector((state) => state.game?.maxFloors) || 10;
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(path) ? path : [];
   const safePlayer = {
-    health: playerHealth,
-    maxHealth: playerMaxHealth,
-    gold: playerGold,
+    health: playerHealth || 50,
+    maxHealth: playerMaxHealth || 50,
+    gold: playerGold || 0,
   };
 
-  // Navigation automatique vers la page appropriée lorsqu'un nœud est sélectionné
+  // Navigation automatique en fonction de la phase
   useEffect(() => {
+    if (isGameOver) {
+      navigate('/');
+      return;
+    }
+    
     // Redirection basée sur la phase de jeu actuelle
     switch (gamePhase) {
       case 'combat':
+      case 'reward':
         console.log('Redirection vers la page de combat');
         navigate('/');
         break;
@@ -69,7 +75,7 @@ const MapPage = () => {
         // Rester sur la page de carte
         break;
     }
-  }, [gamePhase, navigate]);
+  }, [gamePhase, navigate, isGameOver]);
 
   // Generate map if not exists or empty
   useEffect(() => {
@@ -79,11 +85,11 @@ const MapPage = () => {
       });
 
       // Ensure path is empty before generating a new map
-      if (safePath.length === 0) {
+      if (safePath.length === 0 && !mapLoading) {
         try {
           setMapLoading(true);
           console.log('Génération de la carte roguelike');
-          await dispatch(generateNewMap({}));
+          await dispatch(generateNewMap({})).unwrap();
           setFeedback({
             message: 'Carte générée avec succès',
             type: 'success',
@@ -102,9 +108,8 @@ const MapPage = () => {
 
     // Try to generate map immediately
     tryGenerateMap();
-  }, [safePath, dispatch]);
+  }, [safePath, dispatch, mapLoading]);
 
-  // Render logic remains the same...
   if (mapLoading) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
@@ -129,7 +134,13 @@ const MapPage = () => {
             </p>
           </div>
           <button
-            onClick={() => dispatch(generateNewMap({}))}
+            onClick={() => {
+              setMapLoading(true);
+              dispatch(generateNewMap({}))
+                .unwrap()
+                .then(() => setMapLoading(false))
+                .catch(() => setMapLoading(false));
+            }}
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             Essayer de générer une nouvelle carte
@@ -138,7 +149,7 @@ const MapPage = () => {
             onClick={() => navigate('/')}
             className="mt-4 ml-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
           >
-            Retour au combat
+            Retour au menu principal
           </button>
         </div>
         <Navigation />
@@ -185,7 +196,7 @@ const MapPage = () => {
           Cliquez sur un lieu connecté pour vous y rendre. Les lieux plus
           lumineux sont accessibles depuis votre position actuelle.
         </p>
-        <div className="flex justify-center mt-2 space-x-4">
+        <div className="flex flex-wrap justify-center mt-2 gap-2">
           <span>⚔️ Combat</span>
           <span>🛡️ Élite</span>
           <span>👑 Boss</span>
