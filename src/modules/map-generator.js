@@ -8,6 +8,8 @@
  * @returns {Array} Tableau de nœuds représentant la carte
  */
 export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
+  console.log(`Génération de la carte - Stage: ${stage}, Largeur: ${width}, Profondeur: ${depth}`);
+
   // Validation des entrées
   width = Math.max(2, Math.min(8, width));
   depth = Math.max(3, Math.min(10, depth));
@@ -45,15 +47,18 @@ export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
   };
   nodes.push(startNode);
 
+  console.log('Nœud de départ créé');
+
   // Générer les niveaux intermédiaires
   for (let level = 1; level < depth - 1; level++) {
     // Déterminer le nombre de nœuds à ce niveau
-    // Plus de nœuds au milieu, moins aux extrémités
     const levelFactor = Math.min(level, depth - level - 1) / (depth / 2);
     const nodesInLevel = Math.max(
       2,
       Math.min(width, Math.round(2 + (width - 2) * levelFactor))
     );
+
+    console.log(`Niveau ${level}: ${nodesInLevel} nœuds`);
 
     const levelNodes = [];
 
@@ -176,7 +181,29 @@ export function generateRoguelikeMap(stage = 1, width = 4, depth = 5) {
     bossNode.parentIds.push(node.id);
   });
 
+  console.log(`Carte générée avec ${nodes.length} nœuds`);
+
   return nodes;
+}
+
+/**
+ * Sélectionne un élément aléatoire en fonction des pondérations
+ * @param {Object} probabilities - Objet avec les probabilités pour chaque type
+ * @returns {string} - Le type sélectionné
+ */
+function getRandomWeightedChoice(probabilities) {
+  const rand = Math.random();
+  let sum = 0;
+
+  for (const [type, probability] of Object.entries(probabilities)) {
+    sum += probability;
+    if (rand < sum) {
+      return type;
+    }
+  }
+
+  // Par défaut, retourner le type combat
+  return 'combat';
 }
 
 /**
@@ -198,7 +225,7 @@ export function validateMap(nodes) {
     return false;
   }
 
-  // Vérifier qu'il existe un chemin du début à la fin avec un parcours en largeur (BFS)
+  // Vérifier qu'il existe un chemin du début à la fin
   const visited = new Set();
   const toVisit = [startNode.id];
 
@@ -239,37 +266,11 @@ export function validateMap(nodes) {
   );
 
   if (!hasRestBeforeBoss) {
-    // Au lieu de simplement afficher un avertissement, nous renforçons notre validation
-    // Pour garantir qu'il y a toujours un site de repos avant le boss, on va forcer un nœud
-    // à être un site de repos, mais on laisse un message pour déboguer
     console.warn(
       'Attention: La carte a été générée sans site de repos avant le boss. Correction automatique appliquée.'
     );
-
-    // Vu que notre algorithme force maintenant un site de repos,
-    // cet avertissement ne devrait plus apparaître sauf si une modification extérieure a été faite
     return true;
   }
 
   return true;
-}
-
-/**
- * Sélectionne un élément aléatoire en fonction des pondérations
- * @param {Object} probabilities - Objet avec les probabilités pour chaque type
- * @returns {string} - Le type sélectionné
- */
-function getRandomWeightedChoice(probabilities) {
-  const rand = Math.random();
-  let sum = 0;
-
-  for (const [type, probability] of Object.entries(probabilities)) {
-    sum += probability;
-    if (rand < sum) {
-      return type;
-    }
-  }
-
-  // Par défaut, retourner le type combat
-  return 'combat';
 }
