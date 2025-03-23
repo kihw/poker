@@ -1,6 +1,7 @@
-// src/components/card/EnhancedCard.jsx - Version corrigée
+// src/components/card/EnhancedCard.jsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { SHADOWS, COLORS, TRANSITIONS } from '../ui/DesignSystem';
 
 const EnhancedCard = ({
   value,
@@ -10,6 +11,7 @@ const EnhancedCard = ({
   isHighlighted = false,
   selectionType = 'attack', // 'attack', 'discard', 'view'
   disabled = false,
+  scale = 1, // Facteur d'échelle pour ajuster la taille
 }) => {
   const [isProcessingClick, setIsProcessingClick] = useState(false);
 
@@ -31,38 +33,38 @@ const EnhancedCard = ({
     safeSuit === '♥' ||
     safeSuit === '♦';
 
-  // Déterminer les couleurs en fonction du type de carte
-  // Explicitly setting text color to ensure visibility
-  const cardColors = isRed ? 'bg-white text-red-600' : 'bg-white text-black';
+  // Couleurs avec un design plus vivant
+  const bgColor = isRed ? 'white' : 'white';
+  const textColor = isRed ? COLORS.danger.main : COLORS.gray[900];
 
   // Styles pour les différents modes de sélection
   let selectionStyles = '';
+  let selectionBorderColor = '';
   let selectionLabel = '';
 
   if (isSelected) {
     if (selectionType === 'attack') {
-      selectionStyles = 'border-blue-500 shadow-lg shadow-blue-500/50';
+      selectionBorderColor = COLORS.primary.main;
       selectionLabel = 'Attaque';
     } else if (selectionType === 'discard') {
-      selectionStyles = 'border-red-500 shadow-lg shadow-red-500/50';
+      selectionBorderColor = COLORS.danger.main;
       selectionLabel = 'Défausser';
     }
   }
 
+  // Dimensions de base avec échelle
+  const width = 64 * scale;
+  const height = 96 * scale;
+
   // Gestion du clic sur la carte avec protection contre les doubles clics
   const handleClick = (e) => {
-    // Important: stopper la propagation pour éviter les doubles déclenchements
     e.stopPropagation();
 
     if (disabled || !onToggleSelect || isProcessingClick) return;
 
-    // Activer le drapeau pour éviter les doubles clics
     setIsProcessingClick(true);
-
-    // Appeler la fonction de toggle
     onToggleSelect();
 
-    // Réinitialiser le drapeau après un court délai
     setTimeout(() => {
       setIsProcessingClick(false);
     }, 100);
@@ -70,44 +72,48 @@ const EnhancedCard = ({
 
   return (
     <motion.div
-      className={`relative w-16 h-24 cursor-pointer perspective-500 transform-gpu ${isSelected ? 'z-10' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`relative perspective-500 transform-gpu cursor-pointer ${isSelected ? 'z-10' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      style={{ width: `${width}px`, height: `${height}px` }}
       onClick={handleClick}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: disabled ? 1 : 1.05 }}
+      whileTap={{ scale: disabled ? 1 : 0.95 }}
     >
       <motion.div
-        className={`w-full h-full border-2 rounded-lg flex flex-col justify-center items-center
-                     ${cardColors}
-                     ${isSelected ? selectionStyles : 'border-gray-300'}
-                     ${isHighlighted ? 'ring-2 ring-blue-500' : ''}
-                     preserve-3d`}
+        className={`w-full h-full rounded-lg flex flex-col justify-center items-center preserve-3d shadow-md`}
+        style={{
+          backgroundColor: bgColor,
+          border: `${isSelected ? '2px' : '1px'} solid ${isSelected ? selectionBorderColor : '#d1d5db'}`,
+          boxShadow: isSelected
+            ? `0 0 10px ${selectionBorderColor}80`
+            : isHighlighted
+              ? `0 0 8px ${COLORS.primary.light}80`
+              : SHADOWS.md,
+          transition: TRANSITIONS.DEFAULT,
+        }}
       >
         {/* Face avant (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
           <div className="flex justify-between items-center">
-            <div
-              className={`text-lg font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
-            >
+            <div className={`text-lg font-bold`} style={{ color: textColor }}>
               {safeValue}
             </div>
-            <div className={`text-lg ${isRed ? 'text-red-600' : 'text-black'}`}>
+            <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
             </div>
           </div>
 
           <div
-            className={`flex-grow flex justify-center items-center text-3xl font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+            className={`flex-grow flex justify-center items-center text-3xl font-bold`}
+            style={{ color: textColor }}
           >
             {displaySuit}
           </div>
 
           <div className="flex justify-between items-center rotate-180">
-            <div
-              className={`text-lg font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
-            >
+            <div className={`text-lg font-bold`} style={{ color: textColor }}>
               {safeValue}
             </div>
-            <div className={`text-lg ${isRed ? 'text-red-600' : 'text-black'}`}>
+            <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
             </div>
           </div>
@@ -119,11 +125,15 @@ const EnhancedCard = ({
         <motion.div
           initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`absolute -bottom-2 left-0 right-0 text-xs text-center font-bold py-0.5 rounded-b-md ${
-            selectionType === 'attack'
-              ? 'bg-blue-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}
+          transition={{ duration: 0.2 }}
+          className="absolute -bottom-2 left-0 right-0 text-xs text-center font-bold py-0.5 rounded-b-md"
+          style={{
+            backgroundColor:
+              selectionType === 'attack'
+                ? COLORS.primary.main
+                : COLORS.danger.main,
+            color: 'white',
+          }}
         >
           {selectionLabel}
         </motion.div>
