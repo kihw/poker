@@ -21,6 +21,8 @@ import {
 import {
   attackEnemy,
   processCombatVictory,
+  executeCombatTurn,
+  processEnemyAttack,
 } from '../../redux/thunks/combatThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import {
@@ -168,17 +170,37 @@ const CombatInterface = () => {
           type: 'warning',
         })
       );
+      dispatch(attackEnemy())
+        .unwrap()
+        .then((result) => {
+          // Si l'ennemi est toujours en vie
+          if (enemy && enemy.health > 0) {
+            dispatch(processEnemyAttack());
+          }
+        });
       return;
     }
+
+    // Ajouter un log visuel pour confirmer l'attaque
     console.log('Attaque lancée avec', selectedCards.length, 'cartes');
 
-    dispatch(executeCombatTurn())
+    // Utiliser attackEnemy au lieu de executeCombatTurn
+    dispatch(attackEnemy())
       .unwrap()
       .then((result) => {
-        console.log('Résultat du tour de combat:', result);
+        console.log("Résultat de l'attaque:", result);
+
+        // Faire attaquer l'ennemi après l'attaque du joueur
+        // Si l'ennemi est toujours en vie
+        // Au lieu d'utiliser getState(), nous utilisons la variable enemy du state local
+        if (enemy && enemy.health > 0) {
+          setTimeout(() => {
+            dispatch({ type: 'combat/enemyAction' });
+          }, 500);
+        }
       })
       .catch((error) => {
-        console.error("Erreur lors de l'exécution du tour:", error);
+        console.error("Erreur lors de l'attaque:", error);
       });
   };
   // Défausser les cartes sélectionnées

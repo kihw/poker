@@ -372,10 +372,14 @@ export const executeCombatTurn = createAsyncThunk(
           afterAttackState.combat.enemy.health > 0
         ) {
           console.log("L'ennemi contre-attaque");
-          // IMPORTANT: Ajouter un délai pour que l'attaque ennemie soit visible
-          setTimeout(() => {
-            dispatch(enemyAction());
-          }, 300);
+
+          // IMPORTANT: Faire attaquer l'ennemi et réduire les PV du joueur
+          dispatch(enemyAction());
+
+          // Réduire les PV du joueur - C'est la partie qui manque !
+          const damageToPlayer = afterAttackState.combat.enemy.attack;
+          console.log(`Réduction des PV du joueur de ${damageToPlayer}`);
+          dispatch(takeDamage(damageToPlayer));
         } else {
           console.log('Ennemi vaincu, pas de contre-attaque');
         }

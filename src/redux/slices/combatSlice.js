@@ -40,32 +40,21 @@ const combatSlice = createSlice({
         handLength: state.hand.length,
         discardLength: state.discard.length,
         phase: state.turnPhase,
+        selectedCards: state.selectedCards,
       });
 
       // Garder les cartes non sélectionnées du tour précédent
       const keptCards = [];
-      const keptIndices = [];
 
-      // Vérifier si nous avons des cartes sélectionnées valides
-      const hasValidSelectedCards =
-        Array.isArray(state.selectedCards) &&
-        state.selectedCards.length > 0 &&
-        state.turnPhase === 'result';
-
-      if (state.hand.length > 0 && hasValidSelectedCards) {
-        console.log(
-          'Garder les cartes non sélectionnées, sélection:',
-          state.selectedCards
-        );
-
-        // Filtrer les cartes qui n'ont pas été sélectionnées
+      // Vérifier si nous avons des cartes à garder
+      if (state.hand.length > 0) {
+        // Sélectionner les cartes qui ne sont pas dans selectedCards (non utilisées)
         for (let i = 0; i < state.hand.length; i++) {
           const shouldKeep = !state.selectedCards.includes(i);
           if (shouldKeep) {
             // S'assurer que la carte n'est pas marquée comme sélectionnée
             const card = { ...state.hand[i], isSelected: false };
             keptCards.push(card);
-            keptIndices.push(i);
           } else {
             // Ajouter les cartes utilisées à la pile de défausse
             state.discard.push(state.hand[i]);
@@ -73,7 +62,7 @@ const combatSlice = createSlice({
         }
 
         console.log(
-          `Gardé ${keptCards.length} cartes, défaussé ${state.hand.length - keptCards.length} cartes`
+          `Gardé ${keptCards.length} cartes, défaussé ${state.selectedCards.length} cartes`
         );
       } else {
         console.log('Aucune carte à garder, distribution complète');
@@ -131,7 +120,7 @@ const combatSlice = createSlice({
         }
       }
 
-      // Création de la nouvelle main
+      // Création de la nouvelle main avec les cartes conservées et les nouvelles cartes
       let newHand = [...keptCards, ...drawnCards];
       console.log(
         `Nouvelle main créée avec ${newHand.length} cartes (${keptCards.length} conservées + ${drawnCards.length} nouvelles)`
@@ -160,7 +149,6 @@ const combatSlice = createSlice({
         phase: state.turnPhase,
       });
     },
-
     toggleCardSelection: (state, action) => {
       const index = action.payload;
       console.log(

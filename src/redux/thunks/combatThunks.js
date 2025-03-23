@@ -2,7 +2,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
-  startCombat,
+  startCombat, // Import correct de l'action, ne pas renommer
   evaluateSelectedHand as evaluateSelectedHandAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
@@ -163,16 +163,27 @@ export const startNewCombat = createAsyncThunk(
   'combat/startNewCombat',
   async ({ isElite = false, isBoss = false }, { dispatch, getState }) => {
     try {
+      console.log("Démarrage d'un nouveau combat");
       // Récupérer le niveau actuel
       const stage = getState().game.stage || 1;
 
       // Générer un ennemi
       const enemy = generateEnemy(stage, isElite, isBoss);
+      console.log('Ennemi généré:', enemy);
 
-      // Dispatcher l'action pour définir l'ennemi et commencer le combat
+      // Dispatcher l'action pour définir l'ennemi
       dispatch(setEnemy(enemy));
-      dispatch(startCombat(enemy));
+
+      // Dispatcher l'action Redux pour démarrer le combat
+      // L'action doit être un objet de type { type: string, payload: any }
+      dispatch({
+        type: 'combat/startCombat',
+        payload: enemy,
+      });
+
+      // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
+      console.log('Combat initialisé avec succès');
 
       return enemy;
     } catch (error) {
@@ -194,6 +205,8 @@ export const attackEnemy = createAsyncThunk(
       const hand = state.combat.hand;
       const selectedCardsIndices = state.combat.selectedCards;
 
+      console.log('Attaque avec cartes sélectionnées:', selectedCardsIndices);
+
       // Extraire les cartes sélectionnées
       const selectedCards = selectedCardsIndices
         .map((index) => hand[index])
@@ -205,6 +218,13 @@ export const attackEnemy = createAsyncThunk(
       // Calculer les dégâts
       const baseDamage = partialHandResult.baseDamage;
       const totalDamage = Math.max(1, Math.floor(baseDamage));
+
+      console.log(
+        'Évaluation de la main:',
+        partialHandResult.handName,
+        'Dégâts:',
+        totalDamage
+      );
 
       // Préparer les bonus
       const bonusEffects = [];
@@ -243,6 +263,27 @@ export const attackEnemy = createAsyncThunk(
     }
   }
 );
+export const processEnemyAttack = createAsyncThunk(
+  'combat/processEnemyAttack',
+  async (_, { dispatch, getState }) => {
+    const state = getState();
+    const enemy = state.combat.enemy;
 
-// Exporter toutes les actions liées au combat
+    if (!enemy || enemy.health <= 0) {
+      return { attacked: false };
+    }
+
+    // Faire attaquer l'ennemi (mettre à jour le journal)
+    dispatch({ type: 'combat/enemyAction' });
+
+    // Réduire les PV du joueur
+    dispatch(takeDamage(enemy.attack));
+
+    return {
+      attacked: true,
+      damage: enemy.attack,
+    };
+  }
+);
+// Exporter les actions du slice (pas les thunks)
 export { startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
