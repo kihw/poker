@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Optimized with Design System
+// src/components/combat/CombatInterface.jsx - Version optimisée
 import React, { useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +8,6 @@ import {
   Button, 
   Card, 
   Badge, 
-  ProgressBar, 
   Tooltip,
   DESIGN_TOKENS,
   Icons 
