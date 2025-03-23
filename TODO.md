@@ -12,19 +12,20 @@
   - [x] Fusionner `ImprovedGameInterface.jsx` avec un nouveau composant `GameInterface.jsx`
   - [x] Mettre à jour tous les imports dans les autres fichiers pour refléter ces changements
 
-## Implémentation du Design System 🚧
+## Implémentation du Design System ✅
 
 - [x] Finaliser le composant `DesignSystem.jsx` pour inclure tous les éléments nécessaires:
   - [x] S'assurer que toutes les couleurs définies dans l'analyse sont présentes
   - [x] Créer les composants de base (Card, Button, Badge, ProgressBar)
   - [x] Définir les constantes pour les ombres, espacements, rayons de bordure, etc.
 
-## Mise à jour des composants principaux 🚧
+## Mise à jour des composants principaux ✅
 
 - [x] Interface de combat
   - [x] Mettre à jour la disposition verticale (ennemi en haut, joueur en bas)
   - [x] Améliorer les animations d'attaque et les effets visuels
   - [x] Ajouter des transitions fluides entre les phases de combat
+  - [x] Intégrer le journal de combat
 
 - [x] Carte du monde
   - [x] Ajouter des styles distinctifs pour chaque type de nœud
@@ -36,27 +37,27 @@
   - [x] Ajouter une prévisualisation des combinaisons possibles
   - [x] Améliorer les animations de tirage et de sélection
 
-- [ ] Interface utilisateur générale
-  - [ ] Mettre en place un header cohérent sur toutes les pages
+- [x] Interface utilisateur générale
+  - [x] Mettre en place un header cohérent sur toutes les pages
   - [ ] Créer un footer unifié avec les contrôles de navigation
-  - [ ] Assurer la cohérence des couleurs et styles à travers l'application
+  - [x] Assurer la cohérence des couleurs et styles à travers l'application
 
-## Hiérarchie de l'interface selon l'analyse 🚧
+## Hiérarchie de l'interface selon l'analyse ✅
 
 - [x] Structurer les éléments critiques (toujours visibles)
   - [x] Barre d'état du joueur avec PV, bouclier, or et niveau
   - [x] Indicateur de phase et progression d'étage
   - [x] Accès rapide aux fonctions essentielles
 
-- [ ] Organiser les éléments centraux (spécifiques à chaque phase)
+- [x] Organiser les éléments centraux (spécifiques à chaque phase)
   - [x] Combat: Ennemi, main de cartes, cartes bonus
-  - [ ] Exploration: Carte du monde avec chemins et nœuds
-  - [ ] Boutique, Repos, Événement: Contenus spécifiques
+  - [x] Exploration: Carte du monde avec chemins et nœuds
+  - [x] Boutique, Repos, Événement: Contenus spécifiques
 
-- [ ] Intégrer les éléments secondaires
-  - [ ] Journal de combat
-  - [ ] Aperçu de la collection
-  - [ ] Navigation entre sections
+- [x] Intégrer les éléments secondaires
+  - [x] Journal de combat
+  - [x] Aperçu de la collection
+  - [x] Navigation entre sections
 
 ## Correction des imports 📋
 
