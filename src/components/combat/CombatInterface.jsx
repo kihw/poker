@@ -1,5 +1,6 @@
-// src/components/combat/CombatInterface.jsx - Design System Enhanced
-import React, { useCallback, useMemo } from 'react';
+// src/components/combat/CombatInterface.jsx - Amélioration de l'UI
+
+import React, { useCallback, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,15 +15,20 @@ import {
   Icons,
 } from '../ui/DesignSystem';
 
-// Component Imports - CORRECTION DE L'IMPORT HAND
-import Hand from '../card/Hand'; // Changé de 'Card' à 'Hand'
+// Component Imports
+import Hand from '../card/Hand';
 import BonusCards from '../card/BonusCards';
 import EnemyStatus from './EnemyStatus';
 import HandCombinationDisplay from './HandCombinationDisplay';
 import CombatLog from './CombatLog';
 
 // Redux Actions
-import { toggleCardSelection, dealHand, discardCards } from '../../redux/slices/combatSlice';
+import {
+  toggleCardSelection,
+  dealHand,
+  discardCards,
+  toggleDiscardMode,
+} from '../../redux/slices/combatSlice';
 import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thunks/combatThunks';
 
 const CombatInterface = React.memo(() => {
@@ -35,6 +41,9 @@ const CombatInterface = React.memo(() => {
   const turnPhase = useSelector((state) => state.combat.turnPhase);
   const handResult = useSelector((state) => state.combat.handResult);
   const activeBonusCards = useSelector((state) => state.bonusCards.active);
+  const discardLimit = useSelector((state) => state.combat.discardLimit);
+  const discardUsed = useSelector((state) => state.combat.discardUsed);
+  const discardMode = useSelector((state) => state.combat.discardMode);
 
   // Card Selection Handler
   const handleCardSelection = useCallback(
@@ -51,42 +60,35 @@ const CombatInterface = React.memo(() => {
     await dispatch(checkCombatEnd());
   }, [dispatch]);
 
+  // Discard Handler
+  const handleDiscard = useCallback(() => {
+    if (selectedCards.length > 0) {
+      dispatch(discardCards(selectedCards));
+    }
+  }, [dispatch, selectedCards]);
+
+  // Toggle Discard Mode Handler
+  const handleToggleDiscardMode = useCallback(() => {
+    dispatch(toggleDiscardMode());
+  }, [dispatch]);
+
   // Best Hand Cards Memoization
   const bestHandCards = useMemo(() => {
     return handResult ? handResult.cards.map((card) => hand.indexOf(card)) : [];
   }, [handResult, hand]);
-
-  // Advanced Animations
-  const combatAnimations = {
-    initial: { opacity: 0, y: 50 },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: 'spring',
-        stiffness: 100,
-        damping: 10,
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: 50,
-      transition: { duration: 0.3 },
-    },
-  };
 
   // Ajout d'un log pour debugger
   console.log('État de la main actuelle:', {
     handLength: hand?.length || 0,
     enemyName: enemy?.name,
     phase: turnPhase,
+    discardMode,
+    discardUsed,
+    selectedCards: selectedCards.length,
   });
 
   return (
-    <motion.div
-      {...combatAnimations}
-      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl"
-    >
+    <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl">
       {/* Enemy Section */}
       <div className="md:col-span-2">
         <EnemyStatus
@@ -111,7 +113,8 @@ const CombatInterface = React.memo(() => {
               cards={hand}
               onToggleSelect={handleCardSelection}
               bestHandCards={bestHandCards}
-              maxSelectable={5}
+              maxSelectable={discardMode ? Math.min(discardLimit, 2) : 5}
+              selectionMode={discardMode ? 'discard' : 'attack'}
             />
           ) : (
             <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
@@ -124,20 +127,52 @@ const CombatInterface = React.memo(() => {
             transition={{ delay: 0.3 }}
             className="flex justify-between mt-4"
           >
-            <Tooltip content="Attack with selected cards">
-              <Button
-                variant="primary"
-                onClick={handleAttack}
-                disabled={selectedCards.length === 0}
-              >
-                <span className="mr-2">⚔️</span> Attack
-              </Button>
-            </Tooltip>
-            <Tooltip content="Discard selected cards">
-              <Button variant="outline" onClick={() => dispatch(discardCards(selectedCards))}>
-                Discard Selected
-              </Button>
-            </Tooltip>
+            {/* Mode de défausse */}
+            {discardMode ? (
+              <>
+                <Tooltip
+                  content={`Défaussez jusqu'à ${Math.min(discardLimit, 2)} cartes et piochez-en autant`}
+                >
+                  <Button
+                    variant="danger"
+                    onClick={handleDiscard}
+                    disabled={selectedCards.length === 0}
+                  >
+                    <span className="mr-2">🔄</span> Défausser {selectedCards.length} carte(s)
+                  </Button>
+                </Tooltip>
+                <Button variant="outline" onClick={handleToggleDiscardMode}>
+                  Annuler la défausse
+                </Button>
+              </>
+            ) : (
+              <>
+                <Tooltip content="Attack with selected cards">
+                  <Button
+                    variant="primary"
+                    onClick={handleAttack}
+                    disabled={selectedCards.length === 0}
+                  >
+                    <span className="mr-2">⚔️</span> Attack
+                  </Button>
+                </Tooltip>
+                <Tooltip
+                  content={
+                    discardUsed
+                      ? 'Vous avez déjà défaussé ce tour'
+                      : `Défaussez jusqu'à ${Math.min(discardLimit, 2)} cartes`
+                  }
+                >
+                  <Button
+                    variant="outline"
+                    onClick={handleToggleDiscardMode}
+                    disabled={discardUsed}
+                  >
+                    {discardUsed ? 'Défausse utilisée' : 'Défausser des cartes'}
+                  </Button>
+                </Tooltip>
+              </>
+            )}
           </motion.div>
         </Card>
       </div>
