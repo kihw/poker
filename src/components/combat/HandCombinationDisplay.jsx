@@ -3,13 +3,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Card, 
-  Button, 
   DESIGN_TOKENS, 
   getPokerHandColor,
   AnimationPresets 
 } from '../ui/DesignSystem';
 
-import Card as EnhancedCard from '../card/Card';
+import EnhancedCard from '../card/Card';
 
 const HandCombinationDisplay = ({
   handName,
