@@ -2,7 +2,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { createDeck, shuffleDeck, drawCards } from '../../core/deck.js';
 import {
-  evaluateHand,
+  evaluatePartialHand,
   calculateDamage,
   findBestHand,
 } from '../../core/hand-evaluation.js';
@@ -126,25 +126,32 @@ const combatSlice = createSlice({
     toggleCardSelection: (state, action) => {
       const index = action.payload;
       if (index >= 0 && index < state.hand.length) {
-        // Compter les cartes actuellement sélectionnées
-        const currentSelectedCount = state.hand.filter(
-          (card) => card.isSelected
-        ).length;
-
-        // Vérifier les conditions de sélection
-        if (
-          !state.hand[index].isSelected &&
-          currentSelectedCount >= 5 &&
-          state.turnPhase === 'select' &&
-          !state.discardMode
-        ) {
-          return; // Ne pas permettre plus de 5 cartes
+        // Si en mode défausse, gérer la sélection différemment
+        if (state.discardMode) {
+          // Limiter le nombre de cartes à défausser
+          const currentDiscardCount = state.hand.filter(
+            (card) => card.isSelected
+          ).length;
+          if (
+            currentDiscardCount >= state.discardLimit &&
+            !state.hand[index].isSelected
+          ) {
+            return; // Ne pas permettre plus de cartes que la limite de défausse
+          }
+        } else {
+          // Mode attaque normal (limiter à 5 cartes)
+          const currentSelectedCount = state.hand.filter(
+            (card) => card.isSelected
+          ).length;
+          if (currentSelectedCount >= 5 && !state.hand[index].isSelected) {
+            return; // Ne pas permettre plus de 5 cartes
+          }
         }
 
         // Inverser l'état de sélection
         state.hand[index].isSelected = !state.hand[index].isSelected;
 
-        // Mettre à jour selectedCards en fonction de l'état des cartes
+        // Mettre à jour selectedCards en fonction du mode
         state.selectedCards = state.hand
           .map((card, idx) => (card.isSelected ? idx : -1))
           .filter((idx) => idx !== -1);
@@ -158,61 +165,24 @@ const combatSlice = createSlice({
         .map((index) => state.hand[index])
         .filter((card) => card);
 
-      let result;
+      // Utiliser evaluatePartialHand pour gérer les mains de 1-4 cartes
+      const partialHandResult = evaluatePartialHand(selectedCardsData);
 
-      // Si 5 cartes sont sélectionnées, utiliser l'évaluateur de poker
-      if (state.selectedCards.length === 5) {
-        // Trouver la meilleure main
-        const bestHand = findBestHand(selectedCardsData);
+      // Appliquer les bonus
+      const { totalDamage, bonusEffects } = action.payload || {
+        totalDamage: partialHandResult.baseDamage,
+        bonusEffects: [],
+      };
 
-        // Sauvegarder les indices des cartes qui forment la meilleure main
-        state.bestHandCards = bestHand.indices.map(
-          (relativeIndex) => state.selectedCards[relativeIndex]
-        );
-
-        // Calculer les dégâts de base
-        const baseDamage = calculateDamage(bestHand.evaluation);
-
-        // Appliquer les bonus
-        const { totalDamage, bonusEffects } = action.payload || {
-          totalDamage: baseDamage,
-          bonusEffects: [],
-        };
-
-        // Stocker le résultat
-        state.handResult = {
-          handName: bestHand.evaluation.type.name,
-          handRank: bestHand.evaluation.type.rank,
-          baseDamage: baseDamage,
-          totalDamage: totalDamage || baseDamage,
-          bonusEffects: bonusEffects || [],
-          cards: selectedCardsData,
-        };
-      }
-      // Pour moins de 5 cartes, calcul de dégâts simple
-      else {
-        // Calculer la somme des valeurs numériques
-        let totalValue = selectedCardsData.reduce(
-          (sum, card) => sum + (card.numericValue || 0),
-          0
-        );
-
-        // Appliquer les bonus
-        const { totalDamage, bonusEffects } = action.payload || {
-          totalDamage: totalValue,
-          bonusEffects: [],
-        };
-
-        // Stocker le résultat
-        state.handResult = {
-          handName: `${state.selectedCards.length} Carte${state.selectedCards.length > 1 ? 's' : ''}`,
-          handRank: 0,
-          baseDamage: totalValue,
-          totalDamage: totalDamage || totalValue,
-          bonusEffects: bonusEffects || [],
-          cards: selectedCardsData,
-        };
-      }
+      // Stocker le résultat
+      state.handResult = {
+        handName: partialHandResult.handName,
+        handRank: partialHandResult.handRank,
+        baseDamage: partialHandResult.baseDamage,
+        totalDamage: totalDamage || partialHandResult.baseDamage,
+        bonusEffects: bonusEffects || [],
+        cards: selectedCardsData,
+      };
 
       // Appliquer les dégâts à l'ennemi
       if (state.enemy) {
@@ -223,7 +193,6 @@ const combatSlice = createSlice({
         );
         const actualDamage = oldHealth - state.enemy.health;
 
-        // Ajouter au journal de combat
         state.combatLog.unshift(
           `Vous infligez ${actualDamage} dégâts avec ${state.handResult.handName}`
         );
@@ -257,7 +226,7 @@ const combatSlice = createSlice({
       // Marquer la défausse comme utilisée
       state.discardUsed = true;
 
-      // Sauvegarder les cartes défaussées
+      // Sauvegarder les cartes défaussées dans la pile de défausse
       const discardedCards = validIndices.map((index) => state.hand[index]);
       state.discard.push(...discardedCards);
 
@@ -284,7 +253,7 @@ const combatSlice = createSlice({
         }
       }
 
-      // Tirer de nouvelles cartes
+      // Tirer de nouvelles cartes pour remplacer les cartes défaussées
       const newCards = drawCards(state.deck, validIndices.length);
 
       // S'assurer que les nouvelles cartes ont isSelected = false
@@ -303,6 +272,9 @@ const combatSlice = createSlice({
 
       // Désactiver le mode défausse
       state.discardMode = false;
+
+      // Passer en phase de sélection
+      state.turnPhase = 'select';
     },
     enemyAction: (state) => {
       if (!state.enemy || state.enemy.health <= 0) return;

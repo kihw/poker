@@ -140,46 +140,43 @@ const CombatInterface = () => {
 
     setSelectedAttackCards(newSelectedCards);
   };
-
-  const handleDiscardSelection = (index) => {
+  const handleCardAction = (index) => {
     if (!hand || hand[index] === undefined) {
       console.error('Index de carte invalide ou main non disponible:', index);
       return;
     }
 
-    // En mode défausse, gérer les sélections différemment
-    setSelectedDiscards((prevSelected) => {
-      if (prevSelected.includes(index)) {
-        // Si la carte est déjà sélectionnée, la désélectionner
-        return prevSelected.filter((i) => i !== index);
-      } else {
-        // Sinon, l'ajouter aux cartes sélectionnées (max discardLimit)
-        if (prevSelected.length < (discardLimit || 2)) {
-          return [...prevSelected, index];
-        }
-        return prevSelected;
+    // Dispatcher l'action Redux pour modifier la sélection
+    dispatch(toggleCardSelection(index));
+
+    if (discardMode) {
+      // Logique spécifique au mode de défausse
+      const newSelectedDiscards = [...selectedDiscards];
+      const cardIndex = newSelectedDiscards.indexOf(index);
+
+      if (cardIndex !== -1) {
+        // Désélectionner si déjà présent
+        newSelectedDiscards.splice(cardIndex, 1);
+      } else if (newSelectedDiscards.length < discardLimit) {
+        // Ajouter si en dessous de la limite
+        newSelectedDiscards.push(index);
       }
-    });
-  };
 
-  // Confirmer la défausse
-  const confirmDiscard = () => {
-    if (selectedDiscards.length > 0) {
-      // Appeler l'action Redux pour défausser les cartes directement
-      // en utilisant le dispatch pour appeler l'action directement
-      dispatch(discardCards(selectedDiscards));
+      setSelectedDiscards(newSelectedDiscards);
+    } else {
+      // Logique pour le mode attaque
+      const newSelectedAttackCards = [...selectedAttackCards];
+      const cardIndex = newSelectedAttackCards.indexOf(index);
 
-      // Après la défausse, réinitialiser notre état local
-      setSelectedDiscards([]);
-      setDiscardMode(false);
+      if (cardIndex !== -1) {
+        // Désélectionner si déjà présent
+        newSelectedAttackCards.splice(cardIndex, 1);
+      } else if (newSelectedAttackCards.length < 5) {
+        // Ajouter si en dessous de 5 cartes
+        newSelectedAttackCards.push(index);
+      }
 
-      // Feedback visuel pour l'utilisateur
-      dispatch(
-        setActionFeedback({
-          message: `${selectedDiscards.length} cartes défaussées et remplacées`,
-          type: 'info',
-        })
-      );
+      setSelectedAttackCards(newSelectedAttackCards);
     }
   };
 
@@ -343,18 +340,97 @@ const CombatInterface = () => {
   const getDisplayCards = () => {
     if (!hand) return [];
 
-    return hand.map((card, idx) => ({
-      ...card,
-      // En mode défausse, utiliser selectedDiscards
-      // En mode attaque, synchroniser avec l'état isSelected
-      isSelected: discardMode
-        ? selectedDiscards.includes(idx)
-        : turnPhase === 'result'
-          ? card.isSelected // En mode résultat, utiliser l'état enregistré
-          : selectedAttackCards.includes(idx), // Sinon utiliser notre état local
-    }));
-  };
+    return hand.map((card, idx) => {
+      let isSelected = false;
 
+      if (discardMode) {
+        // Mode défausse : sélection basée sur selectedDiscards
+        isSelected = selectedDiscards.includes(idx);
+      } else {
+        // Mode attaque : sélection basée sur le contexte
+        isSelected =
+          turnPhase === 'result'
+            ? card.isSelected // Utiliser l'état enregistré en mode résultat
+            : selectedAttackCards.includes(idx); // Utiliser la sélection locale
+      }
+
+      return {
+        ...card,
+        isSelected,
+      };
+    });
+  };
+  const useCardSelection = (hand, discardMode, discardLimit) => {
+    const [selectedDiscards, setSelectedDiscards] = useState([]);
+    const [selectedAttackCards, setSelectedAttackCards] = useState([]);
+
+    const handleCardSelection = useCallback(
+      (index) => {
+        if (!hand || hand[index] === undefined) {
+          console.error(
+            'Index de carte invalide ou main non disponible:',
+            index
+          );
+          return;
+        }
+
+        const setSelectedCards = discardMode
+          ? setSelectedDiscards
+          : setSelectedAttackCards;
+
+        const currentSelectedCards = discardMode
+          ? selectedDiscards
+          : selectedAttackCards;
+
+        const maxSelectable = discardMode ? discardLimit : 5;
+
+        const newSelectedCards = [...currentSelectedCards];
+        const cardIndex = newSelectedCards.indexOf(index);
+
+        if (cardIndex !== -1) {
+          // Désélectionner si déjà présent
+          newSelectedCards.splice(cardIndex, 1);
+        } else if (newSelectedCards.length < maxSelectable) {
+          // Ajouter si en dessous de la limite
+          newSelectedCards.push(index);
+        }
+
+        setSelectedCards(newSelectedCards);
+      },
+      [hand, discardMode, discardLimit, selectedDiscards, selectedAttackCards]
+    );
+
+    return {
+      selectedDiscards,
+      selectedAttackCards,
+      handleCardSelection,
+      setSelectedDiscards,
+      setSelectedAttackCards,
+    };
+  };
+  const confirmDiscard = () => {
+    if (selectedCards.length > 0 && selectedCards.length <= discardLimit) {
+      dispatch(discardCards(selectedCards));
+
+      // Réinitialiser les états
+      setSelectedDiscards([]);
+      setDiscardMode(false);
+
+      dispatch(
+        setActionFeedback({
+          message: `${selectedCards.length} cartes défaussées et remplacées`,
+          type: 'info',
+        })
+      );
+    } else {
+      dispatch(
+        setActionFeedback({
+          message: `Vous devez sélectionner entre 1 et ${discardLimit} cartes`,
+          type: 'warning',
+        })
+      );
+    }
+  };
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen combat-interface">
       {/* Tutoriel */}
@@ -435,92 +511,84 @@ const CombatInterface = () => {
         {hand && hand.length > 0 && (
           <>
             {discardMode ? (
-              <div className="text-center mb-2">
-                <div className="bg-amber-700 text-white rounded-md p-2 mb-4">
-                  <p className="font-bold">
-                    Mode défausse - Sélectionnez jusqu'à {discardLimit} cartes à
-                    remplacer
-                  </p>
-                  <p className="text-sm">
-                    {selectedDiscards.length}/{discardLimit} cartes
-                    sélectionnées
-                  </p>
-                </div>
-
-                {/* EnhancedHand avec tri intégré */}
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  onClick={() =>
+                    dispatch(
+                      discardCards(
+                        hand
+                          .map((card, index) => (card.isSelected ? index : -1))
+                          .filter((index) => index !== -1)
+                      )
+                    )
+                  }
+                  disabled={selectedCards.length === 0}
+                  className={`px-4 py-2 rounded-md font-bold ${selectedCards.length === 0 ? 'bg-gray-600 text-gray-400' : 'bg-green-600 text-white'}`}
+                >
+                  Confirmer la défausse
+                </button>
+                <button
+                  onClick={() => dispatch(toggleDiscardMode())}
+                  className="bg-red-600 text-white px-4 py-2 rounded-md font-bold"
+                >
+                  Annuler
+                </button>
+              </div>
+            ) : null}
+            <>
+              {/* EnhancedHand avec tri intégré */}
+              <div className="combat-hand">
                 <EnhancedHand
                   cards={getDisplayCards()}
-                  onToggleSelect={handleDiscardSelection}
-                  maxSelectable={discardLimit}
-                  selectionMode="discard"
+                  onToggleSelect={handleCardAction}
+                  maxSelectable={discardMode ? discardLimit : 5}
+                  selectionMode={
+                    discardMode
+                      ? 'discard'
+                      : turnPhase === 'select'
+                        ? 'attack'
+                        : 'view'
+                  }
                 />
-
-                <div className="flex justify-center space-x-4 mt-4">
-                  <button
-                    onClick={confirmDiscard}
-                    disabled={selectedDiscards.length === 0}
-                    className={`px-4 py-2 rounded-md font-bold ${selectedDiscards.length === 0 ? 'bg-gray-600 text-gray-400' : 'bg-green-600 text-white'}`}
-                  >
-                    Confirmer la défausse
-                  </button>
-                  <button
-                    onClick={cancelDiscard}
-                    className="bg-red-600 text-white px-4 py-2 rounded-md font-bold"
-                  >
-                    Annuler
-                  </button>
-                </div>
               </div>
-            ) : (
-              <>
-                {/* EnhancedHand avec tri intégré */}
-                <div className="combat-hand">
-                  <EnhancedHand
-                    cards={getDisplayCards()}
-                    onToggleSelect={handleAttackSelection}
-                    maxSelectable={5}
-                    selectionMode={turnPhase === 'select' ? 'attack' : 'view'}
-                    bestHandCards={[]} // À remplacer par la vraie valeur une fois disponible
-                  />
-                </div>
 
-                {turnPhase === 'select' && (
-                  <div className="text-center mt-3 mb-2 hand-ranking">
-                    <p className="text-gray-300 mb-2">
-                      Sélectionnez 1 à 5 cartes pour attaquer.
-                      {selectedAttackCards.length >= 1 &&
-                        selectedAttackCards.length <= 5 && (
-                          <span className="text-green-400">
-                            {' '}
-                            ({selectedAttackCards.length} sélectionnée
-                            {selectedAttackCards.length > 1 ? 's' : ''})
-                          </span>
-                        )}
-                      {selectedAttackCards.length > 5 && (
-                        <span className="text-red-400">
+              {turnPhase === 'select' && (
+                <div className="text-center mt-3 mb-2 hand-ranking">
+                  <p className="text-gray-300 mb-2">
+                    Sélectionnez 1 à 5 cartes pour attaquer.
+                    {selectedAttackCards.length >= 1 &&
+                      selectedAttackCards.length <= 5 && (
+                        <span className="text-green-400">
                           {' '}
-                          (Trop de cartes sélectionnées)
+                          ({selectedAttackCards.length} sélectionnée
+                          {selectedAttackCards.length > 1 ? 's' : ''})
                         </span>
                       )}
-                    </p>
-                    <div className="text-sm text-gray-400">
-                      {selectedAttackCards.length === 5 && (
+                    {selectedAttackCards.length > 5 && (
+                      <span className="text-red-400">
+                        {' '}
+                        (Trop de cartes sélectionnées)
+                      </span>
+                    )}
+                  </p>
+                  <div className="text-sm text-gray-400">
+                    {selectedAttackCards.length === 5 && (
+                      <p>
+                        Une combinaison de 5 cartes utilise les règles du poker
+                        pour les dégâts
+                      </p>
+                    )}
+                    {selectedAttackCards.length > 0 &&
+                      selectedAttackCards.length < 5 && (
                         <p>
-                          Une combinaison de 5 cartes utilise les règles du
-                          poker pour les dégâts
+                          Les dégâts sont basés sur la somme des valeurs des
+                          cartes
                         </p>
                       )}
-                      {selectedAttackCards.length > 0 &&
-                        selectedAttackCards.length < 5 && (
-                          <p>
-                            Les dégâts sont basés sur la somme des valeurs des
-                            cartes
-                          </p>
-                        )}
-                    </div>
                   </div>
-                )}
-              </>
+                </div>
+              )}
+            </>
             )}
           </>
         )}
