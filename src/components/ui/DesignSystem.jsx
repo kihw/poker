@@ -122,6 +122,24 @@ export const AnimationPresets = {
   }
 };
 
+// Ajout du composant Card qui était manquant
+export const Card = ({ children, variant = "elevated", className = "", ...props }) => {
+  const variantStyles = {
+    elevated: "bg-gray-800 shadow-lg",
+    outline: "bg-gray-800 border border-gray-700",
+    flat: "bg-gray-800"
+  };
+
+  return (
+    <div 
+      className={`rounded-lg overflow-hidden ${variantStyles[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
 // Autres composants et définitions...
 export const Button = ({ children, variant = 'primary', ...props }) => {
   const variantStyles = {
@@ -175,9 +193,25 @@ export const Badge = ({ children, variant = 'primary', size = 'md', ...props }) 
   );
 };
 
+// Ajout du composant Tooltip manquant qui pourrait être utilisé ailleurs
+export const Tooltip = ({ children, content, className = "", ...props }) => {
+  return (
+    <div className={`relative group ${className}`} {...props}>
+      {children}
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="bg-gray-800 text-white text-xs p-2 rounded shadow">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default {
   Button,
   Badge,
+  Card,
+  Tooltip,
   DESIGN_TOKENS,
   AnimationPresets,
   Icons,
