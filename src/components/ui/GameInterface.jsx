@@ -20,11 +20,11 @@ import ActionFeedback from './ActionFeedback';
 // Performance and Design System Utilities
 import { performanceDebounce } from '../../utils/performance';
 
-const GameHeader = React.memo(() => {
+const GameFooter = React.memo(() => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Game and player state selectors
+  // Sélecteurs pour les statistiques du jeu
   const stage = useSelector((state) => state.game.stage);
   const gamePhase = useSelector((state) => state.game.gamePhase);
   const playerStats = useSelector((state) => ({
@@ -34,119 +34,88 @@ const GameHeader = React.memo(() => {
     level: state.player.level,
   }));
 
-  // Header menu state
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // Phase indicator styling
-  const phaseStyles = {
-    exploration: { 
-      color: DESIGN_TOKENS.colors.primary.main, 
-      icon: '🗺️' 
+  // Actions du footer
+  const footerActions = [
+    {
+      icon: '🗺️',
+      label: 'Carte',
+      action: () => navigate('/map'),
+      isEnabled: gamePhase !== 'combat'
     },
-    combat: { 
-      color: DESIGN_TOKENS.colors.danger.main, 
-      icon: '⚔️' 
+    {
+      icon: '🏪',
+      label: 'Boutique',
+      action: () => navigate('/shop'),
+      isEnabled: gamePhase === 'exploration'
     },
-    shop: { 
-      color: DESIGN_TOKENS.colors.success.main, 
-      icon: '🛒' 
+    {
+      icon: '🏕️',
+      label: 'Repos',
+      action: () => navigate('/rest'),
+      isEnabled: gamePhase === 'exploration'
     },
-    rest: { 
-      color: DESIGN_TOKENS.colors.warning.main, 
-      icon: '🏕️' 
-    },
-    event: { 
-      color: DESIGN_TOKENS.colors.secondary.main, 
-      icon: '❗' 
+    {
+      icon: '🃏',
+      label: 'Collection',
+      action: () => navigate('/collection'),
+      isEnabled: true
     }
-  };
-
-  const currentPhaseStyle = phaseStyles[gamePhase] || phaseStyles.exploration;
+  ];
 
   return (
-    <motion.header 
-      initial={{ opacity: 0, y: -50 }}
+    <motion.footer
+      initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 shadow-md"
+      className="bg-gray-800 border-t border-gray-700 p-4 flex items-center justify-between"
     >
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        {/* Game Logo and Stage */}
-        <div className="flex items-center space-x-4">
-          <div className="text-2xl font-bold text-white">
-            Poker Solo RPG
+      {/* Statut du joueur compact */}
+      <div className="flex items-center space-x-4">
+        <Tooltip content="Points de vie">
+          <div className="flex items-center">
+            <Icons.health className="mr-2" />
+            <span>{playerStats.health}/{playerStats.maxHealth}</span>
           </div>
-          <Badge variant="primary">
-            Stage {stage}
-          </Badge>
-        </div>
+        </Tooltip>
+        
+        <Tooltip content="Or">
+          <div className="flex items-center">
+            <Icons.gold className="mr-2" />
+            <span>{playerStats.gold}</span>
+          </div>
+        </Tooltip>
 
-        {/* Current Phase Indicator */}
-        <div 
-          className="flex items-center space-x-2"
-          style={{ color: currentPhaseStyle.color }}
-        >
-          <span className="text-xl">{currentPhaseStyle.icon}</span>
-          <span className="font-semibold capitalize">
-            {gamePhase}
-          </span>
-        </div>
-
-        {/* Player Quick Stats */}
-        <div className="flex items-center space-x-4">
-          <Tooltip content="Player Health">
-            <div className="flex items-center">
-              <Icons.health className="mr-2" />
-              <span>{playerStats.health}/{playerStats.maxHealth}</span>
-            </div>
-          </Tooltip>
-          
-          <Tooltip content="Gold">
-            <div className="flex items-center">
-              <Icons.gold className="mr-2" />
-              <span>{playerStats.gold}</span>
-            </div>
-          </Tooltip>
-
-          <Tooltip content="Player Level">
-            <div className="flex items-center">
-              <Icons.level className="mr-2" />
-              <span>Lv. {playerStats.level}</span>
-            </div>
-          </Tooltip>
-        </div>
-
-        {/* Game Menu and Actions */}
-        <div className="flex items-center space-x-2">
-          <SaveButton />
-          
-          <Tooltip content="Game Menu">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              ☰
-            </Button>
-          </Tooltip>
-        </div>
+        <Tooltip content="Niveau">
+          <div className="flex items-center">
+            <Icons.level className="mr-2" />
+            <span>Lv. {playerStats.level}</span>
+          </div>
+        </Tooltip>
       </div>
 
-      {/* Drop-down Game Menu (Future Implementation) */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-gray-800 p-4"
-          >
-            {/* Future menu items */}
-            <div className="text-white">Game Menu Placeholder</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.header>
+      {/* Actions rapides */}
+      <div className="flex space-x-2">
+        {footerActions.map((action) => (
+          <Tooltip key={action.label} content={action.label}>
+            <Button
+              variant={action.isEnabled ? 'ghost' : 'disabled'}
+              size="sm"
+              disabled={!action.isEnabled}
+              onClick={action.action}
+              className={`${action.isEnabled ? 'hover:bg-gray-700' : 'opacity-50 cursor-not-allowed'}`}
+            >
+              <span className="text-xl">{action.icon}</span>
+            </Button>
+          </Tooltip>
+        ))}
+      </div>
+
+      {/* Stage et bouton de sauvegarde */}
+      <div className="flex items-center space-x-2">
+        <Badge variant="primary">Stage {stage}</Badge>
+        <SaveButton />
+      </div>
+    </motion.footer>
   );
 });
 
@@ -159,7 +128,7 @@ const GameInterface = ({ children }) => {
         {children}
       </main>
 
-      <Navigation />
+      <GameFooter />
       <ActionFeedback />
     </div>
   );
