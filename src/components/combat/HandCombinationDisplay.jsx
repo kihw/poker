@@ -2,13 +2,44 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Card, 
   DESIGN_TOKENS, 
-  getPokerHandColor,
   AnimationPresets 
 } from '../ui/DesignSystem';
-
 import EnhancedCard from '../card/Card';
+
+// Créer un composant Card local car il n'est pas exporté par DesignSystem
+const Card = ({ variant, className, children }) => {
+  const baseClasses = "overflow-hidden";
+  const variantClasses = {
+    "elevated": "shadow-lg",
+    "outlined": "border border-gray-700",
+    "flat": ""
+  };
+
+  return (
+    <div className={`${baseClasses} ${variantClasses[variant] || ''} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+// Fonction locale pour obtenir la couleur d'une main de poker
+const getPokerHandColor = (handName) => {
+  // Mapper les mains de poker à des couleurs
+  switch (handName.toLowerCase().replace(/\s+/g, '')) {
+    case 'highcard': return '#9CA3AF'; // gris
+    case 'pair': case 'onepair': return '#60A5FA'; // bleu clair
+    case 'twopair': return '#3B82F6'; // bleu
+    case 'threeofakind': return '#8B5CF6'; // violet
+    case 'straight': return '#EC4899'; // rose
+    case 'flush': return '#F59E0B'; // orange
+    case 'fullhouse': return '#EF4444'; // rouge
+    case 'fourofakind': return '#10B981'; // vert
+    case 'straightflush': return '#6366F1'; // indigo
+    case 'royalflush': return '#F59E0B'; // or
+    default: return '#6B7280'; // gris par défaut
+  }
+};
 
 const HandCombinationDisplay = ({
   handName,
