@@ -67,13 +67,14 @@ const Card = ({
     },
     rarity: {
       borderColor: rarityColor,
-      background: `linear-gradient(45deg, ${rarityColor}10, ${rarityColor}30)`,
+      background: rarityColor, // Couleur de fond opaque
+      backgroundImage: `linear-gradient(45deg, ${rarityColor}90, ${rarityColor}F0)`, // Gradient avec opacité
     },
   };
 
   // Animation configurations
   const cardAnimations = {
-    initial: { scale: 0.9, opacity: 0 },
+    initial: { scale: 0.9, opacity: 1 }, // Opacity à 1 pour éviter la transparence
     animate: {
       scale: 1,
       opacity: 1,
