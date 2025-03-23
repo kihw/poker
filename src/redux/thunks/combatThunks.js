@@ -3,6 +3,7 @@ import {
   setEnemy,
   startCombat,
   evaluateSelectedHand as evaluateSelectedHandAction,
+  enemyAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
@@ -179,12 +180,8 @@ export const startNewCombat = createAsyncThunk(
       // Dispatcher l'action pour définir l'ennemi
       dispatch(setEnemy(enemy));
 
-      // Dispatcher l'action Redux pour démarrer le combat
-      // L'action doit être un objet de type { type: string, payload: any }
-      dispatch({
-        type: 'combat/startCombat',
-        payload: enemy,
-      });
+      // Dispatcher l'action pour démarrer le combat
+      dispatch(startCombat(enemy));
 
       // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
@@ -268,6 +265,7 @@ export const attackEnemy = createAsyncThunk(
     }
   }
 );
+
 /**
  * Traite l'attaque de l'ennemi
  */
@@ -282,7 +280,7 @@ export const processEnemyAttack = createAsyncThunk(
     }
 
     // Faire attaquer l'ennemi (mettre à jour le journal)
-    dispatch({ type: 'combat/enemyAction' });
+    dispatch(enemyAction());
 
     // Réduire les PV du joueur - Cette ligne est cruciale
     dispatch(takeDamage(enemy.attack));
@@ -295,5 +293,6 @@ export const processEnemyAttack = createAsyncThunk(
     };
   }
 );
-// Exporter les actions du slice (pas les thunks)
+
+// Export des actions du slice (pas les thunks)
 export { startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
