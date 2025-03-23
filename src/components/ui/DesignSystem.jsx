@@ -2,18 +2,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Enhanced Design Tokens
+// Enhanced Design Tokens with more comprehensive color and styling definitions
 export const DESIGN_TOKENS = {
   colors: {
     primary: {
-      light: '#60a5fa', // blue-400
-      main: '#2563eb', // blue-600
-      dark: '#1d4ed8', // blue-700
+      lightest: '#93c5fd', // blue-300
+      light: '#60a5fa',    // blue-400
+      main: '#2563eb',     // blue-600
+      dark: '#1d4ed8',     // blue-700
+      darkest: '#1e40af',  // blue-800
     },
     secondary: {
-      light: '#a78bfa', // violet-400
-      main: '#8b5cf6', // violet-500
-      dark: '#7c3aed', // violet-600
+      lightest: '#c4b5fd', // violet-300
+      light: '#a78bfa',    // violet-400
+      main: '#8b5cf6',     // violet-500
+      dark: '#7c3aed',     // violet-600
+      darkest: '#6d28d9',  // violet-700
     },
     neutral: {
       50: '#f9fafb',
@@ -28,26 +32,32 @@ export const DESIGN_TOKENS = {
       900: '#111827',
     },
     success: {
-      light: '#4ade80', // green-400
-      main: '#22c55e', // green-500
-      dark: '#16a34a', // green-600
+      lightest: '#6ee7b7', // green-300
+      light: '#4ade80',    // green-400
+      main: '#22c55e',     // green-500
+      dark: '#16a34a',     // green-600
+      darkest: '#15803d',  // green-700
     },
     warning: {
-      light: '#fbbf24', // amber-400
-      main: '#f59e0b', // amber-500
-      dark: '#d97706', // amber-600
+      lightest: '#fde68a', // amber-300
+      light: '#fbbf24',    // amber-400
+      main: '#f59e0b',     // amber-500
+      dark: '#d97706',     // amber-600
+      darkest: '#b45309',  // amber-700
     },
     danger: {
-      light: '#f87171', // red-400
-      main: '#ef4444', // red-500
-      dark: '#dc2626', // red-600
+      lightest: '#fca5a5', // red-300
+      light: '#f87171',    // red-400
+      main: '#ef4444',     // red-500
+      dark: '#dc2626',     // red-600
+      darkest: '#b91c1c',  // red-700
     },
     rarity: {
-      common: '#6b7280', // gray
-      uncommon: '#10b981', // emerald
-      rare: '#3b82f6', // blue
-      epic: '#8b5cf6', // violet
-      legendary: '#f59e0b', // amber
+      common: '#6b7280',     // gray
+      uncommon: '#10b981',   // emerald
+      rare: '#3b82f6',       // blue
+      epic: '#8b5cf6',       // violet
+      legendary: '#f59e0b',  // amber
     },
   },
   typography: {
@@ -56,248 +66,126 @@ export const DESIGN_TOKENS = {
       mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
     },
     fontSize: {
-      xs: '0.75rem', // 12px
-      sm: '0.875rem', // 14px
-      base: '1rem', // 16px
+      xs: '0.75rem',   // 12px
+      sm: '0.875rem',  // 14px
+      base: '1rem',    // 16px
       lg: '1.125rem', // 18px
-      xl: '1.25rem', // 20px
+      xl: '1.25rem',  // 20px
       '2xl': '1.5rem', // 24px
       '3xl': '1.875rem', // 30px
       '4xl': '2.25rem', // 36px
     },
     fontWeight: {
+      thin: 100,
+      extralight: 200,
+      light: 300,
       normal: 400,
       medium: 500,
       semibold: 600,
       bold: 700,
+      extrabold: 800,
+      black: 900,
+    },
+    lineHeight: {
+      none: 1,
+      tight: 1.25,
+      snug: 1.375,
+      normal: 1.5,
+      relaxed: 1.625,
+      loose: 2,
     },
   },
   spacing: {
     0: '0px',
-    1: '0.25rem', // 4px
-    2: '0.5rem', // 8px
-    3: '0.75rem', // 12px
-    4: '1rem', // 16px
-    5: '1.25rem', // 20px
-    6: '1.5rem', // 24px
-    8: '2rem', // 32px
-    10: '2.5rem', // 40px
-    12: '3rem', // 48px
-    16: '4rem', // 64px
-    20: '5rem', // 80px
+    0.5: '0.125rem',
+    1: '0.25rem',
+    1.5: '0.375rem',
+    2: '0.5rem',
+    2.5: '0.625rem',
+    3: '0.75rem',
+    3.5: '0.875rem',
+    4: '1rem',
+    5: '1.25rem',
+    6: '1.5rem',
+    7: '1.75rem',
+    8: '2rem',
+    9: '2.25rem',
+    10: '2.5rem',
+    12: '3rem',
+    14: '3.5rem',
+    16: '4rem',
   },
   borderRadius: {
-    sm: '0.125rem', // 2px
-    base: '0.25rem', // 4px
-    md: '0.375rem', // 6px
-    lg: '0.5rem', // 8px
-    xl: '0.75rem', // 12px
-    full: '9999px', // Circle
+    none: '0',
+    sm: '0.125rem',
+    base: '0.25rem',
+    md: '0.375rem',
+    lg: '0.5rem',
+    xl: '0.75rem',
+    '2xl': '1rem',
+    '3xl': '1.5rem',
+    full: '9999px',
   },
   shadows: {
     sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     base: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
     md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-  }
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+    '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+    none: 'none',
+  },
+  transitions: {
+    DEFAULT: 'all 0.2s ease-in-out',
+    slow: 'all 0.5s ease-in-out',
+    fast: 'all 0.1s ease-in-out',
+  },
 };
 
-// Enhanced Components
-export const Button = ({
-  variant = 'primary',
-  size = 'md',
-  children,
-  className = '',
-  ...props
-}) => {
-  const variantStyles = {
-    primary: `bg-blue-600 hover:bg-blue-700 text-white`,
-    secondary: `bg-violet-600 hover:bg-violet-700 text-white`,
-    success: `bg-green-600 hover:bg-green-700 text-white`,
-    danger: `bg-red-600 hover:bg-red-700 text-white`,
-    outline: `border border-gray-300 hover:bg-gray-100 text-gray-700`,
-    ghost: `hover:bg-gray-100 text-gray-700`,
-  };
-
-  const sizeStyles = {
-    sm: 'px-2 py-1 text-sm',
-    md: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg',
-  };
-
-  return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={`
-        rounded-md 
-        transition-all 
-        ${variantStyles[variant]} 
-        ${sizeStyles[size]} 
-        ${className}
-      `}
-      {...props}
-    >
-      {children}
-    </motion.button>
-  );
-};
-
-export const Card = ({ 
-  children, 
-  className = '', 
-  variant = 'default',
-  ...props 
-}) => {
-  const variantStyles = {
-    default: 'bg-gray-100 shadow-md',
-    elevated: 'bg-white shadow-lg hover:shadow-xl transition-shadow',
-    outline: 'bg-white border border-gray-200 shadow-sm',
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className={`
-        rounded-lg 
-        overflow-hidden 
-        ${variantStyles[variant]} 
-        ${className}
-      `}
-      {...props}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-export const ProgressBar = ({ 
-  value, 
-  maxValue, 
-  color = 'primary', 
-  height = '0.5rem',
-  showLabel = false
-}) => {
-  const percentage = Math.min(100, Math.max(0, (value / maxValue) * 100));
-  const colorMap = {
-    primary: 'bg-blue-600',
-    success: 'bg-green-600',
-    danger: 'bg-red-600',
-    warning: 'bg-amber-500',
-    health: 'bg-red-500',
-    experience: 'bg-blue-500',
-  };
-
-  return (
-    <div className="w-full">
-      <div 
-        className="w-full bg-gray-200 rounded-full overflow-hidden" 
-        style={{ height }}
-      >
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.5 }}
-          className={`h-full ${colorMap[color] || colorMap.primary}`}
-        />
-      </div>
-      {showLabel && (
-        <div className="text-xs text-gray-600 mt-1 flex justify-between">
-          <span>{value}</span>
-          <span>{maxValue}</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export const Badge = ({ 
-  children, 
-  variant = 'primary', 
-  className = '', 
-  size = 'md',
-  ...props 
-}) => {
-  const variantStyles = {
-    primary: 'bg-blue-600 text-white',
-    secondary: 'bg-violet-600 text-white',
-    success: 'bg-green-600 text-white',
-    danger: 'bg-red-600 text-white',
-    warning: 'bg-amber-500 text-black',
-  };
-
-  const sizeStyles = {
-    sm: 'px-1.5 py-0.5 text-xs',
-    md: 'px-2 py-1 text-sm',
-    lg: 'px-3 py-1.5 text-base',
-  };
-
-  return (
-    <span
-      className={`
-        inline-block 
-        rounded-full 
-        font-medium 
-        ${variantStyles[variant]} 
-        ${sizeStyles[size]} 
-        ${className}
-      `}
-      {...props}
-    >
-      {children}
-    </span>
-  );
-};
-
-export const Tooltip = ({ content, children }) => {
-  return (
-    <div className="group relative inline-block">
-      {children}
-      <div 
-        className="
-          absolute 
-          z-50 
-          hidden 
-          group-hover:block 
-          bg-gray-800 
-          text-white 
-          text-xs 
-          p-2 
-          rounded 
-          shadow-lg 
-          -top-10 
-          left-1/2 
-          transform 
-          -translate-x-1/2
-        "
-      >
-        {content}
-      </div>
-    </div>
-  );
-};
-
+// Utility function to get rarity color
 export const getRarityColor = (rarity) => {
   return DESIGN_TOKENS.colors.rarity[rarity] || DESIGN_TOKENS.colors.rarity.common;
 };
 
+// Utility function to get poker hand color
 export const getPokerHandColor = (handType) => {
   const handColors = {
     'High Card': DESIGN_TOKENS.colors.neutral[500],
-    'Pair': '#f59e0b', // amber
-    'Two Pair': '#22c55e', // green
-    'Three of a Kind': '#16a34a', // green dark
-    'Straight': '#3b82f6', // blue
-    'Flush': '#2563eb', // blue dark
-    'Full House': '#6366f1', // indigo
-    'Four of a Kind': '#4f46e5', // indigo dark
-    'Straight Flush': '#9333ea', // purple
-    'Royal Flush': '#7e22ce', // purple dark
+    'Pair': DESIGN_TOKENS.colors.warning.main,
+    'Two Pair': DESIGN_TOKENS.colors.success.main,
+    'Three of a Kind': DESIGN_TOKENS.colors.success.dark,
+    'Straight': DESIGN_TOKENS.colors.primary.main,
+    'Flush': DESIGN_TOKENS.colors.primary.dark,
+    'Full House': DESIGN_TOKENS.colors.secondary.main,
+    'Four of a Kind': DESIGN_TOKENS.colors.secondary.dark,
+    'Straight Flush': DESIGN_TOKENS.colors.secondary.light,
+    'Royal Flush': DESIGN_TOKENS.colors.secondary.lightest,
   };
 
   return handColors[handType] || DESIGN_TOKENS.colors.neutral[500];
 };
 
+// Animations utility
+export const AnimationPresets = {
+  fadeIn: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
+  slideUp: {
+    initial: { y: 20, opacity: 0 },
+    animate: { y: 0, opacity: 1 },
+    exit: { y: 20, opacity: 0 },
+  },
+  scaleIn: {
+    initial: { scale: 0.9, opacity: 0 },
+    animate: { scale: 1, opacity: 1 },
+    exit: { scale: 0.9, opacity: 0 },
+  },
+};
+
+// Comprehensive Icons collection
 export const Icons = {
   combat: '⚔️',
   health: '❤️',
@@ -321,12 +209,8 @@ export const Icons = {
 
 export default {
   DESIGN_TOKENS,
-  Button,
-  Card,
-  Badge,
-  ProgressBar,
-  Tooltip,
-  Icons,
+  AnimationPresets,
   getRarityColor,
   getPokerHandColor,
+  Icons,
 };
