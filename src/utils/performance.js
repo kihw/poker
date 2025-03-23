@@ -1,28 +1,92 @@
-// src/utils/performance.js
-import { memo } from 'react';
+// src/utils/performance.js - Enhanced Performance Utilities
+import { memo, useState, useCallback, useMemo } from 'react';
+import { DESIGN_TOKENS } from '../components/ui/DesignSystem';
 
 /**
- * Memoize components to prevent unnecessary re-renders
- * @param {React.FC} Component - React functional component
- * @param {Function} [areEqual] - Optional custom comparison function
- * @returns {React.FC} Memoized component
+ * Performance markers for tracking key application events
  */
-export function memoize(Component, areEqual) {
-  return memo(Component, areEqual);
+export const PerformanceMarkers = {
+  RENDER_START: 'render_start',
+  RENDER_END: 'render_end',
+  COMPONENT_MOUNT: 'component_mount',
+  COMPONENT_UPDATE: 'component_update',
+  DATA_FETCH: 'data_fetch',
+  INTERACTION: 'interaction',
+};
+
+/**
+ * Performance tracking decorator
+ * @param {Function} target - Function to wrap
+ * @param {string} [name] - Optional name for logging
+ * @returns {Function} Performance-tracked function
+ */
+export function performanceTrack(name = 'Function') {
+  return function(target, key, descriptor) {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function(...args) {
+      const start = performance.now();
+      const result = originalMethod.apply(this, args);
+      const end = performance.now();
+
+      console.log(`Performance: ${name} took ${end - start}ms`);
+      
+      // Optional: Add mark and measure for more detailed tracking
+      performance.mark(`${name}_end`);
+      performance.measure(
+        `${name}_measure`, 
+        `${name}_start`, 
+        `${name}_end`
+      );
+
+      return result;
+    };
+
+    return descriptor;
+  };
 }
 
 /**
- * Debounce function to limit rate of function calls
+ * Performance-aware memoization hook
+ * @param {Function} computeFunction - Function to memoize
+ * @param {Array} dependencies - Dependencies array
+ * @returns {any} Memoized value
+ */
+export function usePerformanceMemo(computeFunction, dependencies) {
+  const startTime = performance.now();
+  const memoizedValue = useMemo(computeFunction, dependencies);
+  const endTime = performance.now();
+
+  if (endTime - startTime > 10) {
+    console.warn(
+      `Performance Warning: Memoized computation took ${endTime - startTime}ms`
+    );
+  }
+
+  return memoizedValue;
+}
+
+/**
+ * Enhanced debounce utility with performance tracking
  * @param {Function} func - Function to debounce
  * @param {number} wait - Wait time in milliseconds
  * @returns {Function} Debounced function
  */
-export function debounce(func, wait = 300) {
+export function performanceDebounce(func, wait = 300) {
   let timeout;
   return function executedFunction(...args) {
+    const context = this;
     const later = () => {
       clearTimeout(timeout);
-      func(...args);
+      const start = performance.now();
+      func.apply(context, args);
+      const end = performance.now();
+      
+      if (end - start > wait) {
+        console.warn(
+          `Performance Warning: Debounced function took ${end - start}ms`
+        );
+      }
     };
 
     clearTimeout(timeout);
@@ -31,100 +95,62 @@ export function debounce(func, wait = 300) {
 }
 
 /**
- * Throttle function to limit rate of function calls
- * @param {Function} func - Function to throttle
- * @param {number} limit - Wait time in milliseconds
- * @returns {Function} Throttled function
+ * Performance tracking hook for component rendering
+ * @returns {Object} Performance tracking utilities
  */
-export function throttle(func, limit = 300) {
-  let inThrottle;
-  return function(...args) {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-}
+export function usePerformanceTracking() {
+  const [renderCount, setRenderCount] = useState(0);
+  const [lastRenderTime, setLastRenderTime] = useState(null);
 
-/**
- * Create a performance-optimized selector with memoization
- * @param {Function} selector - Selector function
- * @returns {Function} Memoized selector
- */
-export function createOptimizedSelector(selector) {
-  let lastArgs = null;
-  let lastResult = null;
-
-  return (state) => {
-    if (!lastArgs || !areEqual(lastArgs, state)) {
-      lastArgs = state;
-      lastResult = selector(state);
-    }
-    return lastResult;
-  };
-}
-
-/**
- * Deep comparison for object equality
- * @param {*} a - First value to compare
- * @param {*} b - Second value to compare
- * @returns {boolean} Whether the values are deeply equal
- */
-function areEqual(a, b) {
-  if (a === b) return true;
-  
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) {
-    return false;
-  }
-
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-
-  if (keysA.length !== keysB.length) return false;
-
-  for (let key of keysA) {
-    if (!keysB.includes(key)) return false;
+  const trackRender = useCallback(() => {
+    const currentTime = performance.now();
     
-    if (typeof a[key] === 'object' && typeof b[key] === 'object') {
-      if (!areEqual(a[key], b[key])) return false;
-    } else if (a[key] !== b[key]) {
-      return false;
+    if (lastRenderTime) {
+      const renderDuration = currentTime - lastRenderTime;
+      
+      if (renderDuration > 16) { // More than one frame (60fps)
+        console.warn(
+          `Slow Render: ${renderDuration.toFixed(2)}ms (Frame dropped)`
+        );
+      }
     }
-  }
 
-  return true;
-}
+    setRenderCount(prev => prev + 1);
+    setLastRenderTime(currentTime);
+  }, [lastRenderTime]);
 
-/**
- * Performance logging decorator
- * @param {Function} target - Function to wrap
- * @param {string} [name] - Optional name for logging
- * @returns {Function} Wrapped function with performance logging
- */
-export function performanceLog(target, name) {
-  return function(...args) {
-    const start = performance.now();
-    const result = target.apply(this, args);
-    const end = performance.now();
-
-    console.log(`Performance: ${name || target.name} took ${end - start}ms`);
-    return result;
+  return {
+    renderCount,
+    trackRender,
   };
 }
 
-// Export utility types and constants for performance tracking
-export const PerformanceMarkers = {
-  RENDER_START: 'render_start',
-  RENDER_END: 'render_end',
-  COMBAT_CALCULATION: 'combat_calculation',
-};
-
+/**
+ * Performance Observer for detailed tracking
+ */
 export const performanceObserver = new PerformanceObserver((list) => {
-  list.getEntries().forEach((entry) => {
-    console.log(`Performance: ${entry.name} - ${entry.duration}ms`);
+  const entries = list.getEntries();
+  entries.forEach((entry) => {
+    const color = entry.duration > 50 
+      ? DESIGN_TOKENS.colors.danger.main 
+      : DESIGN_TOKENS.colors.success.main;
+
+    console.log(
+      `%c Performance: ${entry.name} - ${entry.duration.toFixed(2)}ms`, 
+      `color: ${color}; font-weight: bold;`
+    );
   });
 });
 
 // Start observing performance entries
-performanceObserver.observe({ entryTypes: ['measure'] });
+performanceObserver.observe({ 
+  entryTypes: ['measure', 'mark'] 
+});
+
+export default {
+  performanceTrack,
+  usePerformanceMemo,
+  performanceDebounce,
+  usePerformanceTracking,
+  PerformanceMarkers,
+};
