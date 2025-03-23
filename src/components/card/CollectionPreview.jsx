@@ -8,9 +8,20 @@ import {
   Button, 
   Tooltip,
   DESIGN_TOKENS, 
-  Icons,
-  getRarityColor 
+  Icons
 } from '../ui/DesignSystem';
+
+// Définir la fonction getRarityColor localement au lieu de l'importer
+const getRarityColor = (rarity) => {
+  switch (rarity) {
+    case 'common': return '#9CA3AF';
+    case 'uncommon': return '#10B981';
+    case 'rare': return '#3B82F6';
+    case 'epic': return '#8B5CF6';
+    case 'legendary': return '#F59E0B';
+    default: return '#9CA3AF';
+  }
+};
 
 const CollectionPreview = () => {
   const bonusCards = useSelector((state) => state.bonusCards.collection);
