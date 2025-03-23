@@ -1,25 +1,30 @@
-// src/redux/thunks/combatThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
-  startCombat, // Import correct de l'action, ne pas renommer
+  startCombat,
   evaluateSelectedHand as evaluateSelectedHandAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
+import { takeDamage } from '../slices/playerSlice'; // Import important
 import {
   evaluatePartialHand,
   calculateDamage,
 } from '../../utils/handEvaluationUtils';
 
 // Import and re-export specific thunks from combatCycleThunks
-import * as combatCycleThunks from './combatCycleThunks';
+import {
+  startCombatFromNode as importedStartCombatFromNode,
+  processCombatVictory as importedProcessCombatVictory,
+  checkCombatEnd as importedCheckCombatEnd,
+  executeCombatTurn as importedExecuteCombatTurn,
+} from './combatCycleThunks';
 
-// Directly export the individual thunks
-export const startCombatFromNode = combatCycleThunks.startCombatFromNode;
-export const processCombatVictory = combatCycleThunks.processCombatVictory;
-export const checkCombatEnd = combatCycleThunks.checkCombatEnd;
-export const executeCombatTurn = combatCycleThunks.executeCombatTurn;
+// Exporter explicitement les thunks importés
+export const startCombatFromNode = importedStartCombatFromNode;
+export const processCombatVictory = importedProcessCombatVictory;
+export const checkCombatEnd = importedCheckCombatEnd; // S'assurer que cette fonction est correctement exportée
+export const executeCombatTurn = importedExecuteCombatTurn;
 
 /**
  * Thunk pour continuer après une victoire en combat
@@ -263,6 +268,9 @@ export const attackEnemy = createAsyncThunk(
     }
   }
 );
+/**
+ * Traite l'attaque de l'ennemi
+ */
 export const processEnemyAttack = createAsyncThunk(
   'combat/processEnemyAttack',
   async (_, { dispatch, getState }) => {
@@ -276,8 +284,10 @@ export const processEnemyAttack = createAsyncThunk(
     // Faire attaquer l'ennemi (mettre à jour le journal)
     dispatch({ type: 'combat/enemyAction' });
 
-    // Réduire les PV du joueur
+    // Réduire les PV du joueur - Cette ligne est cruciale
     dispatch(takeDamage(enemy.attack));
+
+    console.log(`Joueur a subi ${enemy.attack} dégâts`);
 
     return {
       attacked: true,

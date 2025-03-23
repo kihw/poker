@@ -9,7 +9,7 @@ import {
   setTurnPhase,
 } from '../slices/combatSlice';
 import {
-  takeDamage,
+  takeDamage, // S'assurer que cet import est présent
   addExperience,
   addGold,
   addShield,
@@ -320,7 +320,7 @@ export const checkCombatEnd = createAsyncThunk(
 );
 
 /**
- * Thunk pour exécuter un tour de combat complet (de la distribution à l'attaque de l'ennemi)
+ * Thunk pour exécuter un tour de combat complet
  */
 export const executeCombatTurn = createAsyncThunk(
   'combat/executeCombatTurn',
@@ -373,13 +373,13 @@ export const executeCombatTurn = createAsyncThunk(
         ) {
           console.log("L'ennemi contre-attaque");
 
-          // IMPORTANT: Faire attaquer l'ennemi et réduire les PV du joueur
+          // Action de l'ennemi (journal)
           dispatch(enemyAction());
 
-          // Réduire les PV du joueur - C'est la partie qui manque !
-          const damageToPlayer = afterAttackState.combat.enemy.attack;
-          console.log(`Réduction des PV du joueur de ${damageToPlayer}`);
-          dispatch(takeDamage(damageToPlayer));
+          // Réduire les PV du joueur - C'est ici que nous corrigeons le problème
+          const enemyAttack = afterAttackState.combat.enemy.attack;
+          console.log(`Réduction des PV du joueur de ${enemyAttack}`);
+          dispatch(takeDamage(enemyAttack));
         } else {
           console.log('Ennemi vaincu, pas de contre-attaque');
         }

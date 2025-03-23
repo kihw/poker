@@ -1,5 +1,5 @@
 // src/pages/GamePage.jsx - Migré vers Redux
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -16,6 +16,8 @@ const GamePage = () => {
   const player = useSelector((state) => state.player);
   const stage = useSelector((state) => state.game.stage);
 
+  const [hasRedirected, setHasRedirected] = useState(false);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -24,10 +26,14 @@ const GamePage = () => {
 
   // Redirection automatique vers la carte lorsqu'on est en phase 'reward'
   useEffect(() => {
-    if (gamePhase === 'reward') {
+    // Ajouter une condition pour éviter les redirections multiples
+    if (gamePhase === 'reward' && !hasRedirected) {
       console.log(
         "Phase 'reward' détectée, redirection vers la carte dans 1 seconde"
       );
+
+      // Marquer qu'une redirection a déjà été initiée
+      setHasRedirected(true);
 
       // Utiliser un timeout pour laisser le temps aux animations de se terminer
       const timer = setTimeout(() => {
@@ -38,7 +44,12 @@ const GamePage = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [gamePhase, navigate]);
+
+    // Réinitialiser le flag si on change de phase
+    if (gamePhase !== 'reward') {
+      setHasRedirected(false);
+    }
+  }, [gamePhase, navigate, hasRedirected]);
 
   // Si on est en mode exploration, rediriger vers la carte
   useEffect(() => {

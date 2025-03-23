@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Version améliorée
+// src/components/combat/CombatInterface.jsx - Imports corrigés
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,8 +21,9 @@ import {
 import {
   attackEnemy,
   processCombatVictory,
-  executeCombatTurn,
   processEnemyAttack,
+  // Ajout de l'import manquant
+  checkCombatEnd,
 } from '../../redux/thunks/combatThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import {
@@ -170,39 +171,34 @@ const CombatInterface = () => {
           type: 'warning',
         })
       );
-      dispatch(attackEnemy())
-        .unwrap()
-        .then((result) => {
-          // Si l'ennemi est toujours en vie
-          if (enemy && enemy.health > 0) {
-            dispatch(processEnemyAttack());
-          }
-        });
       return;
     }
 
     // Ajouter un log visuel pour confirmer l'attaque
     console.log('Attaque lancée avec', selectedCards.length, 'cartes');
 
-    // Utiliser attackEnemy au lieu de executeCombatTurn
+    // Utiliser attackEnemy qui gère l'attaque du joueur
     dispatch(attackEnemy())
       .unwrap()
       .then((result) => {
         console.log("Résultat de l'attaque:", result);
 
-        // Faire attaquer l'ennemi après l'attaque du joueur
-        // Si l'ennemi est toujours en vie
-        // Au lieu d'utiliser getState(), nous utilisons la variable enemy du state local
+        // Vérifier si l'ennemi est encore en vie APRÈS l'attaque du joueur
         if (enemy && enemy.health > 0) {
-          setTimeout(() => {
-            dispatch({ type: 'combat/enemyAction' });
-          }, 500);
+          console.log("L'ennemi contre-attaque");
+
+          // Utiliser processEnemyAttack pour gérer l'attaque de l'ennemi et les dégâts au joueur
+          dispatch(processEnemyAttack());
         }
+
+        // Vérifier si le combat est terminé en utilisant l'action importée
+        dispatch(checkCombatEnd());
       })
       .catch((error) => {
         console.error("Erreur lors de l'attaque:", error);
       });
   };
+
   // Défausser les cartes sélectionnées
   const handleDiscard = () => {
     if (selectedCards.length === 0) {
