@@ -2,7 +2,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
-  startCombat as startCombatAction, // Renamed for clarity
+  startCombat,
   evaluateSelectedHand as evaluateSelectedHandAction,
   enemyAction,
 } from '../slices/combatSlice';
@@ -179,7 +179,7 @@ export const startNewCombat = createAsyncThunk(
       dispatch(setEnemy(enemy));
 
       // Dispatcher l'action pour démarrer le combat
-      dispatch(startCombatAction(enemy)); // Fixed: using the renamed action
+      dispatch(startCombat(enemy));
 
       // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
@@ -286,4 +286,4 @@ export const processEnemyAttack = createAsyncThunk(
 );
 
 // Export des actions du slice (pas les thunks)
-export { startCombatAction as startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
+export { startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
