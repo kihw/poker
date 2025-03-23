@@ -1,11 +1,25 @@
 // src/components/card/Card.jsx - Enhanced Design System Card
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  DESIGN_TOKENS, 
-  COLORS, 
-  getRarityColor 
-} from '../ui/DesignSystem';
+import { DESIGN_TOKENS } from '../ui/DesignSystem';
+
+// Définit ces constantes localement puisqu'elles ne sont pas exportées par DesignSystem
+const COLORS = {
+  primary: { main: '#3B82F6', light: '#60A5FA', dark: '#2563EB' },
+  danger: { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C' }
+};
+
+// Fonction locale pour obtenir la couleur de rareté
+const getRarityColor = (rarity) => {
+  switch (rarity) {
+    case 'common': return '#9CA3AF'; // gris
+    case 'uncommon': return '#60A5FA'; // bleu
+    case 'rare': return '#8B5CF6'; // violet
+    case 'epic': return '#EC4899'; // rose
+    case 'legendary': return '#F59E0B'; // or
+    default: return '#9CA3AF'; // gris par défaut
+  }
+};
 
 const Card = ({
   value,
@@ -47,7 +61,7 @@ const Card = ({
         ? `0 0 10px ${COLORS.primary.light}80` 
         : isHighlighted
           ? `0 0 8px ${COLORS.primary.light}80`
-          : DESIGN_TOKENS.shadows.md,
+          : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', // Shadow MD équivalent
     },
     rarity: {
       borderColor: rarityColor,
@@ -100,7 +114,7 @@ const Card = ({
         style={{
           ...borderStyle.base,
           ...borderStyle.rarity,
-          transition: DESIGN_TOKENS.transitions.DEFAULT,
+          transition: 'all 0.3s ease',
         }}
       >
         {/* Card Content */}
