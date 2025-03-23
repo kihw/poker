@@ -1,11 +1,10 @@
-// src/components/card/EnhancedHand.jsx - Migré vers Redux
+// src/components/card/Hand.jsx - Corrigé et optimisé
 import React, { useState, useMemo, useCallback } from 'react';
-import { useSelector } from 'react-redux';
-import EnhancedCard from './EnhancedCard';
 import { motion } from 'framer-motion';
+import Card from './Card'; // Import du composant Card standard
 
 const Hand = ({
-  cards,
+  cards = [],
   onToggleSelect,
   bestHandCards = [],
   maxSelectable = 5,
@@ -14,7 +13,17 @@ const Hand = ({
   const [hoverIndex, setHoverIndex] = useState(null);
   const [sortByValue, setSortByValue] = useState(true); // true = valeur, false = couleur
 
-  // Animations for cards
+  // Validation pour éviter les erreurs
+  const validCards = useMemo(() => {
+    if (!Array.isArray(cards)) {
+      console.warn('cards is not an array:', cards);
+      return [];
+    }
+    // Filtrer les cartes invalides
+    return cards.filter(card => card && typeof card === 'object');
+  }, [cards]);
+
+  // Animations pour les cartes
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -32,21 +41,20 @@ const Hand = ({
 
   // Calcule le nombre de cartes sélectionnées
   const selectedCount = useMemo(
-    () => cards.filter((card) => card.isSelected).length,
-    [cards]
+    () => validCards.filter((card) => card.isSelected).length,
+    [validCards]
   );
 
   // Fonction pour gérer la sélection des cartes
-  // Utiliser useCallback pour la stabilité de référence
   const handleCardSelect = useCallback(
     (index) => {
-      if (onToggleSelect && selectionMode !== 'view') {
+      if (onToggleSelect && selectionMode !== 'view' && index >= 0 && index < validCards.length) {
         // Log pour déboguer la sélection
         console.log('Selecting card at index:', index);
         onToggleSelect(index);
       }
     },
-    [onToggleSelect, selectionMode]
+    [onToggleSelect, selectionMode, validCards.length]
   );
 
   // Fonction pour basculer entre tri par valeur et tri par couleur
@@ -56,18 +64,16 @@ const Hand = ({
 
   // Créer une clé unique pour chaque carte basée sur ses propriétés
   const getCardKey = useCallback((card, index) => {
-    return `${card.value}-${card.suit}-${index}`;
+    // Utiliser un fallback en cas de valeurs manquantes
+    const value = card.value || '';
+    const suit = card.suit || '';
+    return `${value}-${suit}-${index}`;
   }, []);
 
   // Trier les cartes de façon mémoïsée
   const sortedCards = useMemo(() => {
-    if (!Array.isArray(cards)) {
-      console.warn('cards is not an array:', cards);
-      return [];
-    }
-
     // Ajouter l'index original à chaque carte avant de trier
-    const cardsWithIndex = cards.map((card, idx) => ({
+    const cardsWithIndex = validCards.map((card, idx) => ({
       ...card,
       originalIndex: idx,
     }));
@@ -103,7 +109,16 @@ const Hand = ({
     }
 
     return cardsWithIndex;
-  }, [cards, sortByValue]);
+  }, [validCards, sortByValue]);
+
+  // Rendu sécurisé en cas d'absence de cartes
+  if (!validCards.length) {
+    return (
+      <div className="py-6 text-center text-gray-400">
+        Aucune carte disponible
+      </div>
+    );
+  }
 
   return (
     <div className="py-6 relative">
@@ -127,11 +142,6 @@ const Hand = ({
         animate="show"
       >
         {sortedCards.map((card) => {
-          if (!card) {
-            console.warn('Invalid card at index');
-            return null;
-          }
-
           // Utiliser l'index original stocké lors du tri
           const originalIndex = card.originalIndex;
 
@@ -147,7 +157,7 @@ const Hand = ({
               onHoverEnd={() => setHoverIndex(null)}
               className="relative"
             >
-              <EnhancedCard
+              <Card
                 value={card.value}
                 suit={card.suit}
                 isSelected={card.isSelected}
@@ -159,6 +169,7 @@ const Hand = ({
                   selectedCount >= maxSelectable &&
                   selectionMode === 'attack'
                 }
+                rarity={card.rarity || 'common'}
               />
             </motion.div>
           );
@@ -180,11 +191,11 @@ const Hand = ({
       {/* Debugging - Afficher les indices des cartes sélectionnées */}
       {process.env.NODE_ENV === 'development' && (
         <div className="text-center text-xs text-yellow-400 mt-2">
-          Cartes sélectionnées: {cards.filter((c) => c.isSelected).length}
+          Cartes sélectionnées: {validCards.filter((c) => c.isSelected).length}
         </div>
       )}
     </div>
   );
 };
 
-export default Hand;
+export default React.memo(Hand);
