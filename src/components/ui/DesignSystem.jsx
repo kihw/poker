@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 
 // Expanded Design Tokens with comprehensive definitions
 export const DESIGN_TOKENS = {
-  ...EXISTING_DESIGN_TOKENS, // Spread existing tokens
   layout: {
     borderRadius: {
       sm: '0.125rem',
@@ -41,39 +40,92 @@ export const DESIGN_TOKENS = {
       slow: 0.6,
     },
   },
+  colors: {
+    primary: { main: '#3B82F6', light: '#60A5FA', dark: '#2563EB' },
+    secondary: { main: '#6366F1', light: '#818CF8', dark: '#4338CA' },
+    success: { main: '#10B981', light: '#34D399', dark: '#047857' },
+    danger: { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C' },
+    warning: { main: '#F59E0B', light: '#FCD34D', dark: '#B45309' },
+    neutral: {
+      50: '#F9FAFB',
+      100: '#F3F4F6',
+      200: '#E5E7EB',
+      300: '#D1D5DB',
+      400: '#9CA3AF',
+      500: '#6B7280',
+      600: '#4B5563',
+      700: '#374151',
+      800: '#1F2937',
+      900: '#111827',
+    },
+  },
 };
 
-// Enhanced ProgressBar component
-export const ProgressBar = ({ 
-  value, 
-  max = 100, 
-  color = 'primary', 
-  className = '' 
-}) => {
-  const percentage = (value / max) * 100;
-  const colorClasses = {
-    primary: 'bg-blue-500',
-    success: 'bg-green-500',
-    danger: 'bg-red-500',
-    warning: 'bg-yellow-500',
+// Animation Presets
+export const AnimationPresets = {
+  fadeIn: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: { 
+      duration: DESIGN_TOKENS.animations.duration.normal,
+      ease: 'easeInOut'
+    }
+  },
+  slideUp: {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 20 },
+    transition: { 
+      type: 'spring',
+      stiffness: 300,
+      damping: 20 
+    }
+  },
+  scaleIn: {
+    initial: { scale: 0.9, opacity: 0 },
+    animate: { 
+      scale: 1, 
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 300,
+        damping: 10
+      }
+    },
+    exit: { 
+      scale: 0.9, 
+      opacity: 0 
+    }
+  }
+};
+
+// Autres composants et exports existants
+export const Button = ({ children, variant = 'primary', ...props }) => {
+  const variantStyles = {
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    secondary: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+    outline: 'border border-gray-300 hover:bg-gray-100 text-gray-700',
+    ghost: 'hover:bg-gray-100 text-gray-700',
+    danger: 'bg-red-600 hover:bg-red-700 text-white',
   };
 
   return (
-    <div className={`w-full bg-gray-200 rounded-full h-2.5 ${className}`}>
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${percentage}%` }}
-        transition={{ duration: 0.5 }}
-        className={`h-2.5 rounded-full ${colorClasses[color]}`}
-      />
-    </div>
+    <button 
+      className={`
+        px-4 py-2 rounded-md transition-colors 
+        ${variantStyles[variant] || variantStyles.primary}
+      `} 
+      {...props}
+    >
+      {children}
+    </button>
   );
 };
 
-// Add other needed enhancements...
-
+// Autres composants et définitions...
 export default {
-  ...EXISTING_EXPORT, // Spread existing exports
-  ProgressBar,
+  Button,
   DESIGN_TOKENS,
+  AnimationPresets,
 };
