@@ -1,36 +1,47 @@
-// src/components/card/BonusCardManager.jsx - Optimized Performance
-import React, { useMemo, useCallback } from 'react';
+// src/components/card/BonusCardManager.jsx - Optimized Performance & Fixed Bugs
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 
-// Design System Imports
-import { 
-  Button, 
-  Badge, 
-  Card, 
-  Tooltip, 
-  DESIGN_TOKENS,
-  Icons 
-} from '../ui/DesignSystem';
+// Import Design System components and styles
+import { Button, Badge, Card, Tooltip } from '../ui/DesignSystem';
+import { DESIGN_TOKENS } from '../ui/DesignSystem';
 
-// Redux Actions and Selectors
+// Import Redux actions
 import { 
   equipCard, 
   unequipCard, 
   upgradeCard 
 } from '../../redux/slices/bonusCardsSlice';
+import { setActionFeedback } from '../../redux/slices/uiSlice';
+import { spendGold } from '../../redux/slices/playerSlice';
+
+// Mock Icons object if not available in DesignSystem
+const Icons = {
+  card: '🃏'
+};
 
 const BonusCardManager = () => {
   const dispatch = useDispatch();
 
   // Performance-optimized Selectors
-  const bonusCardCollection = useSelector(state => state.bonusCards.collection);
-  const activeBonusCards = useSelector(state => state.bonusCards.active);
-  const maxBonusCardSlots = useSelector(state => state.bonusCards.maxSlots);
-  const playerGold = useSelector(state => state.player.gold);
+  const bonusCardCollection = useSelector(state => state.bonusCards.collection || []);
+  const activeBonusCards = useSelector(state => state.bonusCards.active || []);
+  const maxBonusCardSlots = useSelector(state => state.bonusCards.maxSlots || 3);
+  const playerGold = useSelector(state => state.player.gold || 0);
+
+  // Local state for filtering and sorting
+  const [filterOptions, setFilterOptions] = useState({
+    tab: 'collection',
+    search: '',
+    sortBy: 'name',
+    rarity: 'all'
+  });
 
   // Memoized Card Filtering
   const filterAndSortCards = useCallback((cards, options = {}) => {
+    if (!Array.isArray(cards)) return [];
+    
     const { 
       tab = 'collection', 
       search = '', 
@@ -38,7 +49,7 @@ const BonusCardManager = () => {
       rarity = 'all' 
     } = options;
 
-    let filteredCards = cards;
+    let filteredCards = [...cards];
 
     // Filter by tab
     if (tab === 'equipped') {
@@ -54,7 +65,7 @@ const BonusCardManager = () => {
       const searchLower = search.toLowerCase();
       filteredCards = filteredCards.filter(card => 
         card.name.toLowerCase().includes(searchLower) ||
-        card.description?.toLowerCase().includes(searchLower)
+        (card.description && card.description.toLowerCase().includes(searchLower))
       );
     }
 
@@ -80,16 +91,11 @@ const BonusCardManager = () => {
     });
   }, [activeBonusCards]);
 
-  // Memoize filtered cards with filtering options
-  const [filteredCards, setFilteredCards] = React.useState([]);
-  const [filterOptions, setFilterOptions] = React.useState({
-    tab: 'collection',
-    search: '',
-    sortBy: 'name',
-    rarity: 'all'
-  });
-
-  React.useEffect(() => {
+  // Memoize filtered cards
+  const [filteredCards, setFilteredCards] = useState([]);
+  
+  // Update filtered cards when relevant state changes
+  useEffect(() => {
     const filtered = filterAndSortCards(bonusCardCollection, filterOptions);
     setFilteredCards(filtered);
   }, [bonusCardCollection, filterOptions, filterAndSortCards]);
@@ -97,23 +103,58 @@ const BonusCardManager = () => {
   // Card Interaction Handlers
   const handleEquipCard = useCallback((cardId) => {
     dispatch(equipCard(cardId));
+    
+    dispatch(setActionFeedback({
+      message: "Carte équipée",
+      type: "success"
+    }));
   }, [dispatch]);
 
   const handleUnequipCard = useCallback((cardId) => {
     dispatch(unequipCard(cardId));
+    
+    dispatch(setActionFeedback({
+      message: "Carte retirée",
+      type: "info"
+    }));
   }, [dispatch]);
 
   const handleUpgradeCard = useCallback((cardId) => {
-    // Implement upgrade cost logic
+    // Fixed upgrade cost logic
     const upgradeCost = 50;
     if (playerGold >= upgradeCost) {
+      dispatch(spendGold(upgradeCost));
       dispatch(upgradeCard({ cardId }));
+      
+      dispatch(setActionFeedback({
+        message: "Carte améliorée",
+        type: "success"
+      }));
+    } else {
+      dispatch(setActionFeedback({
+        message: "Or insuffisant pour l'amélioration",
+        type: "warning"
+      }));
     }
   }, [dispatch, playerGold]);
 
+  // Get color for card rarity
+  const getRarityColor = (rarity) => {
+    const rarityColors = {
+      common: '#9CA3AF',
+      uncommon: '#10B981',
+      rare: '#3B82F6',
+      epic: '#8B5CF6',
+      legendary: '#F59E0B'
+    };
+    return rarityColors[rarity] || '#9CA3AF';
+  };
+
   // Render Card Method
   const renderCard = useCallback((card) => {
-    const cardColor = DESIGN_TOKENS.colors.rarity[card.rarity];
+    if (!card) return null;
+    
+    const cardColor = getRarityColor(card.rarity);
     const isEquipped = activeBonusCards.some(c => c.id === card.id);
 
     return (
@@ -129,12 +170,7 @@ const BonusCardManager = () => {
           <div className="p-3">
             <div className="flex justify-between items-start">
               <h3 className="font-bold text-lg">{card.name}</h3>
-              <Badge 
-                variant={isEquipped ? 'success' : 'primary'}
-                size="sm"
-              >
-                {card.rarity}
-              </Badge>
+              <Badge>{card.rarity}</Badge>
             </div>
             <p className="text-sm text-gray-600 mt-2">{card.description}</p>
             
@@ -142,31 +178,28 @@ const BonusCardManager = () => {
               {isEquipped ? (
                 <Button 
                   variant="danger" 
-                  size="sm" 
                   onClick={() => handleUnequipCard(card.id)}
                 >
-                  Unequip
+                  Retirer
                 </Button>
               ) : (
                 <Button 
                   variant="primary" 
-                  size="sm" 
                   onClick={() => handleEquipCard(card.id)}
                   disabled={activeBonusCards.length >= maxBonusCardSlots}
                 >
-                  Equip
+                  Équiper
                 </Button>
               )}
               
-              {(card.level || 0) < 3 && (
-                <Tooltip content={`Upgrade Cost: 50 Gold (Level ${card.level || 1})`}>
+              {(!card.level || card.level < 3) && (
+                <Tooltip content={`Coût d'amélioration: 50 or (Niveau ${card.level || 1})`}>
                   <Button 
                     variant="outline" 
-                    size="sm"
                     disabled={playerGold < 50}
                     onClick={() => handleUpgradeCard(card.id)}
                   >
-                    Upgrade
+                    Améliorer
                   </Button>
                 </Tooltip>
               )}
@@ -198,14 +231,14 @@ const BonusCardManager = () => {
             variant={filterOptions.tab === 'equipped' ? 'primary' : 'outline'}
             onClick={() => setFilterOptions(prev => ({...prev, tab: 'equipped'}))}
           >
-            Equipped
+            Équipées
           </Button>
         </div>
 
         <div className="flex items-center space-x-2">
           <input 
             type="text" 
-            placeholder="Search cards..."
+            placeholder="Rechercher..."
             className="px-2 py-1 border rounded"
             value={filterOptions.search}
             onChange={(e) => setFilterOptions(prev => ({...prev, search: e.target.value}))}
@@ -215,12 +248,12 @@ const BonusCardManager = () => {
             value={filterOptions.rarity}
             onChange={(e) => setFilterOptions(prev => ({...prev, rarity: e.target.value}))}
           >
-            <option value="all">All Rarities</option>
-            <option value="common">Common</option>
-            <option value="uncommon">Uncommon</option>
+            <option value="all">Toutes raretés</option>
+            <option value="common">Commune</option>
+            <option value="uncommon">Peu commune</option>
             <option value="rare">Rare</option>
-            <option value="epic">Epic</option>
-            <option value="legendary">Legendary</option>
+            <option value="epic">Épique</option>
+            <option value="legendary">Légendaire</option>
           </select>
         </div>
       </div>
@@ -230,8 +263,8 @@ const BonusCardManager = () => {
       </AnimatePresence>
 
       {filteredCards.length === 0 && (
-        <div className="text-center text-gray-500">
-          No cards found matching your filters.
+        <div className="text-center text-gray-500 py-8">
+          Aucune carte trouvée.
         </div>
       )}
     </div>
