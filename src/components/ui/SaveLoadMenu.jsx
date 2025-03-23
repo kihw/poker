@@ -1,31 +1,37 @@
-// src/components/ui/SaveLoadMenu.jsx - Migré vers Redux
+// src/components/ui/SaveLoadMenu.jsx - Design System Enhanced
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  saveGame,
-  loadGame,
-  deleteSave,
-  hasSave,
+import { 
+  saveGame, 
+  loadGame, 
+  deleteSave, 
+  hasSave 
 } from '../../redux/thunks/saveThunks';
 
-/**
- * Composant pour afficher un menu de sauvegarde et chargement
- */
+import { 
+  Button, 
+  Card, 
+  Badge, 
+  Icons, 
+  DESIGN_TOKENS, 
+  AnimationPresets 
+} from './DesignSystem';
+
 const SaveLoadMenu = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
 
-  // Sélecteurs Redux pour l'état du joueur
+  // Selectors for player and game state
   const player = useSelector((state) => state.player);
   const gameState = useSelector((state) => state.game);
 
-  // État local pour la gestion du menu
+  // Local state for save management
   const [saveExists, setSaveExists] = useState(false);
   const [saveInfo, setSaveInfo] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [actionCompleted, setActionCompleted] = useState(null);
+  const [actionResult, setActionResult] = useState(null);
 
-  // Vérifier l'existence d'une sauvegarde
+  // Check for existing save on open
   useEffect(() => {
     if (isOpen) {
       const exists = hasSave();
@@ -33,221 +39,208 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
 
       if (exists) {
         try {
-          // Récupérer les informations de la sauvegarde
           const savedData = localStorage.getItem('pokerSoloRpgSave');
           if (savedData) {
             const data = JSON.parse(savedData);
             setSaveInfo(data);
           }
         } catch (error) {
-          console.error(
-            'Erreur lors de la lecture des informations de sauvegarde:',
-            error
-          );
+          console.error('Save data parsing error:', error);
           setSaveInfo(null);
         }
-      } else {
-        setSaveInfo(null);
       }
     }
-  }, [isOpen, actionCompleted]);
+  }, [isOpen]);
 
-  // Gérer les actions
-  const handleSave = () => {
-    dispatch(saveGame());
-    setActionCompleted(`save-${Date.now()}`);
-    setTimeout(() => {
-      setActionCompleted(null);
-    }, 2000);
+  // Save Game Handler
+  const handleSave = async () => {
+    try {
+      await dispatch(saveGame());
+      setActionResult({
+        type: 'success',
+        message: 'Partie sauvegardée avec succès!'
+      });
+      setSaveExists(true);
+    } catch (error) {
+      setActionResult({
+        type: 'error',
+        message: 'Erreur lors de la sauvegarde'
+      });
+    }
   };
 
-  const handleLoad = () => {
-    dispatch(loadGame());
-    onClose();
+  // Load Game Handler
+  const handleLoad = async () => {
+    try {
+      await dispatch(loadGame());
+      onClose();
+    } catch (error) {
+      setActionResult({
+        type: 'error',
+        message: 'Erreur lors du chargement'
+      });
+    }
   };
 
-  const handleDelete = () => {
+  // Delete Save Handler
+  const handleDelete = async () => {
     if (confirmDelete) {
-      dispatch(deleteSave());
-      setConfirmDelete(false);
-      setActionCompleted(`delete-${Date.now()}`);
-      setTimeout(() => {
-        setActionCompleted(null);
-      }, 2000);
+      try {
+        await dispatch(deleteSave());
+        setActionResult({
+          type: 'success',
+          message: 'Sauvegarde supprimée avec succès!'
+        });
+        setSaveExists(false);
+        setConfirmDelete(false);
+      } catch (error) {
+        setActionResult({
+          type: 'error',
+          message: 'Erreur lors de la suppression'
+        });
+      }
     } else {
       setConfirmDelete(true);
     }
   };
 
-  // Formatter la date
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'Date inconnue';
-
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleString();
-    } catch (error) {
-      return 'Date invalide';
+  // Animation Configurations
+  const menuVariants = {
+    ...AnimationPresets.slideUp,
+    initial: { 
+      opacity: 0, 
+      scale: 0.9, 
+      y: 50 
+    },
+    animate: { 
+      opacity: 1, 
+      scale: 1, 
+      y: 0,
+      transition: { 
+        type: 'spring', 
+        stiffness: 300, 
+        damping: 20 
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.9, 
+      y: 50 
     }
   };
 
-  // Animation d'entrée/sortie
-  const menuVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-    exit: { opacity: 0, y: 20, transition: { duration: 0.2 } },
-  };
-
-  // Rendu conditionnel
-  if (!isOpen) return null;
-
   return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <AnimatePresence>
-        <motion.div
-          className="bg-gray-900 rounded-xl w-full max-w-md shadow-2xl overflow-hidden"
-          variants={menuVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
         >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4">
-            <h2 className="text-xl font-bold text-white">
-              Sauvegarde & Chargement
-            </h2>
-          </div>
+          <motion.div
+            {...menuVariants}
+            className="w-full max-w-md bg-gray-800 rounded-xl p-6 shadow-2xl"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                Sauvegarde & Gestion
+              </h2>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClose}
+              >
+                ✕
+              </Button>
+            </div>
 
-          <div className="p-6">
-            {/* Informations de sauvegarde */}
+            {/* Saved Game Information */}
             {saveExists && saveInfo && (
-              <div className="bg-gray-800 rounded-md p-4 mb-6">
-                <h3 className="text-lg font-bold text-white mb-2">
-                  Sauvegarde existante
+              <Card 
+                variant="elevated" 
+                className="mb-6 p-4 bg-gray-700"
+              >
+                <h3 className="text-lg font-semibold mb-3 text-white">
+                  Dernière Sauvegarde
                 </h3>
 
-                <div className="space-y-2 text-sm text-gray-300">
+                <div className="space-y-2 text-gray-300">
                   <div className="flex justify-between">
-                    <span>Date:</span>
-                    <span>{formatDate(saveInfo.timestamp)}</span>
+                    <span>Niveau:</span>
+                    <Badge variant="primary">{saveInfo.player?.level || 1}</Badge>
                   </div>
-
-                  {saveInfo.player && (
-                    <>
-                      <div className="flex justify-between">
-                        <span>Niveau du joueur:</span>
-                        <span>{saveInfo.player.level || 1}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Or:</span>
-                        <span>{saveInfo.player.gold || 0}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>PV:</span>
-                        <span>
-                          {saveInfo.player.health || 0}/
-                          {saveInfo.player.maxHealth || 0}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {saveInfo.game && (
-                    <div className="flex justify-between">
-                      <span>Étage:</span>
-                      <span>{saveInfo.game.currentFloor || 1}</span>
-                    </div>
-                  )}
+                  <div className="flex justify-between">
+                    <span>Or:</span>
+                    <span>{saveInfo.player?.gold || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>PV:</span>
+                    <span>
+                      {saveInfo.player?.health || 0} / 
+                      {saveInfo.player?.maxHealth || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Étage:</span>
+                    <span>{saveInfo.game?.currentFloor || 1}</span>
+                  </div>
                 </div>
-              </div>
+              </Card>
             )}
 
-            {/* Informations sur l'état actuel */}
-            <div className="bg-gray-800 rounded-md p-4 mb-6">
-              <h3 className="text-lg font-bold text-white mb-2">État actuel</h3>
-
-              <div className="space-y-2 text-sm text-gray-300">
-                <div className="flex justify-between">
-                  <span>Niveau du joueur:</span>
-                  <span>{player.level}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Or:</span>
-                  <span>{player.gold}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>PV:</span>
-                  <span>
-                    {player.health}/{player.maxHealth}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Étage:</span>
-                  <span>{gameState.currentFloor}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Boutons d'action */}
-            <div className="space-y-3">
-              <button
+            {/* Action Buttons */}
+            <div className="space-y-4">
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="w-full"
                 onClick={handleSave}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded"
               >
-                Sauvegarder la partie
-              </button>
+                💾 Sauvegarder
+              </Button>
 
-              <button
+              <Button 
+                variant="success" 
+                size="lg" 
+                className="w-full"
+                disabled={!saveExists}
                 onClick={handleLoad}
-                disabled={!saveExists}
-                className={`w-full font-bold py-3 px-4 rounded ${
-                  saveExists
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
               >
-                Charger la partie
-              </button>
+                📂 Charger
+              </Button>
 
-              <button
+              <Button 
+                variant={confirmDelete ? 'danger' : 'outline'} 
+                size="lg" 
+                className="w-full"
+                disabled={!saveExists}
                 onClick={handleDelete}
-                disabled={!saveExists}
-                className={`w-full font-bold py-3 px-4 rounded ${
-                  saveExists
-                    ? confirmDelete
-                      ? 'bg-red-700 hover:bg-red-800 text-white'
-                      : 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
               >
-                {confirmDelete
-                  ? 'Confirmer la suppression?'
-                  : 'Supprimer la sauvegarde'}
-              </button>
-
-              <button
-                onClick={onClose}
-                className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded mt-6"
-              >
-                Fermer
-              </button>
+                {confirmDelete 
+                  ? '⚠️ Confirmer la suppression?' 
+                  : '🗑️ Supprimer la sauvegarde'}
+              </Button>
             </div>
 
-            {/* Message d'information */}
-            {!saveExists && (
-              <div className="mt-4 text-sm text-gray-400 text-center">
-                Aucune sauvegarde disponible
-              </div>
+            {/* Action Result Feedback */}
+            {actionResult && (
+              <motion.div
+                {...AnimationPresets.fadeIn}
+                className={`
+                  mt-4 p-3 rounded-md text-center
+                  ${actionResult.type === 'success' 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-red-600 text-white'}
+                `}
+              >
+                {actionResult.message}
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         </motion.div>
-      </AnimatePresence>
-    </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
