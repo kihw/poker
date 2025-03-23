@@ -1,77 +1,51 @@
-# Poker Solo RPG 🃏🎲
+# Poker Solo RPG
 
-## Description du Jeu
+Un jeu de rôle roguelike basé sur le poker et des mécanismes de cartes.
 
-Poker Solo RPG est un jeu de stratégie roguelike unique qui combine les mécaniques de poker avec un système de progression RPG. Affrontez des ennemis, collectez des cartes bonus, et progressez à travers différents étages dans une aventure solo captivante.
+## Corrections apportées
 
-## Fonctionnalités Principales
+Le projet a été corrigé pour résoudre les problèmes suivants :
 
-- 🃏 Système de combat basé sur les combinaisons de poker
-- 🗺️ Carte roguelike dynamique avec différents types de nœuds
-- 💥 Cartes bonus avec effets spéciaux
-- 🏆 Progression du personnage avec des améliorations et des choix stratégiques
-- 🎨 Design system moderne et réactif
+1. Ajout du composant `Card` dans le fichier DesignSystem.jsx qui n'était pas exporté mais était utilisé par plusieurs composants.
+2. Ajout du composant `Tooltip` dans DesignSystem.jsx.
+3. Correction des importations dans CombatLog.jsx et HandCombinationDisplay.jsx pour utiliser les composants exportés correctement.
+4. Définition locale de la fonction `getRarityColor` dans CollectionPreview.jsx au lieu de l'importer du DesignSystem.
 
-## Technologies Utilisées
+Ces corrections permettent au jeu de fonctionner correctement sans erreurs JavaScript.
 
-- React 18
+## Structure du projet
+
+Le projet est organisé comme suit :
+
+- `src/components/` : Contient tous les composants React
+  - `card/` : Composants liés aux cartes (standard et bonus)
+  - `combat/` : Composants pour l'interface de combat
+  - `map/` : Composants pour la carte du monde
+  - `ui/` : Composants d'interface utilisateur réutilisables
+- `src/core/` : Logique de base du jeu
+- `src/data/` : Données statiques du jeu
+- `src/modules/` : Modules fonctionnels
+- `src/pages/` : Pages principales de l'application
+- `src/redux/` : État global avec Redux
+  - `slices/` : Tranches Redux pour les différentes parties de l'état
+  - `thunks/` : Fonctions thunks Redux pour la logique asynchrone
+  - `selectors/` : Sélecteurs Redux
+  - `middleware/` : Middlewares Redux personnalisés
+- `src/utils/` : Utilitaires et fonctions helpers
+
+## Fonctionnalités du jeu
+
+- Combat basé sur des combinaisons de poker
+- Progression roguelike avec génération procédurale de la carte
+- Collection de cartes bonus avec différentes raretés
+- Système de boutique et repos
+- Événements aléatoires
+- Sauvegarde et chargement de la progression
+
+## Technologies utilisées
+
+- React
 - Redux Toolkit
-- Framer Motion
-- Tailwind CSS
-- TypeScript
-
-## Prérequis
-
-- Node.js 16+ 
-- npm 8+
-
-## Installation
-
-1. Clonez le dépôt
-```bash
-git clone https://github.com/kihw/poker.git
-cd poker
-```
-
-2. Installez les dépendances
-```bash
-npm install
-```
-
-3. Démarrez l'application en mode développement
-```bash
-npm run dev
-```
-
-## Scripts Disponibles
-
-- `npm run dev` : Démarre le serveur de développement
-- `npm run build` : Construit l'application pour la production
-- `npm run preview` : Prévisualise l'application construite
-- `npm run test` : Lance les tests
-- `npm run lint` : Vérifie le code avec ESLint
-
-## Structure du Projet
-
-```
-src/
-├── components/       # Composants React
-├── redux/            # Logique Redux
-├── core/             # Logique de jeu principale
-├── data/             # Données statiques
-├── modules/          # Modules métier
-├── pages/            # Composants de pages
-└── utils/            # Utilitaires
-```
-
-## Contribution
-
-Les contributions sont les bienvenues ! Veuillez consulter le guide de contribution avant de soumettre une pull request.
-
-## Licence
-
-Ce projet est sous licence MIT.
-
-## Contact
-
-Créé par [Votre Nom] - N'hésitez pas à me contacter pour toute question !
+- React Router DOM
+- Framer Motion pour les animations
+- TailwindCSS pour les styles
