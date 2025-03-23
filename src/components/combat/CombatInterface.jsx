@@ -1,8 +1,8 @@
+// src/components/combat/CombatInterface.jsx - Version corrigée
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGameActions } from '../../hooks/useGameActions';
 
 // Import sub-components
 import PlayerStatus from './PlayerStatus';
@@ -15,7 +15,6 @@ import TutorialOverlay from '../ui/TutorialOverlay';
 // Import Redux actions
 import {
   toggleCardSelection,
-  setTurnPhase,
   dealHand,
   discardCards,
   toggleDiscardMode,
@@ -25,12 +24,15 @@ import {
   continueAfterVictory,
 } from '../../redux/thunks/combatThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
-import { setGamePhase } from '../../redux/slices/gameSlice';
+import {
+  setGamePhase,
+  setTutorialStep,
+  completeTutorial,
+} from '../../redux/slices/gameSlice';
 
 const CombatInterface = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const gameActions = useGameActions();
 
   // Extraire les données nécessaires du Redux store
   const enemy = useSelector((state) => state.combat.enemy);
@@ -44,25 +46,37 @@ const CombatInterface = () => {
   const combatLog = useSelector((state) => state.combat.combatLog);
   const gamePhase = useSelector((state) => state.game.gamePhase);
   const activeBonusCards = useSelector((state) => state.bonusCards.active);
+  const stage = useSelector((state) => state.game.stage);
+  const playerGold = useSelector((state) => state.player.gold);
+  const playerHealth = useSelector((state) => state.player.health);
+  const playerMaxHealth = useSelector((state) => state.player.maxHealth);
+  const tutorialStep = useSelector((state) => state.game.tutorialStep);
+  const playerExperience = useSelector((state) => state.player.experience);
+  const playerLevel = useSelector((state) => state.player.level);
 
   // États locaux pour les animations et la gestion d'UI
   const [showDamageEffect, setShowDamageEffect] = useState(false);
   const [showTutorial, setShowTutorial] = useState(true);
   const [isProcessingContinue, setIsProcessingContinue] = useState(false);
 
+  // Recréer gameData à partir des sélecteurs
+  const gameData = {
+    stage,
+    player: {
+      health: playerHealth,
+      maxHealth: playerMaxHealth,
+      gold: playerGold,
+      tutorialStep,
+      experience: playerExperience,
+      level: playerLevel,
+    },
+  };
+
   // Vérifier si le tutoriel a déjà été vu
   useEffect(() => {
     const tutorialCompleted = localStorage.getItem('tutorialCompleted');
     setShowTutorial(!tutorialCompleted);
   }, []);
-
-  // Reset de la sélection quand une nouvelle main est distribuée
-  useEffect(() => {
-    if (turnPhase === 'select') {
-      // Réinitialiser la sélection et le mode de défausse
-      dispatch(toggleDiscardMode(false));
-    }
-  }, [turnPhase, dispatch]);
 
   // Détecter les changements d'état qui déclenchent des animations
   useEffect(() => {
@@ -93,35 +107,15 @@ const CombatInterface = () => {
 
   // Gérer le tutoriel
   const handleNextTutorialStep = () => {
-    const currentStep = gameData.tutorialStep || 0;
-    const nextStep = currentStep + 1;
+    const nextStep = (tutorialStep || 0) + 1;
+    dispatch(setTutorialStep(nextStep));
     console.log(`Étape de tutoriel suivante: ${nextStep}`);
   };
 
-  const completeTutorial = () => {
-    localStorage.setItem('tutorialCompleted', 'true');
+  const handleCompleteTutorial = () => {
+    dispatch(completeTutorial());
     setShowTutorial(false);
   };
-
-  // Lancer l'attaque
-  const handleAttack = () => {
-    if (selectedCards.length === 0 || selectedCards.length > 5) {
-      dispatch(
-        setActionFeedback({
-          message: 'Sélectionnez 1 à 5 cartes pour attaquer',
-          type: 'warning',
-        })
-      );
-      return;
-    }
-
-    dispatch(attackEnemy());
-  };
-  // Vérifier si le tutoriel a déjà été vu
-  useEffect(() => {
-    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
-    setShowTutorial(!tutorialCompleted);
-  }, []);
 
   // Préparer les cartes à afficher selon le mode
   const getDisplayCards = () => {
@@ -136,6 +130,8 @@ const CombatInterface = () => {
           : selectedCards.includes(idx),
     }));
   };
+
+  // Handler pour les actions sur les cartes
   const handleCardAction = (index) => {
     if (discardMode) {
       // Mode défausse
@@ -168,6 +164,22 @@ const CombatInterface = () => {
       dispatch(toggleCardSelection(index));
     }
   };
+
+  // Lancer l'attaque
+  const handleAttack = () => {
+    if (selectedCards.length === 0 || selectedCards.length > 5) {
+      dispatch(
+        setActionFeedback({
+          message: 'Sélectionnez 1 à 5 cartes pour attaquer',
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    dispatch(attackEnemy());
+  };
+
   // Gérer la continuation après un combat
   const handleContinue = () => {
     const callId = Date.now() + Math.random().toString(16).slice(2);
@@ -251,9 +263,9 @@ const CombatInterface = () => {
       {/* Tutoriel */}
       {showTutorial && (
         <TutorialOverlay
-          step={0}
+          step={tutorialStep}
           onNextStep={handleNextTutorialStep}
-          onComplete={completeTutorial}
+          onComplete={handleCompleteTutorial}
         />
       )}
 
@@ -328,7 +340,7 @@ const CombatInterface = () => {
             <div className="combat-hand">
               <EnhancedHand
                 cards={getDisplayCards()}
-                onToggleSelect={(index) => dispatch(toggleCardSelection(index))}
+                onToggleSelect={handleCardAction}
                 maxSelectable={discardMode ? discardLimit : 5}
                 selectionMode={
                   discardMode
@@ -345,21 +357,144 @@ const CombatInterface = () => {
               <div className="flex flex-col space-y-3 mt-4">
                 <div className="flex justify-center space-x-4">
                   <button
-                    onClick={() => {
-                      if (
-                        selectedCards.length > 0 &&
-                        selectedCards.length <= 5
-                      ) {
-                        handleAttack();
-                      } else {
-                        dispatch(
-                          setActionFeedback({
-                            message: 'Sélectionnez 1 à 5 cartes pour attaquer',
-                            type: 'warning',
-                          })
-                        );
-                      }
-                    }}
+                    onClick={handleAttack}
+                    disabled={
+                      selectedCards.length === 0 || selectedCards.length > 5
+                    }
+                    className={`px-6 py-2 rounded-md font-bold uppercase transition-all ${
+                      selectedCards.length > 0 && selectedCards.length <= 5
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Attaquer ({selectedCards.length})
+                  </button>
+
+                  <button
+                  onClick={() => {
+                    // Ne défausser que les cartes déjà sélectionnées
+                    if (
+                      selectedCards.length > 0 &&
+                      selectedCards.length <= discardLimit
+                    ) {
+                      dispatch(discardCards(selectedCards));
+                    } else {
+                      dispatch(
+                        setActionFeedback({
+                          message: 'Sélectionnez d\'abord les cartes à défausser',
+                          type: 'warning',
+                        })
+                      );
+                    }
+                  }}
+                  disabled={selectedCards.length === 0}
+                  className={`px-6 py-2 rounded-md font-bold uppercase ${
+                    selectedCards.length > 0
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  Défausser ({selectedCards.length})
+                </button>  return (
+    <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen combat-interface">
+      {/* Tutoriel */}
+      {showTutorial && (
+        <TutorialOverlay
+          step={tutorialStep}
+          onNextStep={handleNextTutorialStep}
+          onComplete={handleCompleteTutorial}
+        />
+      )}
+
+      {/* Message d'interface */}
+      <div className="text-center mb-4 text-white text-lg">
+        {getInterfaceMessage()}
+      </div>
+
+      {/* Effet de dommages */}
+      <AnimatePresence>
+        {showDamageEffect && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.7 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-red-600 pointer-events-none z-50"
+            style={{ mixBlendMode: 'overlay' }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* En-tête de combat */}
+      <div className="mb-6 text-center relative">
+        <h2 className="text-2xl font-bold text-white">
+          Niveau {gameData.stage} -{' '}
+          {gamePhase === 'combat' ? 'Combat' : 'Récompense'}
+        </h2>
+        <div className="absolute right-0 top-0 bg-yellow-600 text-black font-bold px-3 py-1 rounded-full text-sm">
+          {gameData.player.gold} <span className="text-xs">or</span>
+        </div>
+      </div>
+
+      {/* Zone ennemie */}
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="mb-4"
+      >
+        {enemy && (
+          <EnemyStatus
+            name={enemy.name}
+            hp={enemy.health}
+            maxHp={enemy.maxHealth}
+            nextAttack={enemy.attack}
+          />
+        )}
+      </motion.div>
+
+      {/* Journal de combat */}
+      <div className="bg-gray-800 rounded-md p-3 max-h-32 overflow-y-auto mb-6 text-sm">
+        <h3 className="text-gray-400 uppercase text-xs font-bold mb-2">
+          Journal de combat
+        </h3>
+        {combatLog &&
+          combatLog.map((entry, index) => (
+            <motion.div
+              key={index}
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: index * 0.1, duration: 0.3 }}
+              className={`mb-1 pb-1 ${index !== combatLog.length - 1 ? 'border-b border-gray-700' : ''}`}
+            >
+              {entry}
+            </motion.div>
+          ))}
+      </div>
+
+      {/* Main du joueur */}
+      <div className="mb-6">
+        {hand && hand.length > 0 && (
+          <>
+            <div className="combat-hand">
+              <EnhancedHand
+                cards={getDisplayCards()}
+                onToggleSelect={handleCardAction}
+                maxSelectable={discardMode ? discardLimit : 5}
+                selectionMode={
+                  discardMode
+                    ? 'discard'
+                    : turnPhase === 'select'
+                      ? 'attack'
+                      : 'view'
+                }
+              />
+            </div>
+
+            {/* Actions de combat */}
+            {turnPhase === 'select' && (
+              <div className="flex flex-col space-y-3 mt-4">
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={handleAttack}
                     disabled={
                       selectedCards.length === 0 || selectedCards.length > 5
                     }
@@ -439,60 +574,6 @@ const CombatInterface = () => {
                 </button>
               </div>
             )}
-            <>
-              {/* EnhancedHand avec tri intégré */}
-              <div className="combat-hand">
-                <EnhancedHand
-                  cards={getDisplayCards()}
-                  onToggleSelect={handleCardAction}
-                  maxSelectable={discardMode ? discardLimit : 5}
-                  selectionMode={
-                    discardMode
-                      ? 'discard'
-                      : turnPhase === 'select'
-                        ? 'attack'
-                        : 'view'
-                  }
-                />
-              </div>
-
-              {turnPhase === 'select' && (
-                <div className="text-center mt-3 mb-2 hand-ranking">
-                  <p className="text-gray-300 mb-2">
-                    Sélectionnez 1 à 5 cartes pour attaquer.
-                    {selectedAttackCards.length >= 1 &&
-                      selectedAttackCards.length <= 5 && (
-                        <span className="text-green-400">
-                          {' '}
-                          ({selectedAttackCards.length} sélectionnée
-                          {selectedAttackCards.length > 1 ? 's' : ''})
-                        </span>
-                      )}
-                    {selectedAttackCards.length > 5 && (
-                      <span className="text-red-400">
-                        {' '}
-                        (Trop de cartes sélectionnées)
-                      </span>
-                    )}
-                  </p>
-                  <div className="text-sm text-gray-400">
-                    {selectedAttackCards.length === 5 && (
-                      <p>
-                        Une combinaison de 5 cartes utilise les règles du poker
-                        pour les dégâts
-                      </p>
-                    )}
-                    {selectedAttackCards.length > 0 &&
-                      selectedAttackCards.length < 5 && (
-                        <p>
-                          Les dégâts sont basés sur la somme des valeurs des
-                          cartes
-                        </p>
-                      )}
-                  </div>
-                </div>
-              )}
-            </>
           </>
         )}
       </div>
@@ -548,7 +629,7 @@ const CombatInterface = () => {
             <>
               {!discardUsed && (
                 <button
-                  onClick={toggleDiscardMode}
+                  onClick={() => dispatch(toggleDiscardMode())}
                   className={`${
                     discardMode
                       ? 'bg-red-600 hover:bg-red-700'
@@ -564,13 +645,13 @@ const CombatInterface = () => {
               <button
                 onClick={handleAttack}
                 disabled={
-                  selectedAttackCards.length < 1 ||
-                  selectedAttackCards.length > 5 ||
+                  selectedCards.length < 1 ||
+                  selectedCards.length > 5 ||
                   discardMode
                 }
                 className={`bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg ${
-                  selectedAttackCards.length < 1 ||
-                  selectedAttackCards.length > 5 ||
+                  selectedCards.length < 1 ||
+                  selectedCards.length > 5 ||
                   discardMode
                     ? 'opacity-50 cursor-not-allowed'
                     : ''
@@ -616,5 +697,3 @@ const CombatInterface = () => {
     </div>
   );
 };
-
-export default CombatInterface;
