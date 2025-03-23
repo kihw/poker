@@ -9,7 +9,6 @@ import {
   Card, 
   Badge, 
   Tooltip,
-  ProgressBar,
   DESIGN_TOKENS,
   AnimationPresets,
   Icons 
@@ -20,6 +19,7 @@ import Hand from '../card/Card';
 import BonusCards from '../card/BonusCards';
 import EnemyStatus from './EnemyStatus';
 import HandCombinationDisplay from './HandCombinationDisplay';
+import CombatLog from './CombatLog';
 
 // Redux Actions
 import { 
@@ -83,10 +83,10 @@ const CombatInterface = React.memo(() => {
   return (
     <motion.div 
       {...combatAnimations}
-      className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-900 rounded-xl"
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl"
     >
-      {/* Enemy Section with Strategic Layout */}
-      <div className="md:order-2">
+      {/* Enemy Section */}
+      <div className="md:col-span-2">
         <EnemyStatus 
           name={enemy?.name} 
           hp={enemy?.health} 
@@ -95,8 +95,13 @@ const CombatInterface = React.memo(() => {
         />
       </div>
 
+      {/* Combat Log Section */}
+      <div className="md:col-span-1 md:row-span-2">
+        <CombatLog />
+      </div>
+
       {/* Combat Hand Section */}
-      <div className="md:order-1">
+      <div className="md:col-span-2">
         <Card variant="elevated" className="p-4">
           <Hand 
             cards={hand} 
@@ -134,7 +139,7 @@ const CombatInterface = React.memo(() => {
       </div>
 
       {/* Hand Result and Bonus Cards Section */}
-      <div className="md:order-3 space-y-4">
+      <div className="md:col-span-2 space-y-4">
         <AnimatePresence>
           {handResult && (
             <motion.div
