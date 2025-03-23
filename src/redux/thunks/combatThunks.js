@@ -5,7 +5,7 @@ import {
   dealHand,
   evaluateSelectedHand as evaluateSelectedHandAction,
   enemyAction,
-  // Ne pas importer startCombat s'il n'est pas correctement exporté
+  startCombat as startCombatAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
@@ -18,6 +18,7 @@ import {
   processCombatVictory as importedProcessCombatVictory,
   checkCombatEnd as importedCheckCombatEnd,
   executeCombatTurn as importedExecuteCombatTurn,
+  generateEnemy,
 } from './combatCycleThunks';
 
 // Exporter explicitement les thunks importés
@@ -63,100 +64,6 @@ export const continueAfterVictory = createAsyncThunk(
     }
   }
 );
-
-/**
- * Génère un ennemi approprié en fonction du niveau et du type
- * @param {number} stage - Le niveau actuel du jeu
- * @param {boolean} isElite - Si l'ennemi est de type élite
- * @param {boolean} isBoss - Si l'ennemi est un boss
- * @returns {Object} - Un objet représentant l'ennemi généré
- */
-export function generateEnemy(stage = 1, isElite = false, isBoss = false) {
-  // Scaling basé sur le niveau
-  const healthMultiplier = 1 + stage * 0.1;
-  const damageMultiplier = 1 + stage * 0.1;
-
-  // Base enemies pool
-  const baseEnemies = [
-    {
-      name: 'Goblin',
-      health: Math.floor(40 * healthMultiplier),
-      maxHealth: Math.floor(40 * healthMultiplier),
-      attack: Math.floor(8 * damageMultiplier),
-      image: '👺',
-    },
-    {
-      name: 'Orc',
-      health: Math.floor(50 * healthMultiplier),
-      maxHealth: Math.floor(50 * healthMultiplier),
-      attack: Math.floor(10 * damageMultiplier),
-      image: '👹',
-    },
-    {
-      name: 'Skeleton',
-      health: Math.floor(35 * healthMultiplier),
-      maxHealth: Math.floor(35 * healthMultiplier),
-      attack: Math.floor(7 * damageMultiplier),
-      image: '💀',
-    },
-  ];
-
-  // Elite enemies pool
-  const eliteEnemies = [
-    {
-      name: 'Dark Knight',
-      health: Math.floor(80 * healthMultiplier),
-      maxHealth: Math.floor(80 * healthMultiplier),
-      attack: Math.floor(14 * damageMultiplier),
-      image: '🧟',
-      abilities: ['armor'],
-    },
-    {
-      name: 'Troll Berserker',
-      health: Math.floor(90 * healthMultiplier),
-      maxHealth: Math.floor(90 * healthMultiplier),
-      attack: Math.floor(16 * damageMultiplier),
-      image: '👹',
-      abilities: ['rage'],
-    },
-  ];
-
-  // Boss enemies pool
-  const bossEnemies = [
-    {
-      name: 'Dragon',
-      health: Math.floor(150 * healthMultiplier),
-      maxHealth: Math.floor(150 * healthMultiplier),
-      attack: Math.floor(18 * damageMultiplier),
-      image: '🐉',
-      abilities: ['firebreath'],
-      type: 'boss', // Ajout du type boss pour faciliter l'identification
-    },
-    {
-      name: 'Demon Lord',
-      health: Math.floor(180 * healthMultiplier),
-      maxHealth: Math.floor(180 * healthMultiplier),
-      attack: Math.floor(20 * damageMultiplier),
-      image: '👿',
-      abilities: ['darkmagic'],
-      type: 'boss', // Ajout du type boss pour faciliter l'identification
-    },
-  ];
-
-  // Sélectionner l'ennemi en fonction du type
-  let enemyPool;
-  if (isBoss) {
-    enemyPool = bossEnemies;
-  } else if (isElite) {
-    enemyPool = eliteEnemies;
-  } else {
-    enemyPool = baseEnemies;
-  }
-
-  // Sélectionner un ennemi aléatoire de la piscine
-  const randomIndex = Math.floor(Math.random() * enemyPool.length);
-  return enemyPool[randomIndex];
-}
 
 /**
  * Thunk pour démarrer un nouveau combat
@@ -277,7 +184,7 @@ export const processEnemyAttack = createAsyncThunk(
     // Faire attaquer l'ennemi (mettre à jour le journal)
     dispatch(enemyAction());
 
-    // Réduire les PV du joueur - Cette ligne est cruciale
+    // CORRECTION: Ajouter cette ligne pour infliger directement les dégâts
     dispatch(takeDamage(enemy.attack));
 
     console.log(`Joueur a subi ${enemy.attack} dégâts`);

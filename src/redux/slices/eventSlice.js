@@ -46,7 +46,7 @@ const eventSlice = createSlice({
       state.error = null;
     },
     resetAllEvents: () => initialState,
-    // Ajouter le handler pour charger les données sauvegardées
+
     LOAD_SAVED_DATA: (state, action) => {
       const savedData = action.payload;
       if (savedData && savedData.eventHistory) {

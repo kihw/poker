@@ -27,7 +27,7 @@ import { selectNode } from '../slices/mapSlice';
  * @param {boolean} isBoss - Si l'ennemi est un boss
  * @returns {Object} - Un objet représentant l'ennemi généré
  */
-function generateEnemy(stage, isElite = false, isBoss = false) {
+export function generateEnemy(stage, isElite = false, isBoss = false) {
   // Scaling basé sur le niveau
   const healthMultiplier = 1 + stage * 0.1;
   const damageMultiplier = 1 + stage * 0.1;
@@ -144,19 +144,13 @@ export const startCombatFromNode = createAsyncThunk(
       const enemy = generateEnemy(state.game.stage, isElite, isBoss);
       console.log('Ennemi généré:', enemy.name, 'PV:', enemy.health);
 
-      // Initialiser le combat
-      dispatch(startCombat(enemy));
+      // Utiliser startCombatAction pour initialiser l'état de combat
+      dispatch(startCombatAction(enemy));
       dispatch(setGamePhase('combat'));
       dispatch(resetCardUses());
-      dispatch(setTurnPhase('draw'));
 
       // Log pour confirmer l'initialisation
-      console.log(
-        'Combat initialisé, phase:',
-        state.game.gamePhase,
-        'tour:',
-        'draw'
-      );
+      console.log('Combat initialisé, phase:', state.game.gamePhase, 'tour:', 'draw');
 
       // Distribuer automatiquement la première main
       console.log('Distribution de la première main...');
@@ -164,9 +158,7 @@ export const startCombatFromNode = createAsyncThunk(
       console.log('Première main distribuée');
 
       // Ajouter au journal de combat
-      dispatch(
-        addToCombatLog(`Combat début! Vous affrontez un ${enemy.name}.`)
-      );
+      dispatch(addToCombatLog(`Combat début! Vous affrontez un ${enemy.name}.`));
 
       // Feedback pour le joueur
       dispatch(
@@ -189,7 +181,6 @@ export const startCombatFromNode = createAsyncThunk(
     }
   }
 );
-
 /**
  * Thunk pour traiter la fin d'un combat (victoire)
  */
@@ -243,16 +234,12 @@ export const processCombatVictory = createAsyncThunk(
       const healAmount = Math.floor(state.player.maxHealth * 0.1);
       if (healAmount > 0) {
         dispatch(healPlayer(healAmount));
-        dispatch(
-          addToCombatLog(`Vous récupérez ${healAmount} PV après le combat.`)
-        );
+        dispatch(addToCombatLog(`Vous récupérez ${healAmount} PV après le combat.`));
       }
 
       // Ajouter au journal de combat
       dispatch(addToCombatLog(`Vous avez vaincu ${enemy.name}!`));
-      dispatch(
-        addToCombatLog(`Vous gagnez ${goldReward} or et ${xpReward} XP.`)
-      );
+      dispatch(addToCombatLog(`Vous gagnez ${goldReward} or et ${xpReward} XP.`));
 
       // Passer à la phase de récompense
       dispatch(setGamePhase('reward'));
@@ -331,10 +318,7 @@ export const executeCombatTurn = createAsyncThunk(
 
       // 1. S'assurer qu'on est en phase de combat
       if (state.game.gamePhase !== 'combat') {
-        console.log(
-          'Non en phase de combat, phase actuelle:',
-          state.game.gamePhase
-        );
+        console.log('Non en phase de combat, phase actuelle:', state.game.gamePhase);
         return { status: 'not_in_combat' };
       }
 
@@ -347,15 +331,8 @@ export const executeCombatTurn = createAsyncThunk(
       }
 
       // 3. Exécuter l'attaque si des cartes sont sélectionnées
-      if (
-        state.combat.turnPhase === 'select' &&
-        state.combat.selectedCards.length > 0
-      ) {
-        console.log(
-          'Attaque du joueur avec',
-          state.combat.selectedCards.length,
-          'cartes'
-        );
+      if (state.combat.turnPhase === 'select' && state.combat.selectedCards.length > 0) {
+        console.log('Attaque du joueur avec', state.combat.selectedCards.length, 'cartes');
         dispatch(evaluateSelectedHand());
 
         // Vérifier si l'ennemi est encore en vie APRÈS l'attaque du joueur
@@ -367,10 +344,7 @@ export const executeCombatTurn = createAsyncThunk(
           afterAttackState.combat.enemy?.maxHealth
         );
 
-        if (
-          afterAttackState.combat.enemy &&
-          afterAttackState.combat.enemy.health > 0
-        ) {
+        if (afterAttackState.combat.enemy && afterAttackState.combat.enemy.health > 0) {
           console.log("L'ennemi contre-attaque");
 
           // Action de l'ennemi (journal)

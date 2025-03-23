@@ -1,9 +1,4 @@
-// src/redux/middleware/bonusEffectsMiddleware.js
-/**
- * Middleware Redux pour gérer les effets des cartes bonus
- * Ce middleware intercepte les actions spécifiques et applique les effets des cartes bonus
- */
-
+// src/redux/middleware/bonusEffectsMiddleware.js - Version corrigée
 import {
   setPendingDamageBonus,
   setPendingDamageMultiplier,
@@ -13,6 +8,7 @@ import { heal, addShield } from '../slices/playerSlice';
 import { setActionFeedback } from '../slices/uiSlice';
 
 // Configuration des types d'effet de carte bonus et leur mapping avec les actions Redux
+// Utilisation du pattern d'inversion de dépendances pour éviter les références circulaires
 const BONUS_EFFECT_HANDLERS = {
   damage: (store, card, value) => {
     store.dispatch(setPendingDamageBonus(value));
@@ -35,7 +31,8 @@ const BONUS_EFFECT_HANDLERS = {
     return `${card.name} vous rend invulnérable au prochain tour`;
   },
   discard: (store, card, value) => {
-    // Géré dans la thunk discardCards
+    // Nous ne modifions pas directement l'état ici, juste un retour de message
+    // Le comportement est géré par le thunk discardCards
     return `${card.name} vous permet de défausser jusqu'à ${value} cartes`;
   },
   damageReduction: () => {
@@ -46,6 +43,7 @@ const BONUS_EFFECT_HANDLERS = {
 
 /**
  * Applique les effets d'une carte bonus active
+ * Cette fonction est exportée pour être utilisable par les thunks sans créer de dépendance circulaire
  * @param {Object} store - Le store Redux
  * @param {Object} card - La carte bonus à utiliser
  * @returns {String|null} - Message de feedback ou null
