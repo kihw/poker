@@ -1,4 +1,4 @@
-// src/App.jsx - Migration Redux complétée - Correctifs d'affichage
+// src/App.jsx - Optimisé et corrigé
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -17,13 +17,10 @@ import LoadingScreen from './components/ui/LoadingScreen';
 import ErrorScreen from './components/ui/ErrorScreen';
 import SaveButton from './components/ui/SaveButton';
 
-// Import for Redux initialization
+// Import thunks for initialization
 import { initCollection } from './redux/slices/bonusCardsSlice';
 import { generateNewMap } from './redux/thunks/mapThunks';
 import { loadGame } from './redux/thunks/saveThunks';
-
-// Optionally import the debug component
-// import { injectColorDebug } from './components/debug/ColorDebugComponent';
 
 function App() {
   const dispatch = useDispatch();
@@ -35,16 +32,27 @@ function App() {
   // Initialize app on first load
   useEffect(() => {
     const initializeApp = async () => {
-      // Check if a save exists
-      const savedGame = localStorage.getItem('pokerSoloRpgSave');
+      try {
+        // Check if a save exists
+        const savedGame = localStorage.getItem('pokerSoloRpgSave');
 
-      if (savedGame) {
-        // Load existing game
-        await dispatch(loadGame());
-      } else {
-        // Initialize a new game
+        if (savedGame) {
+          // Load existing game
+          await dispatch(loadGame()).unwrap();
+        } else {
+          // Initialize a new game
+          dispatch(initCollection());
+          await dispatch(generateNewMap({})).unwrap();
+        }
+      } catch (err) {
+        console.error("Erreur lors de l'initialisation du jeu:", err);
+        // En cas d'erreur, initialiser un nouveau jeu
         dispatch(initCollection());
-        await dispatch(generateNewMap({}));
+        try {
+          await dispatch(generateNewMap({})).unwrap();
+        } catch (mapError) {
+          console.error("Erreur lors de la génération de la carte:", mapError);
+        }
       }
     };
 
@@ -64,9 +72,6 @@ function App() {
       <GameManager>
         {/* Bouton de sauvegarde présent sur toutes les pages */}
         <SaveButton />
-
-        {/* Debug color component - uncomment to test colors 
-        {injectColorDebug()} */}
 
         <Routes>
           <Route path="/" element={<GamePage />} />
