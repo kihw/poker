@@ -1,7 +1,7 @@
-// src/components/core/GameManager.jsx - Version corrigée
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+// src/components/core/GameManager.jsx
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   selectGamePhase,
   selectIsGameOver,
@@ -9,7 +9,7 @@ import {
 import { selectPlayerHealth } from '../../redux/selectors/playerSelectors';
 import { setGamePhase } from '../../redux/slices/gameSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
-import { loadGame } from '../../redux/thunks/saveThunks';
+import { loadGame, saveGame } from '../../redux/thunks/saveThunks';
 import { generateNewMap } from '../../redux/thunks/mapThunks';
 import { initCollection } from '../../redux/slices/bonusCardsSlice';
 import ActionFeedback from '../ui/ActionFeedback';
@@ -25,16 +25,25 @@ const GameManager = ({ children }) => {
   const gamePhase = useSelector(selectGamePhase);
   const isGameOver = useSelector(selectIsGameOver);
   const playerHealth = useSelector(selectPlayerHealth);
+  
+  // Récupérer ces infos de manière sécurisée en gérant les cas undefined
   const mapInitialized = useSelector(
-    (state) => state.map.path && state.map.path.length > 0
-  );
+    (state) => state.map?.path && state.map.path.length > 0
+  ) || false;
+  
   const bonusCardsInitialized = useSelector(
-    (state) =>
-      state.bonusCards.collection && state.bonusCards.collection.length > 0
-  );
+    (state) => state.bonusCards?.collection && state.bonusCards.collection.length > 0
+  ) || false;
+
+  // État local pour éviter les redirections multiples
+  const [hasRedirected, setHasRedirected] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialisation du jeu au premier chargement
   useEffect(() => {
+    // Éviter les initialisations multiples
+    if (isInitialized) return;
+    
     const initGame = async () => {
       try {
         // Vérifier si une sauvegarde existe et la charger
@@ -70,6 +79,8 @@ const GameManager = ({ children }) => {
             })
           );
         }
+        
+        setIsInitialized(true);
       } catch (error) {
         console.error("Erreur lors de l'initialisation du jeu:", error);
         dispatch(
@@ -78,16 +89,41 @@ const GameManager = ({ children }) => {
             type: 'error',
           })
         );
+        
+        // Tentative de réinitialisation d'urgence
+        if (!bonusCardsInitialized) {
+          dispatch(initCollection());
+        }
+        
+        if (!mapInitialized) {
+          try {
+            await dispatch(generateNewMap({})).unwrap();
+          } catch (mapError) {
+            console.error("Erreur critique lors de la génération de carte:", mapError);
+          }
+        }
+        
+        setIsInitialized(true);
       }
     };
 
     initGame();
-  }, [dispatch, mapInitialized, bonusCardsInitialized]);
+  }, [dispatch, mapInitialized, bonusCardsInitialized, isInitialized]);
 
   // Gestion des redirections en fonction de la phase du jeu
   useEffect(() => {
+    // Ne pas effectuer de redirections pendant l'initialisation
+    if (!isInitialized) return;
+    
+    // Éviter les redirections répétées
+    if (hasRedirected) {
+      setHasRedirected(false);
+      return;
+    }
+    
     // Gérer le game over
     if (isGameOver || playerHealth <= 0) {
+      setHasRedirected(true);
       dispatch(setGamePhase('gameOver'));
       navigate('/');
       return;
@@ -97,6 +133,7 @@ const GameManager = ({ children }) => {
     switch (gamePhase) {
       case 'exploration':
         if (window.location.pathname === '/') {
+          setHasRedirected(true);
           navigate('/map');
         }
         break;
@@ -104,28 +141,32 @@ const GameManager = ({ children }) => {
       case 'reward':
       case 'gameOver':
         if (window.location.pathname !== '/') {
+          setHasRedirected(true);
           navigate('/');
         }
         break;
       case 'shop':
         if (window.location.pathname !== '/shop') {
+          setHasRedirected(true);
           navigate('/shop');
         }
         break;
       case 'rest':
         if (window.location.pathname !== '/rest') {
+          setHasRedirected(true);
           navigate('/rest');
         }
         break;
       case 'event':
         if (window.location.pathname !== '/event') {
+          setHasRedirected(true);
           navigate('/event');
         }
         break;
       default:
         break;
     }
-  }, [gamePhase, isGameOver, playerHealth, navigate, dispatch]);
+  }, [gamePhase, isGameOver, playerHealth, navigate, dispatch, hasRedirected, isInitialized]);
 
   // Vérification périodique de l'état du joueur
   useEffect(() => {
@@ -147,6 +188,21 @@ const GameManager = ({ children }) => {
 
     return () => clearInterval(healthCheckInterval);
   }, [playerHealth, isGameOver, dispatch]);
+
+  // Sauvegarde automatique
+  useEffect(() => {
+    // Ne pas sauvegarder pendant l'initialisation
+    if (!isInitialized) return;
+    
+    // Ne pas sauvegarder en game over
+    if (isGameOver) return;
+    
+    const autoSaveInterval = setInterval(() => {
+      dispatch(saveGame());
+    }, 60000); // Sauvegarde toutes les minutes
+    
+    return () => clearInterval(autoSaveInterval);
+  }, [dispatch, isInitialized, isGameOver]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
