@@ -1,4 +1,4 @@
-// src/components/card/Card.jsx - Updated version after merging ImprovedCard.jsx
+// src/components/card/Card.jsx - Merged version of ImprovedCard and previous Card
 import React from 'react';
 import { motion } from 'framer-motion';
 import { SHADOWS, COLORS, TRANSITIONS } from '../ui/DesignSystem';
@@ -28,21 +28,20 @@ const Card = ({
     suit === 'hearts' || suit === 'diamonds' || suit === '♥' || suit === '♦';
 
   // Colors with a more vibrant design
-  const bgColor = isRed ? 'white' : 'white';
+  const bgColor = 'white';
   const textColor = isRed ? '#e11d48' : '#111827'; // rose-600 for red, gray-900 for black
 
   // Styles for different selection types
-  let selectionStyles = '';
   let selectionBorderColor = '';
   let selectionLabel = '';
 
   if (isSelected) {
     if (selectionType === 'attack') {
       selectionBorderColor = COLORS.primary.main;
-      selectionLabel = 'Attaque';
+      selectionLabel = 'Attack';
     } else if (selectionType === 'discard') {
       selectionBorderColor = COLORS.danger.main;
-      selectionLabel = 'Défausser';
+      selectionLabel = 'Discard';
     }
   }
 
@@ -138,7 +137,7 @@ export const Hand = ({
     [cards]
   );
 
-  // Animation for card entry
+  // Card entry animation
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -198,12 +197,12 @@ export const Hand = ({
       {/* Instructions */}
       {selectionMode === 'attack' && (
         <div className="text-center text-sm text-gray-400 mt-4">
-          Sélectionnez 1 à 5 cartes pour attaquer
+          Select 1 to 5 cards to attack
         </div>
       )}
       {selectionMode === 'discard' && (
         <div className="text-center text-sm text-gray-400 mt-4">
-          Sélectionnez les cartes à défausser
+          Select cards to discard
         </div>
       )}
     </div>
