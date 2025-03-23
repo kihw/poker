@@ -1,13 +1,13 @@
 // src/pages/CollectionPage.jsx
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { selectIsGameOver } from '../redux/selectors/gameSelectors';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 
 import CollectionPreview from '../components/card/CollectionPreview';
 import CombatLog from '../components/combat/CombatLog';
 import Navigation from '../components/ui/Navigation';
 import { Card, DESIGN_TOKENS, Icons } from '../components/ui/DesignSystem';
+import { useNavigate } from 'react-router-dom';
 
 // Fixed StatBlock Component
 const StatBlock = ({ label, value, icon }) => (
@@ -27,14 +27,27 @@ const StatBlock = ({ label, value, icon }) => (
 );
 
 const CollectionPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   // Get card collection from Redux state
   const bonusCardCollection = useSelector((state) => state.bonusCards?.collection || []);
+  const gamePhase = useSelector((state) => state.game.gamePhase);
+  const collectionAccessLevel = useSelector((state) => state.game.collectionAccessLevel);
+
   const [statsData, setStatsData] = useState({
     totalCards: 0,
     legendaryCards: 0,
     averageLevel: 0,
     totalEffect: 0,
   });
+
+  // Handling access restrictions
+  useEffect(() => {
+    if (gamePhase === 'combat' && collectionAccessLevel !== 'readonly') {
+      navigate('/');
+    }
+  }, [gamePhase, collectionAccessLevel, navigate]);
 
   // Calculate statistics when collection changes
   useEffect(() => {
@@ -51,7 +64,7 @@ const CollectionPage = () => {
       });
       const averageLevel = (totalLevels / totalCards).toFixed(1);
 
-      // Calculate total effect (sum of all bonus values)
+      // Calculate total effect
       let totalEffect = 0;
       bonusCardCollection.forEach((card) => {
         if (card.bonus && card.bonus.value) {
@@ -68,6 +81,29 @@ const CollectionPage = () => {
     }
   }, [bonusCardCollection]);
 
+  const renderContent = () => {
+    if (collectionAccessLevel === 'disabled') {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400">
+          Collection inaccessible
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {collectionAccessLevel === 'readonly' && (
+          <div className="absolute top-0 left-0 right-0 bg-yellow-600 text-white text-center p-2 z-10">
+            Vue limitée en combat
+          </div>
+        )}
+        <CollectionPreview 
+          readOnly={collectionAccessLevel === 'readonly'} 
+        />
+      </>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -78,7 +114,7 @@ const CollectionPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
         {/* Collection Preview */}
         <div className="md:col-span-2">
-          <CollectionPreview />
+          {renderContent()}
         </div>
 
         {/* Combat Log */}
