@@ -13,6 +13,7 @@ import {
   addExperience,
   addGold,
   addShield,
+  heal as healPlayer,
 } from '../slices/playerSlice';
 import { setGamePhase, incrementStage, updateStats } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
@@ -85,6 +86,7 @@ function generateEnemy(stage, isElite = false, isBoss = false) {
       attack: Math.floor(18 * damageMultiplier),
       image: '🐉',
       abilities: ['firebreath'],
+      type: 'boss',
     },
     {
       name: 'Demon Lord',
@@ -93,6 +95,7 @@ function generateEnemy(stage, isElite = false, isBoss = false) {
       attack: Math.floor(20 * damageMultiplier),
       image: '👿',
       abilities: ['darkmagic'],
+      type: 'boss',
     },
   ];
 
@@ -189,7 +192,7 @@ export const processCombatVictory = createAsyncThunk(
 
       // Calculer les récompenses
       const isElite = enemy.abilities && enemy.abilities.length > 0;
-      const isBoss = enemy.health > 100; // Simple heuristique
+      const isBoss = enemy.health > 100 || enemy.type === 'boss'; // Simple heuristique
 
       // Base gold and XP
       const goldBase = 10 + stage * 5;
@@ -224,7 +227,7 @@ export const processCombatVictory = createAsyncThunk(
       // Soins légers après le combat
       const healAmount = Math.floor(state.player.maxHealth * 0.1);
       if (healAmount > 0) {
-        dispatch(heal(healAmount));
+        dispatch(healPlayer(healAmount));
         dispatch(
           addToCombatLog(`Vous récupérez ${healAmount} PV après le combat.`)
         );
@@ -351,6 +354,44 @@ export const executeCombatTurn = createAsyncThunk(
         })
       );
       return { status: 'error', error: error.message };
+    }
+  }
+);
+
+/**
+ * Thunk pour continuer après une victoire
+ * Transition vers la phase suivante du jeu
+ */
+export const continueAfterVictory = createAsyncThunk(
+  'combat/continueAfterVictory',
+  async (_, { dispatch, getState }) => {
+    try {
+      const state = getState();
+      const enemy = state.combat.enemy;
+      const isBoss =
+        enemy &&
+        (enemy.type === 'boss' ||
+          enemy.abilities?.includes('firebreath') ||
+          enemy.abilities?.includes('darkmagic'));
+
+      // Si c'était un boss, incrémenter l'étage
+      if (isBoss) {
+        dispatch(incrementStage());
+      }
+
+      // Transition vers l'exploration
+      dispatch(setGamePhase('exploration'));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error transitioning after victory:', error);
+      dispatch(
+        setActionFeedback({
+          message: 'Erreur lors de la transition après victoire',
+          type: 'error',
+        })
+      );
+      return { success: false, error: error.message };
     }
   }
 );

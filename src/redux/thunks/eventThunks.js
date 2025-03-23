@@ -15,12 +15,20 @@ import {
   generateRandomEvent,
   processEventChoice,
 } from '../../modules/event-system';
+import {
+  setCurrentEvent,
+  setEventResult,
+  setLoading,
+  resetEvent,
+} from '../slices/eventSlice';
 
 // Action pour créer un événement aléatoire
 export const generateNewEvent = createAsyncThunk(
   'event/generateNewEvent',
   async (_, { dispatch, getState }) => {
     try {
+      dispatch(setLoading(true));
+
       const state = getState();
       const stage = state.game.stage;
 
@@ -28,14 +36,12 @@ export const generateNewEvent = createAsyncThunk(
       const newEvent = generateRandomEvent(stage);
 
       // Définir l'événement comme événement actuel
-      dispatch({
-        type: 'event/setCurrentEvent',
-        payload: newEvent,
-      });
+      dispatch(setCurrentEvent(newEvent));
 
       // Changer la phase du jeu
       dispatch(setGamePhase('event'));
 
+      dispatch(setLoading(false));
       return newEvent;
     } catch (error) {
       console.error('Error generating event:', error);
@@ -45,6 +51,7 @@ export const generateNewEvent = createAsyncThunk(
           type: 'error',
         })
       );
+      dispatch(setLoading(false));
       return null;
     }
   }
@@ -56,7 +63,8 @@ export const makeEventChoice = createAsyncThunk(
   async ({ choiceIndex }, { dispatch, getState }) => {
     try {
       const state = getState();
-      const event = state.game.currentEvent;
+      // Récupérer l'événement directement depuis le state
+      const event = state.event.currentEvent;
 
       if (!event) {
         throw new Error('Aucun événement actif');
@@ -117,10 +125,7 @@ export const makeEventChoice = createAsyncThunk(
       );
 
       // Sauvegarder le résultat de l'événement
-      dispatch({
-        type: 'event/setEventResult',
-        payload: result,
-      });
+      dispatch(setEventResult(result));
 
       return result;
     } catch (error) {
@@ -142,8 +147,7 @@ export const completeEvent = createAsyncThunk(
   async (_, { dispatch }) => {
     try {
       // Réinitialiser l'événement actuel
-      dispatch({ type: 'event/setCurrentEvent', payload: null });
-      dispatch({ type: 'event/setEventResult', payload: null });
+      dispatch(resetEvent());
 
       // Revenir à l'exploration
       dispatch(setGamePhase('exploration'));
