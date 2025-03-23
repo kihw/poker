@@ -1,5 +1,4 @@
 // src/pages/MapPage.jsx - Version corrigée
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -89,7 +88,12 @@ const MapPage = () => {
         try {
           setMapLoading(true);
           console.log('Génération de la carte roguelike');
-          await dispatch(generateNewMap({})).unwrap();
+          
+          // Utiliser await pour s'assurer que la carte est générée
+          const result = await dispatch(generateNewMap({})).unwrap();
+          
+          console.log('Carte générée:', result);
+          
           setFeedback({
             message: 'Carte générée avec succès',
             type: 'success',
@@ -106,7 +110,7 @@ const MapPage = () => {
       }
     };
 
-    // Try to generate map immediately
+    // Appeler immédiatement
     tryGenerateMap();
   }, [safePath, dispatch, mapLoading]);
 
@@ -143,7 +147,7 @@ const MapPage = () => {
             }}
             className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
-            Essayer de générer une nouvelle carte
+            Générer une nouvelle carte
           </button>
           <button
             onClick={() => navigate('/')}
