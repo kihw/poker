@@ -1,86 +1,137 @@
-// src/components/combat/CombatInterface.jsx - Merged Improved Version
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/components/combat/CombatInterface.jsx - Optimized with Design System
+import React, { useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Import des composants améliorés
-import {
-  Button,
-  Card,
-  Badge,
-  ProgressBar,
-  COLORS,
-  ICONS,
+// Design System Imports
+import { 
+  Button, 
+  Card, 
+  Badge, 
+  ProgressBar, 
+  Tooltip,
+  DESIGN_TOKENS,
+  Icons 
 } from '../ui/DesignSystem';
-import { ImprovedHand } from '../card/ImprovedCard';
-import ImprovedPlayerStatus from '../player/ImprovedPlayerStatus';
 
-// Import des actions Redux
-import {
-  toggleCardSelection,
-  dealHand,
-  discardCards,
+// Component Imports
+import Hand from '../card/Hand';
+import BonusCards from '../card/BonusCards';
+import EnemyStatus from './EnemyStatus';
+import HandCombinationDisplay from './HandCombinationDisplay';
+
+// Redux Actions and Thunks
+import { 
+  toggleCardSelection, 
+  dealHand, 
+  discardCards 
 } from '../../redux/slices/combatSlice';
-import {
-  attackEnemy,
-  processCombatVictory,
-  processEnemyAttack,
-  checkCombatEnd,
+import { 
+  attackEnemy, 
+  processEnemyAttack, 
+  checkCombatEnd 
 } from '../../redux/thunks/combatThunks';
-import { setActionFeedback } from '../../redux/slices/uiSlice';
-import {
-  setGamePhase,
-  setTutorialStep,
-  completeTutorial,
-} from '../../redux/slices/gameSlice';
 
-// Composant principal d'interface de combat
 const CombatInterface = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
-  // Redux state
-  const enemy = useSelector((state) => state.combat.enemy);
-  const hand = useSelector((state) => state.combat.hand);
-  const selectedCards = useSelector((state) => state.combat.selectedCards);
-  const turnPhase = useSelector((state) => state.combat.turnPhase);
-  const discardLimit = useSelector((state) => state.combat.discardLimit);
-  const discardUsed = useSelector((state) => state.combat.discardUsed);
-  const handResult = useSelector((state) => state.combat.handResult);
-  const combatLog = useSelector((state) => state.combat.combatLog);
-  const gamePhase = useSelector((state) => state.game.gamePhase);
-  const activeBonusCards = useSelector((state) => state.bonusCards.active);
-  const stage = useSelector((state) => state.game.stage);
-  const playerGold = useSelector((state) => state.player.gold);
-  const playerHealth = useSelector((state) => state.player.health);
-  const playerMaxHealth = useSelector((state) => state.player.maxHealth);
-  const playerShield = useSelector((state) => state.player.shield);
-  const tutorialStep = useSelector((state) => state.game.tutorialStep);
-  const playerExperience = useSelector((state) => state.player.experience);
-  const playerLevel = useSelector((state) => state.player.level);
+  // Memoized Selectors for Performance
+  const enemy = useSelector(state => state.combat.enemy);
+  const hand = useSelector(state => state.combat.hand);
+  const selectedCards = useSelector(state => state.combat.selectedCards);
+  const turnPhase = useSelector(state => state.combat.turnPhase);
+  const handResult = useSelector(state => state.combat.handResult);
+  const activeBonusCards = useSelector(state => state.bonusCards.active);
 
-  // États locaux pour les animations
-  const [showDamageEffect, setShowDamageEffect] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(true);
-  const [isProcessingContinue, setIsProcessingContinue] = useState(false);
+  // Memoized Callbacks for Performance
+  const handleCardSelection = useCallback((index) => {
+    dispatch(toggleCardSelection(index));
+  }, [dispatch]);
 
-  // Vérifier si le tutoriel a déjà été vu
-  useEffect(() => {
-    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
-    setShowTutorial(!tutorialCompleted);
-  }, []);
+  const handleAttack = useCallback(async () => {
+    await dispatch(attackEnemy());
+    await dispatch(processEnemyAttack());
+    await dispatch(checkCombatEnd());
+  }, [dispatch]);
 
-  // Reste de l'implémentation similaire à ImprovedCombatInterface.jsx
-  // Tous les gestionnaires de gestion de l'interface, logique de combat, etc.
-  // seront similaires à la version précédente.
+  // Determine best hand cards memoized
+  const bestHandCards = useMemo(() => {
+    if (!handResult) return [];
+    return handResult.cards.map(card => hand.indexOf(card));
+  }, [handResult, hand]);
+
+  // Animations
+  const combatAnimations = {
+    initial: { opacity: 0, y: 50 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden">
-      {/* Contenu identique à ImprovedCombatInterface.jsx */}
-      {/* Tous les composants, animations, et logiques seront transférés */}
-    </div>
+    <motion.div 
+      className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl"
+      {...combatAnimations}
+    >
+      {/* Enemy Section */}
+      <motion.div 
+        className="mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <EnemyStatus 
+          name={enemy?.name} 
+          hp={enemy?.health} 
+          maxHp={enemy?.maxHealth} 
+          nextAttack={enemy?.attack} 
+        />
+      </motion.div>
+
+      {/* Hand and Combat Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Hand Section */}
+        <Card variant="elevated" className="p-4">
+          <Hand 
+            cards={hand} 
+            onToggleSelect={handleCardSelection}
+            bestHandCards={bestHandCards}
+            maxSelectable={5}
+          />
+          
+          {/* Attack and Discard Controls */}
+          <div className="flex justify-between mt-4">
+            <Button 
+              variant="primary" 
+              onClick={handleAttack}
+              disabled={selectedCards.length === 0}
+            >
+              Attack
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => dispatch(discardCards(selectedCards))}
+            >
+              Discard Selected
+            </Button>
+          </div>
+        </Card>
+
+        {/* Hand Result and Bonus Cards */}
+        <div className="space-y-4">
+          {handResult && (
+            <HandCombinationDisplay
+              handName={handResult.handName}
+              baseDamage={handResult.baseDamage}
+              totalDamage={handResult.totalDamage}
+              bonusEffects={handResult.bonusEffects}
+              cards={handResult.cards}
+            />
+          )}
+
+          <BonusCards />
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-export default CombatInterface;
+export default React.memo(CombatInterface);
