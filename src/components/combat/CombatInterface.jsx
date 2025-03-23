@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Version corrigée
+// src/components/combat/CombatInterface.jsx - Version améliorée
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,11 +17,10 @@ import {
   toggleCardSelection,
   dealHand,
   discardCards,
-  toggleDiscardMode,
 } from '../../redux/slices/combatSlice';
 import {
   attackEnemy,
-  continueAfterVictory,
+  processCombatVictory,
 } from '../../redux/thunks/combatThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import {
@@ -41,7 +40,6 @@ const CombatInterface = () => {
   const turnPhase = useSelector((state) => state.combat.turnPhase);
   const discardLimit = useSelector((state) => state.combat.discardLimit);
   const discardUsed = useSelector((state) => state.combat.discardUsed);
-  const discardMode = useSelector((state) => state.combat.discardMode);
   const handResult = useSelector((state) => state.combat.handResult);
   const combatLog = useSelector((state) => state.combat.combatLog);
   const gamePhase = useSelector((state) => state.game.gamePhase);
@@ -77,6 +75,13 @@ const CombatInterface = () => {
     const tutorialCompleted = localStorage.getItem('tutorialCompleted');
     setShowTutorial(!tutorialCompleted);
   }, []);
+
+  // Distribution automatique des cartes au début du combat
+  useEffect(() => {
+    if (turnPhase === 'draw' && hand.length === 0) {
+      dispatch(dealHand());
+    }
+  }, [turnPhase, hand.length, dispatch]);
 
   // Détecter les changements d'état qui déclenchent des animations
   useEffect(() => {
@@ -123,46 +128,25 @@ const CombatInterface = () => {
 
     return hand.map((card, idx) => ({
       ...card,
-      isSelected: discardMode
-        ? selectedCards.includes(idx)
-        : turnPhase === 'result'
-          ? card.isSelected
-          : selectedCards.includes(idx),
+      isSelected:
+        turnPhase === 'result' ? card.isSelected : selectedCards.includes(idx),
     }));
   };
 
   // Handler pour les actions sur les cartes
   const handleCardAction = (index) => {
-    if (discardMode) {
-      // Mode défausse
-      const currentDiscardCount = selectedCards.length;
-      if (
-        currentDiscardCount >= discardLimit &&
-        !selectedCards.includes(index)
-      ) {
-        dispatch(
-          setActionFeedback({
-            message: `Vous ne pouvez défausser que ${discardLimit} cartes`,
-            type: 'warning',
-          })
-        );
-        return;
-      }
-      dispatch(toggleCardSelection(index));
-    } else {
-      // Mode attaque normal
-      const currentSelectedCount = selectedCards.length;
-      if (currentSelectedCount >= 5 && !selectedCards.includes(index)) {
-        dispatch(
-          setActionFeedback({
-            message: 'Vous ne pouvez sélectionner que 5 cartes maximum',
-            type: 'warning',
-          })
-        );
-        return;
-      }
-      dispatch(toggleCardSelection(index));
+    // Mode attaque normal
+    const currentSelectedCount = selectedCards.length;
+    if (currentSelectedCount >= 5 && !selectedCards.includes(index)) {
+      dispatch(
+        setActionFeedback({
+          message: 'Vous ne pouvez sélectionner que 5 cartes maximum',
+          type: 'warning',
+        })
+      );
+      return;
     }
+    dispatch(toggleCardSelection(index));
   };
 
   // Lancer l'attaque
@@ -178,6 +162,42 @@ const CombatInterface = () => {
     }
 
     dispatch(attackEnemy());
+  };
+
+  // Défausser les cartes sélectionnées
+  const handleDiscard = () => {
+    if (selectedCards.length === 0) {
+      dispatch(
+        setActionFeedback({
+          message: 'Sélectionnez des cartes à défausser',
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    if (selectedCards.length > discardLimit) {
+      dispatch(
+        setActionFeedback({
+          message: `Vous ne pouvez défausser que ${discardLimit} cartes`,
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    if (discardUsed) {
+      dispatch(
+        setActionFeedback({
+          message: 'Vous avez déjà utilisé la défausse ce tour',
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    // Défausser directement les cartes sélectionnées
+    dispatch(discardCards(selectedCards));
   };
 
   // Gérer la continuation après un combat
@@ -205,15 +225,21 @@ const CombatInterface = () => {
           `[DEBUG ${callId}] Ennemi vaincu, transition vers la phase suivante`
         );
 
-        dispatch(continueAfterVictory());
-
-        setTimeout(() => {
-          console.log(
-            `[DEBUG ${callId}] Redirection vers la carte après délai`
-          );
-          dispatch(setGamePhase('exploration'));
-          navigate('/map');
-        }, 500);
+        // Process victory
+        dispatch(processCombatVictory())
+          .then(() => {
+            console.log(
+              `[DEBUG ${callId}] Redirection vers la carte après délai`
+            );
+            dispatch(setGamePhase('exploration'));
+            navigate('/map');
+          })
+          .catch((error) => {
+            console.error(
+              `[DEBUG ${callId}] Erreur lors du traitement de la victoire:`,
+              error
+            );
+          });
       } else {
         console.log(`[DEBUG ${callId}] Distribution d'une nouvelle main`);
 
@@ -243,12 +269,10 @@ const CombatInterface = () => {
   // Messages d'interface conditionnels
   const getInterfaceMessage = () => {
     if (turnPhase === 'draw') {
-      return "Cliquez sur 'Distribuer les cartes' pour commencer";
+      return 'Préparation du combat...';
     }
     if (turnPhase === 'select') {
-      return discardMode
-        ? `Sélectionnez jusqu'à ${discardLimit} cartes à défausser`
-        : "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
+      return "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
     }
     if (turnPhase === 'result') {
       return enemy?.health <= 0
@@ -341,99 +365,44 @@ const CombatInterface = () => {
               <EnhancedHand
                 cards={getDisplayCards()}
                 onToggleSelect={handleCardAction}
-                maxSelectable={discardMode ? discardLimit : 5}
-                selectionMode={
-                  discardMode
-                    ? 'discard'
-                    : turnPhase === 'select'
-                      ? 'attack'
-                      : 'view'
-                }
+                maxSelectable={5}
+                selectionMode={turnPhase === 'select' ? 'attack' : 'view'}
               />
             </div>
 
-            {/* Actions de combat */}
-            {turnPhase === 'select' && !discardMode && (
-              <div className="flex flex-col space-y-3 mt-4">
-                <div className="flex justify-center space-x-4">
-                  <button
-                    onClick={handleAttack}
-                    disabled={
-                      selectedCards.length === 0 || selectedCards.length > 5
-                    }
-                    className={`px-6 py-2 rounded-md font-bold uppercase transition-all ${
-                      selectedCards.length > 0 && selectedCards.length <= 5
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    Attaquer ({selectedCards.length})
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (!discardUsed) {
-                        dispatch(toggleDiscardMode());
-                      } else {
-                        dispatch(
-                          setActionFeedback({
-                            message:
-                              'Vous avez déjà utilisé la défausse ce tour',
-                            type: 'warning',
-                          })
-                        );
-                      }
-                    }}
-                    className={`px-6 py-2 rounded-md font-bold uppercase ${
-                      !discardUsed
-                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    Défausser ({discardLimit} max.)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Mode défausse */}
-            {discardMode && (
-              <div className="flex justify-center space-x-4 mt-4">
+            {/* Actions de combat - Boutons d'attaque et de défausse simplifiés */}
+            {turnPhase === 'select' && (
+              <div className="flex justify-center space-x-6 mt-6">
                 <button
-                  onClick={() => {
-                    if (
-                      selectedCards.length > 0 &&
-                      selectedCards.length <= discardLimit
-                    ) {
-                      dispatch(discardCards(selectedCards));
-                    } else {
-                      dispatch(
-                        setActionFeedback({
-                          message: `Sélectionnez 1 à ${discardLimit} cartes à défausser`,
-                          type: 'warning',
-                        })
-                      );
-                    }
-                  }}
+                  onClick={handleAttack}
                   disabled={
-                    selectedCards.length === 0 ||
-                    selectedCards.length > discardLimit
+                    selectedCards.length === 0 || selectedCards.length > 5
                   }
                   className={`px-6 py-2 rounded-md font-bold uppercase ${
-                    selectedCards.length > 0 &&
-                    selectedCards.length <= discardLimit
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                    selectedCards.length > 0 && selectedCards.length <= 5
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
                       : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                   }`}
                 >
-                  Confirmer la défausse ({selectedCards.length})
+                  Attaquer ({selectedCards.length})
                 </button>
 
                 <button
-                  onClick={() => dispatch(toggleDiscardMode())}
-                  className="px-6 py-2 rounded-md font-bold uppercase bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleDiscard}
+                  disabled={
+                    selectedCards.length === 0 ||
+                    selectedCards.length > discardLimit ||
+                    discardUsed
+                  }
+                  className={`px-6 py-2 rounded-md font-bold uppercase ${
+                    !discardUsed &&
+                    selectedCards.length > 0 &&
+                    selectedCards.length <= discardLimit
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  }`}
                 >
-                  Annuler
+                  Défausser ({selectedCards.length}/{discardLimit})
                 </button>
               </div>
             )}
@@ -479,40 +448,6 @@ const CombatInterface = () => {
         />
 
         <div className="flex flex-col space-y-3">
-          {turnPhase === 'draw' && (
-            <button
-              onClick={() => dispatch(dealHand())}
-              className="distribute-cards-btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md shadow-lg"
-            >
-              Distribuer les cartes
-            </button>
-          )}
-
-          {turnPhase === 'select' && !discardMode && (
-            <>
-              {!discardUsed && (
-                <button
-                  onClick={() => dispatch(toggleDiscardMode())}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md"
-                >
-                  Défausser ({discardLimit} max.)
-                </button>
-              )}
-
-              <button
-                onClick={handleAttack}
-                disabled={selectedCards.length < 1 || selectedCards.length > 5}
-                className={`bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg ${
-                  selectedCards.length < 1 || selectedCards.length > 5
-                    ? 'opacity-50 cursor-not-allowed'
-                    : ''
-                }`}
-              >
-                Attaquer
-              </button>
-            </>
-          )}
-
           {turnPhase === 'result' && (
             <button
               onClick={(e) => {

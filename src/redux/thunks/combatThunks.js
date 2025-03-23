@@ -5,7 +5,7 @@ import {
   startCombat,
   evaluateSelectedHand as evaluateSelectedHandAction,
 } from '../slices/combatSlice';
-import { setGamePhase } from '../slices/gameSlice';
+import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
 import {
   evaluatePartialHand,
@@ -20,7 +20,44 @@ export const startCombatFromNode = combatCycleThunks.startCombatFromNode;
 export const processCombatVictory = combatCycleThunks.processCombatVictory;
 export const checkCombatEnd = combatCycleThunks.checkCombatEnd;
 export const executeCombatTurn = combatCycleThunks.executeCombatTurn;
-export const continueAfterVictory = combatCycleThunks.continueAfterVictory;
+
+/**
+ * Thunk pour continuer après une victoire en combat
+ * Gère la transition vers la phase d'exploration
+ */
+export const continueAfterVictory = createAsyncThunk(
+  'combat/continueAfterVictory',
+  async (_, { dispatch, getState }) => {
+    try {
+      // Traiter la victoire si ce n'est pas déjà fait
+      await dispatch(processCombatVictory());
+
+      // Vérifier si c'était un boss
+      const state = getState();
+      const enemy = state.combat.enemy;
+      const isBoss = enemy && enemy.type === 'boss';
+
+      // Si c'était un boss, incrémenter le niveau
+      if (isBoss) {
+        dispatch(incrementStage());
+      }
+
+      // Passer à la phase d'exploration
+      dispatch(setGamePhase('exploration'));
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error in continueAfterVictory:', error);
+      dispatch(
+        setActionFeedback({
+          message: 'Erreur lors de la fin du combat',
+          type: 'error',
+        })
+      );
+      return { success: false, error: error.message };
+    }
+  }
+);
 
 /**
  * Génère un ennemi approprié en fonction du niveau et du type
@@ -88,6 +125,7 @@ export function generateEnemy(stage = 1, isElite = false, isBoss = false) {
       attack: Math.floor(18 * damageMultiplier),
       image: '🐉',
       abilities: ['firebreath'],
+      type: 'boss', // Ajout du type boss pour faciliter l'identification
     },
     {
       name: 'Demon Lord',
@@ -96,6 +134,7 @@ export function generateEnemy(stage = 1, isElite = false, isBoss = false) {
       attack: Math.floor(20 * damageMultiplier),
       image: '👿',
       abilities: ['darkmagic'],
+      type: 'boss', // Ajout du type boss pour faciliter l'identification
     },
   ];
 
