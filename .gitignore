@@ -1,40 +1,58 @@
-# Dependency directories
+# Dépendances
 node_modules/
-package-lock.json
-.gitignore
-# Production build directory
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production
 dist/
+build/
+out/
 
-# Coverage directory
-coverage/
-
-# Environment variables
+# Environnement local
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
-logs
+# Cache & Logs
+.cache/
+.next/
+.nuxt/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Editor directories and files
+# IDE et éditeurs
 .idea/
 .vscode/
 *.swp
 *.swo
-*.swn
-*.bak
-
-# OS generated files
 .DS_Store
-.DS_Store?
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests
+coverage/
+*.test.js
+*.test.jsx
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.swp
+*~
 ._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+
+# Autres
+.eslintcache
