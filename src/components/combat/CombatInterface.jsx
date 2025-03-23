@@ -147,6 +147,7 @@ const CombatInterface = () => {
       return;
     }
 
+    // En mode défausse, gérer les sélections différemment
     setSelectedDiscards((prevSelected) => {
       if (prevSelected.includes(index)) {
         // Si la carte est déjà sélectionnée, la désélectionner
@@ -164,12 +165,21 @@ const CombatInterface = () => {
   // Confirmer la défausse
   const confirmDiscard = () => {
     if (selectedDiscards.length > 0) {
-      // Appeler l'action Redux pour défausser les cartes
-      gameActions.discardCards(selectedDiscards);
+      // Appeler l'action Redux pour défausser les cartes directement
+      // en utilisant le dispatch pour appeler l'action directement
+      dispatch(discardCards(selectedDiscards));
 
       // Après la défausse, réinitialiser notre état local
       setSelectedDiscards([]);
       setDiscardMode(false);
+
+      // Feedback visuel pour l'utilisateur
+      dispatch(
+        setActionFeedback({
+          message: `${selectedDiscards.length} cartes défaussées et remplacées`,
+          type: 'info',
+        })
+      );
     }
   };
 
@@ -180,9 +190,37 @@ const CombatInterface = () => {
   };
 
   // Basculer entre mode attaque et défausse
+
   const toggleDiscardMode = () => {
+    // Vérifier si la défausse a déjà été utilisée ce tour
+    if (discardUsed && !discardMode) {
+      dispatch(
+        setActionFeedback({
+          message: 'Vous avez déjà utilisé la défausse ce tour',
+          type: 'warning',
+        })
+      );
+      return;
+    }
+
+    // Si on active le mode défausse
+    if (!discardMode) {
+      // Réinitialiser les sélections d'attaque
+      setSelectedAttackCards([]);
+
+      // Réinitialiser les sélections visuelles dans la main
+      for (let i = 0; i < hand.length; i++) {
+        if (hand[i].isSelected) {
+          dispatch(toggleCardSelection(i));
+        }
+      }
+    } else {
+      // Si on désactive le mode défausse, réinitialiser les défausses
+      setSelectedDiscards([]);
+    }
+
+    // Basculer l'état local du mode défausse
     setDiscardMode(!discardMode);
-    setSelectedDiscards([]);
   };
 
   // Lancer l'attaque
@@ -316,12 +354,6 @@ const CombatInterface = () => {
           : selectedAttackCards.includes(idx), // Sinon utiliser notre état local
     }));
   };
-
-  if (!enemy) {
-    return (
-      <div className="text-white text-center p-4">Chargement du combat...</div>
-    );
-  }
 
   return (
     <div className="max-w-4xl mx-auto p-4 bg-gray-900 rounded-xl shadow-2xl relative overflow-hidden start-screen combat-interface">
