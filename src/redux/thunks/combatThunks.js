@@ -1,176 +1,117 @@
-// Modification pour src/redux/thunks/combatThunks.js
-export * from './combatCycleThunks';
-// Intégrer cette fonction dans le fichier pour évaluer correctement les mains de moins de 5 cartes
+// src/redux/thunks/combatThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { setEnemy, startCombat } from '../slices/combatSlice';
+import {
+  setEnemy,
+  startCombat,
+  evaluateSelectedHand as evaluateSelectedHandAction,
+} from '../slices/combatSlice';
 import { setGamePhase } from '../slices/gameSlice';
-import { generateEnemy } from '../../modules/combat-system-factory';
+import { setActionFeedback } from '../slices/uiSlice';
+import {
+  evaluatePartialHand,
+  calculateDamage,
+} from '../../utils/handEvaluationUtils';
+
+// Import and re-export specific thunks from combatCycleThunks
+import * as combatCycleThunks from './combatCycleThunks';
+
+// Directly export the individual thunks
+export const startCombatFromNode = combatCycleThunks.startCombatFromNode;
+export const processCombatVictory = combatCycleThunks.processCombatVictory;
+export const checkCombatEnd = combatCycleThunks.checkCombatEnd;
+export const executeCombatTurn = combatCycleThunks.executeCombatTurn;
+export const continueAfterVictory = combatCycleThunks.continueAfterVictory;
 
 /**
- * Évalue une main de moins de 5 cartes
- * @param {Array} cards - Tableau de cartes (1-4 cartes)
- * @returns {Object} - Résultat de l'évaluation
+ * Génère un ennemi approprié en fonction du niveau et du type
+ * @param {number} stage - Le niveau actuel du jeu
+ * @param {boolean} isElite - Si l'ennemi est de type élite
+ * @param {boolean} isBoss - Si l'ennemi est un boss
+ * @returns {Object} - Un objet représentant l'ennemi généré
  */
-function evaluatePartialHand(cards) {
-  if (!cards || cards.length === 0) {
-    return {
-      handName: 'Aucune carte',
-      handRank: 0,
-      baseDamage: 0,
-    };
+export function generateEnemy(stage = 1, isElite = false, isBoss = false) {
+  // Scaling basé sur le niveau
+  const healthMultiplier = 1 + stage * 0.1;
+  const damageMultiplier = 1 + stage * 0.1;
+
+  // Base enemies pool
+  const baseEnemies = [
+    {
+      name: 'Goblin',
+      health: Math.floor(40 * healthMultiplier),
+      maxHealth: Math.floor(40 * healthMultiplier),
+      attack: Math.floor(8 * damageMultiplier),
+      image: '👺',
+    },
+    {
+      name: 'Orc',
+      health: Math.floor(50 * healthMultiplier),
+      maxHealth: Math.floor(50 * healthMultiplier),
+      attack: Math.floor(10 * damageMultiplier),
+      image: '👹',
+    },
+    {
+      name: 'Skeleton',
+      health: Math.floor(35 * healthMultiplier),
+      maxHealth: Math.floor(35 * healthMultiplier),
+      attack: Math.floor(7 * damageMultiplier),
+      image: '💀',
+    },
+  ];
+
+  // Elite enemies pool
+  const eliteEnemies = [
+    {
+      name: 'Dark Knight',
+      health: Math.floor(80 * healthMultiplier),
+      maxHealth: Math.floor(80 * healthMultiplier),
+      attack: Math.floor(14 * damageMultiplier),
+      image: '🧟',
+      abilities: ['armor'],
+    },
+    {
+      name: 'Troll Berserker',
+      health: Math.floor(90 * healthMultiplier),
+      maxHealth: Math.floor(90 * healthMultiplier),
+      attack: Math.floor(16 * damageMultiplier),
+      image: '👹',
+      abilities: ['rage'],
+    },
+  ];
+
+  // Boss enemies pool
+  const bossEnemies = [
+    {
+      name: 'Dragon',
+      health: Math.floor(150 * healthMultiplier),
+      maxHealth: Math.floor(150 * healthMultiplier),
+      attack: Math.floor(18 * damageMultiplier),
+      image: '🐉',
+      abilities: ['firebreath'],
+    },
+    {
+      name: 'Demon Lord',
+      health: Math.floor(180 * healthMultiplier),
+      maxHealth: Math.floor(180 * healthMultiplier),
+      attack: Math.floor(20 * damageMultiplier),
+      image: '👿',
+      abilities: ['darkmagic'],
+    },
+  ];
+
+  // Sélectionner l'ennemi en fonction du type
+  let enemyPool;
+  if (isBoss) {
+    enemyPool = bossEnemies;
+  } else if (isElite) {
+    enemyPool = eliteEnemies;
+  } else {
+    enemyPool = baseEnemies;
   }
 
-  // Compter les valeurs pour identifier les paires, brelan, etc.
-  const valueCount = {};
-  for (const card of cards) {
-    const value = card.numericValue;
-    valueCount[value] = (valueCount[value] || 0) + 1;
-  }
-
-  const values = Object.keys(valueCount).map(Number);
-
-  // Cas particuliers selon le nombre de cartes
-  switch (cards.length) {
-    case 1: // Une seule carte - la valeur de la carte est le dégât
-      return {
-        handName: '1 Carte',
-        handRank: 0,
-        baseDamage: cards[0].numericValue,
-      };
-
-    case 2: // Deux cartes - paire ou somme
-      if (values.length === 1) {
-        // Paire
-        return {
-          handName: `Paire de ${getCardNameFromValue(values[0])}`,
-          handRank: 1,
-          baseDamage: values[0] * 2 * 1.5, // Bonus de 50% pour une paire
-        };
-      } else {
-        // Somme des valeurs
-        return {
-          handName: '2 Cartes',
-          handRank: 0,
-          baseDamage: cards.reduce((sum, card) => sum + card.numericValue, 0),
-        };
-      }
-
-    case 3: // Trois cartes - brelan ou somme
-      if (values.length === 1) {
-        // Brelan
-        return {
-          handName: `Brelan de ${getCardNameFromValue(values[0])}`,
-          handRank: 3,
-          baseDamage: values[0] * 3 * 2, // Bonus de 100% pour un brelan
-        };
-      } else if (
-        values.length === 2 &&
-        (valueCount[values[0]] === 2 || valueCount[values[1]] === 2)
-      ) {
-        // Une paire + une carte
-        const pairValue = valueCount[values[0]] === 2 ? values[0] : values[1];
-        const singleValue = valueCount[values[0]] === 2 ? values[1] : values[0];
-        return {
-          handName: `Paire de ${getCardNameFromValue(pairValue)}`,
-          handRank: 1,
-          baseDamage: pairValue * 2 * 1.5 + singleValue,
-        };
-      } else {
-        // Somme simple
-        return {
-          handName: '3 Cartes',
-          handRank: 0,
-          baseDamage: cards.reduce((sum, card) => sum + card.numericValue, 0),
-        };
-      }
-
-    case 4: // Quatre cartes - carré, double paire, brelan+carte, ou somme
-      if (values.length === 1) {
-        // Carré
-        return {
-          handName: `Carré de ${getCardNameFromValue(values[0])}`,
-          handRank: 7,
-          baseDamage: values[0] * 4 * 3, // Bonus de 200% pour un carré
-        };
-      } else if (values.length === 2) {
-        if (valueCount[values[0]] === 2 && valueCount[values[1]] === 2) {
-          // Double paire
-          const highPair = Math.max(values[0], values[1]);
-          const lowPair = Math.min(values[0], values[1]);
-          return {
-            handName: `Double Paire de ${getCardNameFromValue(highPair)} et ${getCardNameFromValue(lowPair)}`,
-            handRank: 2,
-            baseDamage: (highPair + lowPair) * 2 * 1.3, // Bonus de 30% pour une double paire
-          };
-        } else {
-          // Brelan + carte
-          const brealanValue =
-            valueCount[values[0]] === 3 ? values[0] : values[1];
-          const singleValue =
-            valueCount[values[0]] === 3 ? values[1] : values[0];
-          return {
-            handName: `Brelan de ${getCardNameFromValue(brealanValue)}`,
-            handRank: 3,
-            baseDamage: brealanValue * 3 * 1.8 + singleValue, // Bonus légèrement réduit
-          };
-        }
-      } else if (
-        values.length === 3 &&
-        (valueCount[values[0]] === 2 ||
-          valueCount[values[1]] === 2 ||
-          valueCount[values[2]] === 2)
-      ) {
-        // Une paire + deux cartes
-        let pairValue;
-        for (const val of values) {
-          if (valueCount[val] === 2) {
-            pairValue = val;
-            break;
-          }
-        }
-        const totalNonPairValue = cards.reduce(
-          (sum, card) =>
-            card.numericValue !== pairValue ? sum + card.numericValue : sum,
-          0
-        );
-
-        return {
-          handName: `Paire de ${getCardNameFromValue(pairValue)}`,
-          handRank: 1,
-          baseDamage: pairValue * 2 * 1.3 + totalNonPairValue,
-        };
-      } else {
-        // Simple somme
-        return {
-          handName: '4 Cartes',
-          handRank: 0,
-          baseDamage: cards.reduce((sum, card) => sum + card.numericValue, 0),
-        };
-      }
-  }
-
-  // Somme simple pour les autres cas
-  return {
-    handName: `${cards.length} Cartes`,
-    handRank: 0,
-    baseDamage: cards.reduce((sum, card) => sum + card.numericValue, 0),
-  };
-}
-
-/**
- * Convertit une valeur numérique en nom de carte
- * @param {number} value - Valeur numérique (2-14)
- * @returns {string} - Nom de la carte
- */
-function getCardNameFromValue(value) {
-  const valueMap = {
-    11: 'Valet',
-    12: 'Dame',
-    13: 'Roi',
-    14: 'As',
-  };
-
-  return valueMap[value] || value.toString();
+  // Sélectionner un ennemi aléatoire de la piscine
+  const randomIndex = Math.floor(Math.random() * enemyPool.length);
+  return enemyPool[randomIndex];
 }
 
 /**
@@ -202,5 +143,67 @@ export const startNewCombat = createAsyncThunk(
   }
 );
 
-// Exporter les autres thunks existants
-export * from './combatCycleThunks';
+/**
+ * Thunk pour attaquer l'ennemi
+ * Évalue la main sélectionnée et calcule les dégâts
+ */
+export const attackEnemy = createAsyncThunk(
+  'combat/attackEnemy',
+  async (_, { dispatch, getState }) => {
+    try {
+      const state = getState();
+      const hand = state.combat.hand;
+      const selectedCardsIndices = state.combat.selectedCards;
+
+      // Extraire les cartes sélectionnées
+      const selectedCards = selectedCardsIndices
+        .map((index) => hand[index])
+        .filter((card) => card);
+
+      // Évaluer la main
+      const partialHandResult = evaluatePartialHand(selectedCards);
+
+      // Calculer les dégâts
+      const baseDamage = partialHandResult.baseDamage;
+      const totalDamage = Math.max(1, Math.floor(baseDamage));
+
+      // Préparer les bonus
+      const bonusEffects = [];
+
+      // Dispatcher l'évaluation de la main avec les dégâts
+      dispatch(
+        evaluateSelectedHandAction({
+          totalDamage,
+          bonusEffects,
+        })
+      );
+
+      // Feedback visuel
+      dispatch(
+        setActionFeedback({
+          message: `Attaque avec ${partialHandResult.handName}, ${totalDamage} dégâts`,
+          type: 'success',
+        })
+      );
+
+      return {
+        handName: partialHandResult.handName,
+        baseDamage,
+        totalDamage,
+        bonusEffects,
+      };
+    } catch (error) {
+      console.error("Erreur lors de l'attaque:", error);
+      dispatch(
+        setActionFeedback({
+          message: "Erreur lors de l'attaque",
+          type: 'error',
+        })
+      );
+      return null;
+    }
+  }
+);
+
+// Exporter toutes les actions liées au combat
+export { startCombat, evaluateSelectedHandAction as evaluateSelectedHand };

@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Fixed imports
+// src/components/combat/CombatInterface.jsx - Version améliorée
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +18,8 @@ import {
   toggleCardSelection,
   setTurnPhase,
   dealHand,
+  discardCards,
+  toggleDiscardMode,
 } from '../../redux/slices/combatSlice';
 import {
   attackEnemy,
@@ -39,6 +41,7 @@ const CombatInterface = () => {
   const turnPhase = useSelector((state) => state.combat.turnPhase);
   const discardLimit = useSelector((state) => state.combat.discardLimit);
   const discardUsed = useSelector((state) => state.combat.discardUsed);
+  const discardMode = useSelector((state) => state.combat.discardMode);
   const handResult = useSelector((state) => state.combat.handResult);
   const combatLog = useSelector((state) => state.combat.combatLog);
   const gamePhase = useSelector((state) => state.game.gamePhase);
@@ -46,10 +49,6 @@ const CombatInterface = () => {
 
   // États locaux pour les animations et la gestion d'UI
   const [showDamageEffect, setShowDamageEffect] = useState(false);
-  const [showHealEffect, setShowHealEffect] = useState(false);
-  const [discardMode, setDiscardMode] = useState(false);
-  const [selectedAttackCards, setSelectedAttackCards] = useState([]);
-  const [selectedDiscards, setSelectedDiscards] = useState([]);
   const [showTutorial, setShowTutorial] = useState(true);
   const [isProcessingContinue, setIsProcessingContinue] = useState(false);
 
@@ -59,14 +58,13 @@ const CombatInterface = () => {
     setShowTutorial(!tutorialCompleted);
   }, []);
 
-  // Reset local selection when a new hand is dealt
+  // Reset de la sélection quand une nouvelle main est distribuée
   useEffect(() => {
     if (turnPhase === 'select') {
-      setSelectedAttackCards([]);
-      setSelectedDiscards([]);
-      setDiscardMode(false);
+      // Réinitialiser la sélection et le mode de défausse
+      dispatch(toggleDiscardMode(false));
     }
-  }, [turnPhase]);
+  }, [turnPhase, dispatch]);
 
   // Détecter les changements d'état qui déclenchent des animations
   useEffect(() => {
@@ -77,9 +75,8 @@ const CombatInterface = () => {
     }
   }, [turnPhase, enemy]);
 
-  // Pour détecter si l'ennemi est vaincu pendant le rendu
+  // Détection automatique de victoire
   useEffect(() => {
-    // Si l'ennemi est vaincu mais que nous sommes encore en phase combat
     if (
       enemy &&
       enemy.health <= 0 &&
@@ -88,9 +85,7 @@ const CombatInterface = () => {
     ) {
       console.log('Détection automatique de victoire');
 
-      // Attendre un court délai puis rediriger
       const victoryTimer = setTimeout(() => {
-        // Appeler handleContinue pour gérer la victoire
         handleContinue();
       }, 1500);
 
@@ -100,157 +95,33 @@ const CombatInterface = () => {
 
   // Gérer le tutoriel
   const handleNextTutorialStep = () => {
-    // Mise à jour du state tutorialStep dans le Redux store
     const currentStep = gameData.tutorialStep || 0;
     const nextStep = currentStep + 1;
     console.log(`Étape de tutoriel suivante: ${nextStep}`);
   };
 
   const completeTutorial = () => {
-    // Marquer le tutoriel comme terminé
     localStorage.setItem('tutorialCompleted', 'true');
     setShowTutorial(false);
   };
 
-  // Gestion locale de la sélection en mode attaque
-  const handleAttackSelection = (index) => {
-    if (!hand || hand[index] === undefined) {
-      console.error('Index de carte invalide ou main non disponible:', index);
-      return;
-    }
-
-    // Dispatcher l'action Redux pour modifier la sélection
-    dispatch(toggleCardSelection(index));
-
-    // Mettre à jour l'état local pour refléter le changement
-    const newSelectedCards = [...selectedAttackCards];
-
-    if (newSelectedCards.includes(index)) {
-      // Si la carte est déjà sélectionnée, la désélectionner
-      const cardIndex = newSelectedCards.indexOf(index);
-      newSelectedCards.splice(cardIndex, 1);
-    } else {
-      // Sinon, l'ajouter (si moins de 5 cartes sont déjà sélectionnées)
-      if (newSelectedCards.length < 5) {
-        newSelectedCards.push(index);
-      } else {
-        return; // Ne pas sélectionner plus de 5 cartes
-      }
-    }
-
-    setSelectedAttackCards(newSelectedCards);
-  };
-
-  const handleCardAction = (index) => {
-    if (!hand || hand[index] === undefined) {
-      console.error('Index de carte invalide ou main non disponible:', index);
-      return;
-    }
-
-    // Dispatcher l'action Redux pour modifier la sélection
-    dispatch(toggleCardSelection(index));
-
-    if (discardMode) {
-      // Logique spécifique au mode de défausse
-      const newSelectedDiscards = [...selectedDiscards];
-      const cardIndex = newSelectedDiscards.indexOf(index);
-
-      if (cardIndex !== -1) {
-        // Désélectionner si déjà présent
-        newSelectedDiscards.splice(cardIndex, 1);
-      } else if (newSelectedDiscards.length < discardLimit) {
-        // Ajouter si en dessous de la limite
-        newSelectedDiscards.push(index);
-      }
-
-      setSelectedDiscards(newSelectedDiscards);
-    } else {
-      // Logique pour le mode attaque
-      const newSelectedAttackCards = [...selectedAttackCards];
-      const cardIndex = newSelectedAttackCards.indexOf(index);
-
-      if (cardIndex !== -1) {
-        // Désélectionner si déjà présent
-        newSelectedAttackCards.splice(cardIndex, 1);
-      } else if (newSelectedAttackCards.length < 5) {
-        // Ajouter si en dessous de 5 cartes
-        newSelectedAttackCards.push(index);
-      }
-
-      setSelectedAttackCards(newSelectedAttackCards);
-    }
-  };
-
-  // Annuler la défausse
-  const cancelDiscard = () => {
-    setDiscardMode(false);
-    setSelectedDiscards([]);
-  };
-
-  // Basculer entre mode attaque et défausse
-  const toggleDiscardMode = () => {
-    // Vérifier si la défausse a déjà été utilisée ce tour
-    if (discardUsed && !discardMode) {
-      dispatch(
-        setActionFeedback({
-          message: 'Vous avez déjà utilisé la défausse ce tour',
-          type: 'warning',
-        })
-      );
-      return;
-    }
-
-    // Si on active le mode défausse
-    if (!discardMode) {
-      // Réinitialiser les sélections d'attaque
-      setSelectedAttackCards([]);
-
-      // Réinitialiser les sélections visuelles dans la main
-      for (let i = 0; i < hand.length; i++) {
-        if (hand[i].isSelected) {
-          dispatch(toggleCardSelection(i));
-        }
-      }
-    } else {
-      // Si on désactive le mode défausse, réinitialiser les défausses
-      setSelectedDiscards([]);
-    }
-
-    // Basculer l'état local du mode défausse
-    setDiscardMode(!discardMode);
-  };
-
   // Lancer l'attaque
   const handleAttack = () => {
-    // Vérifier qu'au moins 1 carte est sélectionnée
-    if (selectedCards.length === 0) {
+    if (selectedCards.length === 0 || selectedCards.length > 5) {
       dispatch(
         setActionFeedback({
-          message: 'Vous devez sélectionner au moins 1 carte pour attaquer',
+          message: 'Sélectionnez 1 à 5 cartes pour attaquer',
           type: 'warning',
         })
       );
       return;
     }
 
-    // Vérifier qu'au maximum 5 cartes sont sélectionnées
-    if (selectedCards.length > 5) {
-      dispatch(
-        setActionFeedback({
-          message:
-            'Vous ne pouvez pas sélectionner plus de 5 cartes pour attaquer',
-          type: 'warning',
-        })
-      );
-      return;
-    }
-
-    // Évaluer la main sélectionnée via Redux
     dispatch(attackEnemy());
   };
 
+  // Gérer la continuation après un combat
   const handleContinue = () => {
-    // Identifiant unique pour ce cycle de traitement
     const callId = Date.now() + Math.random().toString(16).slice(2);
     console.log(
       `[DEBUG ${callId}] handleContinue appelé - État actuel:`,
@@ -259,7 +130,6 @@ const CombatInterface = () => {
       enemy?.health
     );
 
-    // Vérifier si un traitement est déjà en cours
     if (isProcessingContinue) {
       console.warn(
         `[DEBUG ${callId}] handleContinue déjà en cours d'exécution, ignoré`
@@ -267,20 +137,16 @@ const CombatInterface = () => {
       return;
     }
 
-    // Définir le drapeau de traitement
     setIsProcessingContinue(true);
 
     try {
       if (enemy && enemy.health <= 0) {
-        // L'ennemi est vaincu, on passe à l'étape suivante
         console.log(
           `[DEBUG ${callId}] Ennemi vaincu, transition vers la phase suivante`
         );
 
-        // Appeler l'action Redux pour traiter la victoire
         dispatch(continueAfterVictory());
 
-        // Forcer le passage en mode exploration et la redirection après un délai
         setTimeout(() => {
           console.log(
             `[DEBUG ${callId}] Redirection vers la carte après délai`
@@ -289,17 +155,12 @@ const CombatInterface = () => {
           navigate('/map');
         }, 500);
       } else {
-        // S'assurer que toutes les cartes sont correctement marquées avant de distribuer
         console.log(`[DEBUG ${callId}] Distribution d'une nouvelle main`);
 
-        // Définir un verrou pour dealHand au niveau local
         if (!window._dealHandLock) {
           window._dealHandLock = true;
-
-          // Appeler dealHand pour distribuer une nouvelle main
           dispatch(dealHand());
 
-          // Libérer le verrou après un délai
           setTimeout(() => {
             window._dealHandLock = false;
           }, 500);
@@ -310,7 +171,6 @@ const CombatInterface = () => {
     } catch (error) {
       console.error(`[DEBUG ${callId}] Erreur dans handleContinue:`, error);
     } finally {
-      // Réinitialiser le drapeau après un court délai pour éviter les problèmes d'état
       setTimeout(() => {
         setIsProcessingContinue(false);
         console.log(
@@ -320,13 +180,15 @@ const CombatInterface = () => {
     }
   };
 
-  // Styles et messages conditionnels pour l'interface
+  // Messages d'interface conditionnels
   const getInterfaceMessage = () => {
     if (turnPhase === 'draw') {
       return "Cliquez sur 'Distribuer les cartes' pour commencer";
     }
     if (turnPhase === 'select') {
-      return "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
+      return discardMode
+        ? `Sélectionnez jusqu'à ${discardLimit} cartes à défausser`
+        : "Sélectionnez 1 à 5 cartes pour attaquer l'ennemi";
     }
     if (turnPhase === 'result') {
       return enemy?.health <= 0
@@ -336,29 +198,18 @@ const CombatInterface = () => {
     return '';
   };
 
-  // Préparation des cartes à afficher selon le mode
+  // Préparer les cartes à afficher selon le mode
   const getDisplayCards = () => {
     if (!hand) return [];
 
-    return hand.map((card, idx) => {
-      let isSelected = false;
-
-      if (discardMode) {
-        // Mode défausse : sélection basée sur selectedDiscards
-        isSelected = selectedDiscards.includes(idx);
-      } else {
-        // Mode attaque : sélection basée sur le contexte
-        isSelected =
-          turnPhase === 'result'
-            ? card.isSelected // Utiliser l'état enregistré en mode résultat
-            : selectedAttackCards.includes(idx); // Utiliser la sélection locale
-      }
-
-      return {
-        ...card,
-        isSelected,
-      };
-    });
+    return hand.map((card, idx) => ({
+      ...card,
+      isSelected: discardMode
+        ? selectedCards.includes(idx)
+        : turnPhase === 'result'
+          ? card.isSelected
+          : selectedCards.includes(idx),
+    }));
   };
 
   return (
@@ -377,7 +228,7 @@ const CombatInterface = () => {
         {getInterfaceMessage()}
       </div>
 
-      {/* Dommages */}
+      {/* Effet de dommages */}
       <AnimatePresence>
         {showDamageEffect && (
           <motion.div
@@ -440,31 +291,120 @@ const CombatInterface = () => {
       <div className="mb-6">
         {hand && hand.length > 0 && (
           <>
-            {discardMode ? (
+            <div className="combat-hand">
+              <EnhancedHand
+                cards={getDisplayCards()}
+                onToggleSelect={(index) => dispatch(toggleCardSelection(index))}
+                maxSelectable={discardMode ? discardLimit : 5}
+                selectionMode={
+                  discardMode
+                    ? 'discard'
+                    : turnPhase === 'select'
+                      ? 'attack'
+                      : 'view'
+                }
+              />
+            </div>
+
+            {/* Actions de combat */}
+            {turnPhase === 'select' && (
+              <div className="flex flex-col space-y-3 mt-4">
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => {
+                      if (
+                        selectedCards.length > 0 &&
+                        selectedCards.length <= 5
+                      ) {
+                        handleAttack();
+                      } else {
+                        dispatch(
+                          setActionFeedback({
+                            message: 'Sélectionnez 1 à 5 cartes pour attaquer',
+                            type: 'warning',
+                          })
+                        );
+                      }
+                    }}
+                    disabled={
+                      selectedCards.length === 0 || selectedCards.length > 5
+                    }
+                    className={`px-6 py-2 rounded-md font-bold uppercase transition-all ${
+                      selectedCards.length > 0 && selectedCards.length <= 5
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Attaquer ({selectedCards.length})
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (!discardUsed) {
+                        dispatch(toggleDiscardMode());
+                      } else {
+                        dispatch(
+                          setActionFeedback({
+                            message:
+                              'Vous avez déjà utilisé la défausse ce tour',
+                            type: 'warning',
+                          })
+                        );
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-md font-bold uppercase ${
+                      !discardUsed
+                        ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    Défausser ({discardLimit} max.)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Mode défausse */}
+            {discardMode && (
               <div className="flex justify-center space-x-4 mt-4">
                 <button
-                  onClick={() =>
-                    dispatch(
-                      discardCards(
-                        hand
-                          .map((card, index) => (card.isSelected ? index : -1))
-                          .filter((index) => index !== -1)
-                      )
-                    )
+                  onClick={() => {
+                    if (
+                      selectedCards.length > 0 &&
+                      selectedCards.length <= discardLimit
+                    ) {
+                      dispatch(discardCards(selectedCards));
+                    } else {
+                      dispatch(
+                        setActionFeedback({
+                          message: `Sélectionnez 1 à ${discardLimit} cartes à défausser`,
+                          type: 'warning',
+                        })
+                      );
+                    }
+                  }}
+                  disabled={
+                    selectedCards.length === 0 ||
+                    selectedCards.length > discardLimit
                   }
-                  disabled={selectedCards.length === 0}
-                  className={`px-4 py-2 rounded-md font-bold ${selectedCards.length === 0 ? 'bg-gray-600 text-gray-400' : 'bg-green-600 text-white'}`}
+                  className={`px-6 py-2 rounded-md font-bold uppercase ${
+                    selectedCards.length > 0 &&
+                    selectedCards.length <= discardLimit
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                  }`}
                 >
-                  Confirmer la défausse
+                  Confirmer la défausse ({selectedCards.length})
                 </button>
+
                 <button
                   onClick={() => dispatch(toggleDiscardMode())}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md font-bold"
+                  className="px-6 py-2 rounded-md font-bold uppercase bg-red-600 hover:bg-red-700 text-white"
                 >
                   Annuler
                 </button>
               </div>
-            ) : null}
+            )}
             <>
               {/* EnhancedHand avec tri intégré */}
               <div className="combat-hand">
