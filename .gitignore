@@ -1,6 +1,7 @@
 # Dependency directories
 node_modules/
 package-lock.json
+.gitignore
 # Production build directory
 dist/
 
