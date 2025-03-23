@@ -191,7 +191,8 @@ const ShopInterface = () => {
           />
         </div>
 
-        <Button variant="outline" onClick={handleExit} icon="🚪">
+        <Button variant="outline" onClick={handleExit}>
+          <span className="mr-2">🚪</span>
           Quitter la boutique
         </Button>
       </div>
