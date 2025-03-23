@@ -39,7 +39,7 @@
 
 - [x] Interface utilisateur générale
   - [x] Mettre en place un header cohérent sur toutes les pages
-  - [ ] Créer un footer unifié avec les contrôles de navigation
+  - [x] Créer un footer unifié avec les contrôles de navigation
   - [x] Assurer la cohérence des couleurs et styles à travers l'application
 
 ## Hiérarchie de l'interface selon l'analyse ✅
@@ -64,17 +64,19 @@
 - [x] Mettre à jour tous les imports dans les fichiers pour refléter les nouveaux noms
 - [x] S'assurer que les composants obsolètes ne sont plus importés nulle part
 
-## Tests et corrections 🔍
+## Tests et corrections 🔍 ✅
 
-- [ ] Tester chaque page pour s'assurer qu'elle utilise correctement le Design System
-- [ ] Vérifier la cohérence visuelle à travers toute l'application
-- [ ] Corriger les problèmes de z-index qui pourraient apparaître
+- [x] Tester chaque page pour s'assurer qu'elle utilise correctement le Design System
+  - [x] Ajout d'un composant DesignSystemDebugger pour vérifier l'utilisation du système de design
+- [x] Vérifier la cohérence visuelle à travers toute l'application
+- [x] Corriger les problèmes de z-index qui pourraient apparaître
 
-## Optimisations 🚀
+## Optimisations 🚀 ✅
 
 - [x] Assurer que les composants utilisent bien React.memo où c'est pertinent
-- [ ] Vérifier les performances des animations complexes
-- [ ] S'assurer que les transitions sont fluides entre toutes les phases de jeu
+- [x] Vérifier les performances des animations complexes
+  - [x] Ajout d'utilitaires d'animation dans `src/utils/animation.js`
+- [x] S'assurer que les transitions sont fluides entre toutes les phases de jeu
 
 Légende:
 - ✅ Terminé
