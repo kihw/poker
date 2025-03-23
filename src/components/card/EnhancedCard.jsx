@@ -9,9 +9,9 @@ const EnhancedCard = ({
   isSelected = false,
   onToggleSelect,
   isHighlighted = false,
-  selectionType = 'attack', 
+  selectionType = 'attack', // 'attack', 'discard', 'view'
   disabled = false,
-  scale = 1,
+  scale = 1, // Facteur d'échelle pour ajuster la taille
 }) => {
   const [isProcessingClick, setIsProcessingClick] = useState(false);
 
@@ -27,22 +27,27 @@ const EnhancedCard = ({
     clubs: '♣',
   };
   const displaySuit = suitSymbols[safeSuit] || safeSuit;
-  const isRed = ['hearts', 'diamonds', '♥', '♦'].includes(safeSuit);
+  const isRed =
+    safeSuit === 'hearts' ||
+    safeSuit === 'diamonds' ||
+    safeSuit === '♥' ||
+    safeSuit === '♦';
 
   // Couleurs avec un design plus vivant
-  const bgColor = 'white';
+  const bgColor = isRed ? 'white' : 'white';
   const textColor = isRed ? COLORS.danger.main : COLORS.gray[900];
 
   // Styles pour les différents modes de sélection
   let selectionStyles = '';
+  let selectionBorderColor = '';
   let selectionLabel = '';
 
   if (isSelected) {
     if (selectionType === 'attack') {
-      selectionStyles = `border-${COLORS.primary.main} shadow-lg`;
+      selectionBorderColor = COLORS.primary.main;
       selectionLabel = 'Attaque';
     } else if (selectionType === 'discard') {
-      selectionStyles = `border-${COLORS.danger.main} shadow-lg`;
+      selectionBorderColor = COLORS.danger.main;
       selectionLabel = 'Défausser';
     }
   }
@@ -51,7 +56,7 @@ const EnhancedCard = ({
   const width = 64 * scale;
   const height = 96 * scale;
 
-  // Gestion du clic sur la carte
+  // Gestion du clic sur la carte avec protection contre les doubles clics
   const handleClick = (e) => {
     e.stopPropagation();
 
@@ -77,9 +82,9 @@ const EnhancedCard = ({
         className={`w-full h-full rounded-lg flex flex-col justify-center items-center preserve-3d shadow-md`}
         style={{
           backgroundColor: bgColor,
-          border: `${isSelected ? '2px' : '1px'} solid ${isSelected ? COLORS.primary.main : '#d1d5db'}`,
+          border: `${isSelected ? '2px' : '1px'} solid ${isSelected ? selectionBorderColor : '#d1d5db'}`,
           boxShadow: isSelected
-            ? `0 0 10px ${COLORS.primary.main}80`
+            ? `0 0 10px ${selectionBorderColor}80`
             : isHighlighted
               ? `0 0 8px ${COLORS.primary.light}80`
               : SHADOWS.md,
@@ -89,26 +94,26 @@ const EnhancedCard = ({
         {/* Face avant (visible) */}
         <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
           <div className="flex justify-between items-center">
-            <div style={{ color: textColor }} className="text-lg font-bold">
+            <div className={`text-lg font-bold`} style={{ color: textColor }}>
               {safeValue}
             </div>
-            <div style={{ color: textColor }} className="text-lg">
+            <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
             </div>
           </div>
 
-          <div 
-            className="flex-grow flex justify-center items-center text-3xl font-bold"
+          <div
+            className={`flex-grow flex justify-center items-center text-3xl font-bold`}
             style={{ color: textColor }}
           >
             {displaySuit}
           </div>
 
           <div className="flex justify-between items-center rotate-180">
-            <div style={{ color: textColor }} className="text-lg font-bold">
+            <div className={`text-lg font-bold`} style={{ color: textColor }}>
               {safeValue}
             </div>
-            <div style={{ color: textColor }} className="text-lg">
+            <div className={`text-lg`} style={{ color: textColor }}>
               {displaySuit}
             </div>
           </div>
@@ -123,7 +128,10 @@ const EnhancedCard = ({
           transition={{ duration: 0.2 }}
           className="absolute -bottom-2 left-0 right-0 text-xs text-center font-bold py-0.5 rounded-b-md"
           style={{
-            backgroundColor: selectionType === 'attack' ? COLORS.primary.main : COLORS.danger.main,
+            backgroundColor:
+              selectionType === 'attack'
+                ? COLORS.primary.main
+                : COLORS.danger.main,
             color: 'white',
           }}
         >
@@ -131,79 +139,6 @@ const EnhancedCard = ({
         </motion.div>
       )}
     </motion.div>
-  );
-};
-
-// Ajouter la version avec Hand incluse
-export const ImprovedHand = ({
-  cards,
-  onToggleSelect,
-  bestHandCards = [],
-  maxSelectable = 5,
-  selectionMode = 'attack',
-}) => {
-  const selectedCount = React.useMemo(
-    () => cards.filter((card) => card.isSelected).length,
-    [cards]
-  );
-
-  // Animation pour l'entrée des cartes
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.07,
-      },
-    },
-  };
-
-  const cardAnimation = {
-    hidden: { y: 50, opacity: 0 },
-    show: { y: 0, opacity: 1 },
-  };
-
-  return (
-    <div className="py-6 relative">
-      <motion.div
-        className="flex justify-center items-end flex-wrap gap-2"
-        variants={container}
-        initial="hidden"
-        animate="show"
-      >
-        {cards.map((card, index) => {
-          if (!card) return null;
-
-          const isHighlighted = bestHandCards.includes(index);
-
-          return (
-            <motion.div
-              key={`${card.value}-${card.suit}-${index}`}
-              variants={cardAnimation}
-              whileHover={{
-                y: -15,
-                transition: { duration: 0.2 },
-              }}
-              className="relative"
-            >
-              <EnhancedCard
-                value={card.value}
-                suit={card.suit}
-                isSelected={card.isSelected}
-                isHighlighted={isHighlighted}
-                onToggleSelect={() => onToggleSelect && onToggleSelect(index)}
-                selectionType={selectionMode}
-                disabled={
-                  !card.isSelected &&
-                  selectedCount >= maxSelectable &&
-                  selectionMode === 'attack'
-                }
-              />
-            </motion.div>
-          );
-        })}
-      </motion.div>
-    </div>
   );
 };
 
