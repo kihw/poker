@@ -121,6 +121,8 @@ export const startCombatFromNode = createAsyncThunk(
   'combat/startCombatFromNode',
   async ({ nodeId }, { dispatch, getState }) => {
     try {
+      console.log("Démarrage d'un combat depuis le nœud:", nodeId);
+
       // Sélectionner le nœud pour marquer la progression sur la carte
       dispatch(selectNode(nodeId));
 
@@ -132,12 +134,15 @@ export const startCombatFromNode = createAsyncThunk(
         throw new Error(`Nœud avec ID ${nodeId} non trouvé`);
       }
 
+      console.log('Type de nœud pour ce combat:', selectedNode.type);
+
       // Déterminer le type d'ennemi en fonction du type de nœud
       const isElite = selectedNode.type === 'elite';
       const isBoss = selectedNode.type === 'boss';
 
       // Générer l'ennemi approprié
       const enemy = generateEnemy(state.game.stage, isElite, isBoss);
+      console.log('Ennemi généré:', enemy.name, 'PV:', enemy.health);
 
       // Initialiser le combat
       dispatch(startCombat(enemy));
@@ -145,8 +150,18 @@ export const startCombatFromNode = createAsyncThunk(
       dispatch(resetCardUses());
       dispatch(setTurnPhase('draw'));
 
+      // Log pour confirmer l'initialisation
+      console.log(
+        'Combat initialisé, phase:',
+        state.game.gamePhase,
+        'tour:',
+        'draw'
+      );
+
       // Distribuer automatiquement la première main
+      console.log('Distribution de la première main...');
       dispatch(dealHand());
+      console.log('Première main distribuée');
 
       // Ajouter au journal de combat
       dispatch(
@@ -311,15 +326,21 @@ export const executeCombatTurn = createAsyncThunk(
   'combat/executeCombatTurn',
   async (_, { dispatch, getState }) => {
     try {
+      console.log('Exécution du tour de combat');
       const state = getState();
 
       // 1. S'assurer qu'on est en phase de combat
       if (state.game.gamePhase !== 'combat') {
+        console.log(
+          'Non en phase de combat, phase actuelle:',
+          state.game.gamePhase
+        );
         return { status: 'not_in_combat' };
       }
 
       // 2. Distribuer une nouvelle main si en phase de tirage
       if (state.combat.turnPhase === 'draw') {
+        console.log('Phase de tirage détectée, distribution de cartes');
         dispatch(dealHand());
         dispatch(setTurnPhase('select'));
         return { status: 'hand_dealt' };
@@ -330,13 +351,33 @@ export const executeCombatTurn = createAsyncThunk(
         state.combat.turnPhase === 'select' &&
         state.combat.selectedCards.length > 0
       ) {
+        console.log(
+          'Attaque du joueur avec',
+          state.combat.selectedCards.length,
+          'cartes'
+        );
         dispatch(evaluateSelectedHand());
 
-        // Vérifier si l'ennemi est encore en vie
-        const updatedState = getState();
-        if (updatedState.combat.enemy && updatedState.combat.enemy.health > 0) {
-          // L'ennemi contre-attaque
-          dispatch(enemyAction());
+        // Vérifier si l'ennemi est encore en vie APRÈS l'attaque du joueur
+        const afterAttackState = getState();
+        console.log(
+          "État de l'ennemi après attaque:",
+          afterAttackState.combat.enemy?.health,
+          '/',
+          afterAttackState.combat.enemy?.maxHealth
+        );
+
+        if (
+          afterAttackState.combat.enemy &&
+          afterAttackState.combat.enemy.health > 0
+        ) {
+          console.log("L'ennemi contre-attaque");
+          // IMPORTANT: Ajouter un délai pour que l'attaque ennemie soit visible
+          setTimeout(() => {
+            dispatch(enemyAction());
+          }, 300);
+        } else {
+          console.log('Ennemi vaincu, pas de contre-attaque');
         }
 
         // Vérifier si le combat est terminé
@@ -344,6 +385,7 @@ export const executeCombatTurn = createAsyncThunk(
         return { status: 'turn_completed', combatStatus };
       }
 
+      console.log('En attente de sélection de cartes');
       return { status: 'waiting_for_selection' };
     } catch (error) {
       console.error('Error executing combat turn:', error);
@@ -357,7 +399,6 @@ export const executeCombatTurn = createAsyncThunk(
     }
   }
 );
-
 /**
  * Thunk pour continuer après une victoire
  * Transition vers la phase suivante du jeu

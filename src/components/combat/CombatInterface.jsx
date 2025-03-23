@@ -98,7 +98,8 @@ const CombatInterface = () => {
       enemy &&
       enemy.health <= 0 &&
       gamePhase === 'combat' &&
-      turnPhase === 'result'
+      turnPhase === 'result' &&
+      !isProcessingContinue // Ajout de cette condition
     ) {
       console.log('Détection automatique de victoire');
 
@@ -108,7 +109,14 @@ const CombatInterface = () => {
 
       return () => clearTimeout(victoryTimer);
     }
-  }, [enemy?.health, gamePhase, turnPhase, dispatch, navigate]);
+  }, [
+    enemy?.health,
+    gamePhase,
+    turnPhase,
+    dispatch,
+    navigate,
+    isProcessingContinue,
+  ]);
 
   // Gérer le tutoriel
   const handleNextTutorialStep = () => {
@@ -151,6 +159,8 @@ const CombatInterface = () => {
 
   // Lancer l'attaque
   const handleAttack = () => {
+    console.log('handleAttack appelé, cartes sélectionnées:', selectedCards);
+
     if (selectedCards.length === 0 || selectedCards.length > 5) {
       dispatch(
         setActionFeedback({
@@ -160,10 +170,17 @@ const CombatInterface = () => {
       );
       return;
     }
+    console.log('Attaque lancée avec', selectedCards.length, 'cartes');
 
-    dispatch(attackEnemy());
+    dispatch(executeCombatTurn())
+      .unwrap()
+      .then((result) => {
+        console.log('Résultat du tour de combat:', result);
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'exécution du tour:", error);
+      });
   };
-
   // Défausser les cartes sélectionnées
   const handleDiscard = () => {
     if (selectedCards.length === 0) {
@@ -201,6 +218,7 @@ const CombatInterface = () => {
   };
 
   // Gérer la continuation après un combat
+  // Gérer la continuation après un combat
   const handleContinue = () => {
     const callId = Date.now() + Math.random().toString(16).slice(2);
     console.log(
@@ -227,18 +245,24 @@ const CombatInterface = () => {
 
         // Process victory
         dispatch(processCombatVictory())
+          .unwrap()
           .then(() => {
             console.log(
               `[DEBUG ${callId}] Redirection vers la carte après délai`
             );
             dispatch(setGamePhase('exploration'));
-            navigate('/map');
+            setTimeout(() => navigate('/map'), 300);
           })
           .catch((error) => {
             console.error(
               `[DEBUG ${callId}] Erreur lors du traitement de la victoire:`,
               error
             );
+          })
+          .finally(() => {
+            setTimeout(() => {
+              setIsProcessingContinue(false);
+            }, 1000);
           });
       } else {
         console.log(`[DEBUG ${callId}] Distribution d'une nouvelle main`);
@@ -249,20 +273,16 @@ const CombatInterface = () => {
 
           setTimeout(() => {
             window._dealHandLock = false;
+            setIsProcessingContinue(false);
           }, 500);
         } else {
           console.warn(`[DEBUG ${callId}] Distribution déjà en cours, ignorée`);
+          setIsProcessingContinue(false);
         }
       }
     } catch (error) {
       console.error(`[DEBUG ${callId}] Erreur dans handleContinue:`, error);
-    } finally {
-      setTimeout(() => {
-        setIsProcessingContinue(false);
-        console.log(
-          `[DEBUG ${callId}] Traitement terminé, drapeau réinitialisé`
-        );
-      }, 1000);
+      setIsProcessingContinue(false);
     }
   };
 
@@ -369,8 +389,7 @@ const CombatInterface = () => {
                 selectionMode={turnPhase === 'select' ? 'attack' : 'view'}
               />
             </div>
-
-            {/* Actions de combat - Boutons d'attaque et de défausse simplifiés */}
+            {/* Actions de combat - Boutons d'attaque et de défausse */}
             {turnPhase === 'select' && (
               <div className="flex justify-center space-x-6 mt-6">
                 <button
@@ -403,6 +422,22 @@ const CombatInterface = () => {
                   }`}
                 >
                   Défausser ({selectedCards.length}/{discardLimit})
+                </button>
+              </div>
+            )}
+            {/* Bouton Continuer */}
+            {turnPhase === 'result' && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Bouton Continuer cliqué');
+                    handleContinue();
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg w-48"
+                >
+                  Continuer
                 </button>
               </div>
             )}

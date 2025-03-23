@@ -25,16 +25,16 @@ const EventPage = () => {
   useEffect(() => {
     // Vérifier que nous sommes bien en phase 'event'
     if (gamePhase === 'event' && !currentEvent && !isLoading) {
-      console.log('Génération d'un nouvel événement');
+      console.log("Génération d'un nouvel événement");
       dispatch(generateNewEvent())
         .unwrap()
         .then((event) => {
           if (!event) {
             // En cas d'échec de génération, revenir à la carte
-            console.log('Échec de génération d'événement, retour à la carte');
+            console.log("Échec de génération d'événement, retour à la carte");
             dispatch(
               setActionFeedback({
-                message: "Impossible de générer un événement",
+                message: 'Impossible de générer un événement',
                 type: 'error',
               })
             );
@@ -42,8 +42,8 @@ const EventPage = () => {
             navigate('/map');
           }
         })
-        .catch(error => {
-          console.error('Erreur lors de la génération d'événement:', error);
+        .catch((error) => {
+          console.error("Erreur lors de la génération d'événement:", error);
           dispatch(setGamePhase('exploration'));
           navigate('/map');
         });
@@ -69,14 +69,14 @@ const EventPage = () => {
       );
       return;
     }
-    
+
     dispatch(makeEventChoice({ choiceIndex }))
       .unwrap()
-      .catch(error => {
+      .catch((error) => {
         console.error('Erreur lors du traitement du choix:', error);
         dispatch(
           setActionFeedback({
-            message: "Erreur lors du traitement du choix",
+            message: 'Erreur lors du traitement du choix',
             type: 'error',
           })
         );
