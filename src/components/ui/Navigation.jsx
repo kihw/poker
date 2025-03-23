@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { 
+import {
   selectStage, 
   selectGamePhase 
 } from '../../redux/selectors/gameSelectors';
