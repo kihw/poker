@@ -21,19 +21,27 @@ import {
   setLoading,
   resetEvent,
 } from '../slices/eventSlice';
+import { fetchData } from '../../utils/apiUtils';
 
 // Action pour créer un événement aléatoire
 export const generateNewEvent = createAsyncThunk(
   'event/generateNewEvent',
   async (_, { dispatch, getState }) => {
-    try {
-      dispatch(setLoading(true));
+    dispatch(setLoading(true));
 
+    try {
       const state = getState();
       const stage = state.game.stage;
 
-      // Générer un événement aléatoire basé sur le niveau actuel
-      const newEvent = generateRandomEvent(stage);
+      // Utilisation de l'utilitaire fetchData pour générer un événement avec gestion d'erreurs
+      const newEvent = await fetchData(
+        () => generateRandomEvent(stage),
+        {
+          errorMessage: "Erreur lors de la génération de l'événement",
+          successMessage: 'Nouvel événement découvert !',
+        },
+        dispatch
+      );
 
       // Définir l'événement comme événement actuel
       dispatch(setCurrentEvent(newEvent));
@@ -45,13 +53,10 @@ export const generateNewEvent = createAsyncThunk(
       return newEvent;
     } catch (error) {
       console.error('Error generating event:', error);
-      dispatch(
-        setActionFeedback({
-          message: "Erreur lors de la génération de l'événement",
-          type: 'error',
-        })
-      );
       dispatch(setLoading(false));
+      
+      // Redirection vers exploration en cas d'erreur grave
+      dispatch(setGamePhase('exploration'));
       return null;
     }
   }
@@ -70,13 +75,19 @@ export const makeEventChoice = createAsyncThunk(
         throw new Error('Aucun événement actif');
       }
 
-      // Traiter le choix de l'utilisateur
-      const result = processEventChoice(event, choiceIndex, {
-        player: state.player,
-        bonusCardSystem: {
-          addBonusCardToCollection: (cardId) => dispatch(addCard(cardId)),
+      // Utilisation de l'utilitaire fetchData pour traiter le choix
+      const result = await fetchData(
+        () => processEventChoice(event, choiceIndex, {
+          player: state.player,
+          bonusCardSystem: {
+            addBonusCardToCollection: (cardId) => dispatch(addCard(cardId)),
+          },
+        }),
+        {
+          errorMessage: "Erreur lors du traitement du choix",
         },
-      });
+        dispatch
+      );
 
       // Appliquer les effets au joueur
       if (result.details) {
@@ -155,6 +166,16 @@ export const completeEvent = createAsyncThunk(
       return { success: true };
     } catch (error) {
       console.error('Error completing event:', error);
+      // Malgré l'erreur, on essaie quand même de revenir à l'exploration
+      dispatch(setGamePhase('exploration'));
+      
+      dispatch(
+        setActionFeedback({
+          message: "Erreur lors de la fin de l'événement",
+          type: 'error',
+        })
+      );
+      
       return { success: false, error: error.message };
     }
   }
