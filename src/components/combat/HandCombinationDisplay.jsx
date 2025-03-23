@@ -3,25 +3,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   DESIGN_TOKENS, 
-  AnimationPresets 
+  AnimationPresets,
+  Card // Import Card depuis DesignSystem au lieu de le définir localement
 } from '../ui/DesignSystem';
 import EnhancedCard from '../card/Card';
-
-// Créer un composant Card local car il n'est pas exporté par DesignSystem
-const Card = ({ variant, className, children }) => {
-  const baseClasses = "overflow-hidden";
-  const variantClasses = {
-    "elevated": "shadow-lg",
-    "outlined": "border border-gray-700",
-    "flat": ""
-  };
-
-  return (
-    <div className={`${baseClasses} ${variantClasses[variant] || ''} ${className || ''}`}>
-      {children}
-    </div>
-  );
-};
 
 // Fonction locale pour obtenir la couleur d'une main de poker
 const getPokerHandColor = (handName) => {
