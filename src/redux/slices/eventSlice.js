@@ -47,6 +47,7 @@ const eventSlice = createSlice({
     },
     resetAllEvents: () => initialState,
 
+    // Reducer for loading saved data
     LOAD_SAVED_DATA: (state, action) => {
       const savedData = action.payload;
       if (savedData && savedData.eventHistory) {
