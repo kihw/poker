@@ -14,7 +14,7 @@ import { startNewCombat } from './combatThunks';
 // Thunk pour générer une nouvelle carte
 export const generateNewMap = createAsyncThunk(
   'map/generateNewMap',
-  async ({ width, depth }, { dispatch, getState }) => {
+  async ({ width, depth } = {}, { dispatch, getState }) => {
     try {
       // Indiquer que la génération de carte commence
       dispatch(startGeneratingMap());
@@ -26,17 +26,27 @@ export const generateNewMap = createAsyncThunk(
       const mapWidth = width || Math.min(3 + Math.floor(stage / 3), 6);
       const mapDepth = depth || Math.min(5 + Math.floor(stage / 2), 8);
 
-      // Générer la carte (avec un délai simulé pour montrer le chargement)
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log(`Génération de la carte - Niveau: ${stage}, Largeur: ${mapWidth}, Profondeur: ${mapDepth}`);
+
+      // Générer la carte
       const nodes = generateRoguelikeMap(stage, mapWidth, mapDepth);
+
+      console.log('Carte générée:', nodes);
 
       // Valider la carte
       if (!validateMap(nodes)) {
+        console.error('Carte générée invalide');
         throw new Error('Carte générée invalide');
       }
 
       // Mettre à jour l'état avec la nouvelle carte
       dispatch(mapGenerationSuccess(nodes));
+
+      // Sélectionner automatiquement le nœud de départ
+      const startNode = nodes.find(node => node.type === 'start');
+      if (startNode) {
+        dispatch(selectNode(startNode.id));
+      }
 
       // Feedback pour l'utilisateur
       dispatch(
@@ -48,7 +58,7 @@ export const generateNewMap = createAsyncThunk(
 
       return nodes;
     } catch (error) {
-      console.error('Error generating map:', error);
+      console.error('Erreur lors de la génération de la carte:', error);
 
       // Mettre à jour l'état avec l'erreur
       dispatch(mapGenerationFailure(error.message));
@@ -61,7 +71,21 @@ export const generateNewMap = createAsyncThunk(
         })
       );
 
-      return null;
+      // Tenter de générer une carte par défaut en cas d'échec
+      try {
+        const fallbackNodes = generateRoguelikeMap(1, 3, 5);
+        dispatch(mapGenerationSuccess(fallbackNodes));
+        
+        const startNode = fallbackNodes.find(node => node.type === 'start');
+        if (startNode) {
+          dispatch(selectNode(startNode.id));
+        }
+
+        return fallbackNodes;
+      } catch (fallbackError) {
+        console.error('Erreur lors de la génération de la carte de secours:', fallbackError);
+        return null;
+      }
     }
   }
 );
