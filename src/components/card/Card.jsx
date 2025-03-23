@@ -22,15 +22,15 @@ const Card = ({
   // Dictionnaire pour afficher les symboles des couleurs
   const suitSymbols = {
     spades: '♠',
-    hearts: '♥',
+    hearts: '♥', 
     diamonds: '♦',
     clubs: '♣',
   };
   const displaySuit = suitSymbols[safeSuit] || safeSuit;
-  const isRed =
-    safeSuit === 'hearts' ||
-    safeSuit === 'diamonds' ||
-    safeSuit === '♥' ||
+  const isRed = 
+    safeSuit === 'hearts' || 
+    safeSuit === 'diamonds' || 
+    safeSuit === '♥' || 
     safeSuit === '♦';
 
   // Couleurs avec un design plus vivant
