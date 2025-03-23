@@ -2,13 +2,13 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
-  startCombat, // Import with original name - no renaming
+  startCombat as startCombatAction, // Renamed import to avoid confusion
   evaluateSelectedHand as evaluateSelectedHandAction,
   enemyAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
-import { takeDamage } from '../slices/playerSlice';
+import { takeDamage } from '../slices/playerSlice'; // Important import for damage handling
 import { evaluatePartialHand } from '../../utils/handEvaluationUtils';
 
 // Import and re-export specific thunks from combatCycleThunks
@@ -19,7 +19,7 @@ import {
   executeCombatTurn as importedExecuteCombatTurn,
 } from './combatCycleThunks';
 
-// Exporter les thunks importés
+// Exporter explicitement les thunks importés
 export const startCombatFromNode = importedStartCombatFromNode;
 export const processCombatVictory = importedProcessCombatVictory;
 export const checkCombatEnd = importedCheckCombatEnd;
@@ -179,7 +179,7 @@ export const startNewCombat = createAsyncThunk(
       dispatch(setEnemy(enemy));
 
       // Dispatcher l'action pour démarrer le combat
-      dispatch(startCombat(enemy)); // Use original name, no "Action" suffix
+      dispatch(startCombatAction(enemy)); // Use the renamed import
 
       // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
