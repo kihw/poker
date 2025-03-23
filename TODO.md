@@ -26,15 +26,15 @@
   - [x] Améliorer les animations d'attaque et les effets visuels
   - [x] Ajouter des transitions fluides entre les phases de combat
 
-- [ ] Carte du monde
-  - [ ] Ajouter des styles distinctifs pour chaque type de nœud
-  - [ ] Améliorer l'animation des chemins disponibles
-  - [ ] Ajouter des tooltips détaillés au survol des destinations
+- [x] Carte du monde
+  - [x] Ajouter des styles distinctifs pour chaque type de nœud
+  - [x] Améliorer l'animation des chemins disponibles
+  - [x] Ajouter des tooltips détaillés au survol des destinations
 
-- [ ] Système de cartes
-  - [ ] Implémenter des effets visuels différents selon la rareté
-  - [ ] Ajouter une prévisualisation des combinaisons possibles
-  - [ ] Améliorer les animations de tirage et de sélection
+- [x] Système de cartes
+  - [x] Implémenter des effets visuels différents selon la rareté
+  - [x] Ajouter une prévisualisation des combinaisons possibles
+  - [x] Améliorer les animations de tirage et de sélection
 
 - [ ] Interface utilisateur générale
   - [ ] Mettre en place un header cohérent sur toutes les pages
@@ -43,13 +43,13 @@
 
 ## Hiérarchie de l'interface selon l'analyse 🚧
 
-- [ ] Structurer les éléments critiques (toujours visibles)
-  - [ ] Barre d'état du joueur avec PV, bouclier, or et niveau
-  - [ ] Indicateur de phase et progression d'étage
-  - [ ] Accès rapide aux fonctions essentielles
+- [x] Structurer les éléments critiques (toujours visibles)
+  - [x] Barre d'état du joueur avec PV, bouclier, or et niveau
+  - [x] Indicateur de phase et progression d'étage
+  - [x] Accès rapide aux fonctions essentielles
 
 - [ ] Organiser les éléments centraux (spécifiques à chaque phase)
-  - [ ] Combat: Ennemi, main de cartes, cartes bonus
+  - [x] Combat: Ennemi, main de cartes, cartes bonus
   - [ ] Exploration: Carte du monde avec chemins et nœuds
   - [ ] Boutique, Repos, Événement: Contenus spécifiques
 
@@ -71,7 +71,7 @@
 
 ## Optimisations 🚀
 
-- [ ] Assurer que les composants utilisent bien React.memo où c'est pertinent
+- [x] Assurer que les composants utilisent bien React.memo où c'est pertinent
 - [ ] Vérifier les performances des animations complexes
 - [ ] S'assurer que les transitions sont fluides entre toutes les phases de jeu
 
