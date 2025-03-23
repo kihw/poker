@@ -14,17 +14,17 @@
 
 ## Implémentation du Design System 🚧
 
-- [ ] Finaliser le composant `DesignSystem.jsx` pour inclure tous les éléments nécessaires:
+- [x] Finaliser le composant `DesignSystem.jsx` pour inclure tous les éléments nécessaires:
   - [x] S'assurer que toutes les couleurs définies dans l'analyse sont présentes
   - [x] Créer les composants de base (Card, Button, Badge, ProgressBar)
   - [x] Définir les constantes pour les ombres, espacements, rayons de bordure, etc.
 
 ## Mise à jour des composants principaux 🚧
 
-- [ ] Interface de combat
-  - [ ] Mettre à jour la disposition verticale (ennemi en haut, joueur en bas)
-  - [ ] Améliorer les animations d'attaque et les effets visuels
-  - [ ] Ajouter des transitions fluides entre les phases de combat
+- [x] Interface de combat
+  - [x] Mettre à jour la disposition verticale (ennemi en haut, joueur en bas)
+  - [x] Améliorer les animations d'attaque et les effets visuels
+  - [x] Ajouter des transitions fluides entre les phases de combat
 
 - [ ] Carte du monde
   - [ ] Ajouter des styles distinctifs pour chaque type de nœud
