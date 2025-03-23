@@ -1,17 +1,15 @@
+// src/redux/thunks/combatThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
-  startCombat,
+  startCombat as startCombatAction, // Renamed for clarity
   evaluateSelectedHand as evaluateSelectedHandAction,
   enemyAction,
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
-import { takeDamage } from '../slices/playerSlice'; // Import important
-import {
-  evaluatePartialHand,
-  calculateDamage,
-} from '../../utils/handEvaluationUtils';
+import { takeDamage } from '../slices/playerSlice'; // Important import for damage handling
+import { evaluatePartialHand, calculateDamage } from '../../utils/handEvaluationUtils';
 
 // Import and re-export specific thunks from combatCycleThunks
 import {
@@ -24,7 +22,7 @@ import {
 // Exporter explicitement les thunks importés
 export const startCombatFromNode = importedStartCombatFromNode;
 export const processCombatVictory = importedProcessCombatVictory;
-export const checkCombatEnd = importedCheckCombatEnd; // S'assurer que cette fonction est correctement exportée
+export const checkCombatEnd = importedCheckCombatEnd;
 export const executeCombatTurn = importedExecuteCombatTurn;
 
 /**
@@ -181,7 +179,7 @@ export const startNewCombat = createAsyncThunk(
       dispatch(setEnemy(enemy));
 
       // Dispatcher l'action pour démarrer le combat
-      dispatch(startCombat(enemy));
+      dispatch(startCombatAction(enemy)); // Fixed: using the renamed action
 
       // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
@@ -210,9 +208,7 @@ export const attackEnemy = createAsyncThunk(
       console.log('Attaque avec cartes sélectionnées:', selectedCardsIndices);
 
       // Extraire les cartes sélectionnées
-      const selectedCards = selectedCardsIndices
-        .map((index) => hand[index])
-        .filter((card) => card);
+      const selectedCards = selectedCardsIndices.map((index) => hand[index]).filter((card) => card);
 
       // Évaluer la main
       const partialHandResult = evaluatePartialHand(selectedCards);
@@ -221,12 +217,7 @@ export const attackEnemy = createAsyncThunk(
       const baseDamage = partialHandResult.baseDamage;
       const totalDamage = Math.max(1, Math.floor(baseDamage));
 
-      console.log(
-        'Évaluation de la main:',
-        partialHandResult.handName,
-        'Dégâts:',
-        totalDamage
-      );
+      console.log('Évaluation de la main:', partialHandResult.handName, 'Dégâts:', totalDamage);
 
       // Préparer les bonus
       const bonusEffects = [];
@@ -295,4 +286,4 @@ export const processEnemyAttack = createAsyncThunk(
 );
 
 // Export des actions du slice (pas les thunks)
-export { startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
+export { startCombatAction as startCombat, evaluateSelectedHandAction as evaluateSelectedHand };
