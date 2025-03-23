@@ -21,12 +21,11 @@ import {
   LOAD_SAVED_DATA as LOAD_SHOP_DATA,
 } from '../slices/shopSlice';
 import { resetUi } from '../slices/uiSlice';
+import { resetAllEvents, LOAD_SAVED_DATA as LOAD_EVENT_DATA } from '../slices/eventSlice';
 import { generateNewMap } from './mapThunks';
 
-// Clé de sauvegarde dans le localStorage
 const SAVE_KEY = 'pokerSoloRpgSave';
 
-// Thunk pour sauvegarder le jeu
 export const saveGame = createAsyncThunk(
   'save/saveGame',
   async (_, { dispatch, getState }) => {
@@ -35,9 +34,8 @@ export const saveGame = createAsyncThunk(
 
       const state = getState();
 
-      // Créer un objet de sauvegarde avec les données essentielles
       const saveData = {
-        version: '1.1', // Version incrémentée
+        version: '1.1',
         timestamp: Date.now(),
         player: { ...state.player },
         game: {
@@ -66,9 +64,11 @@ export const saveGame = createAsyncThunk(
         shop: {
           itemsPurchased: state.shop.itemsPurchased || {},
         },
+        event: {
+          eventHistory: state.event.eventHistory || [],
+        },
       };
 
-      // Sauvegarder dans le localStorage
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
       dispatch(setLoading(false));
@@ -97,14 +97,12 @@ export const saveGame = createAsyncThunk(
   }
 );
 
-// Thunk pour charger le jeu
 export const loadGame = createAsyncThunk(
   'save/loadGame',
-  async (_, { dispatch, getState }) => {
+  async (_, { dispatch }) => {
     try {
       dispatch(setLoading(true));
 
-      // Récupérer les données de sauvegarde
       const savedData = localStorage.getItem(SAVE_KEY);
       if (!savedData) {
         dispatch(
@@ -115,7 +113,7 @@ export const loadGame = createAsyncThunk(
         );
         dispatch(setLoading(false));
         
-        // Si pas de sauvegarde, initialiser un nouveau jeu
+        // If no save exists, initialize a new game
         dispatch(initCollection());
         await dispatch(generateNewMap({ width: 3, depth: 5 }));
         
@@ -124,44 +122,43 @@ export const loadGame = createAsyncThunk(
 
       const saveData = JSON.parse(savedData);
 
-      // Réinitialiser tous les états pour éviter des conflits
+      // Reset all states to avoid conflicts
       dispatch(resetPlayer());
       dispatch(resetCombatState());
       dispatch(resetBonusCards());
       dispatch(resetMap());
       dispatch(resetShop());
       dispatch(resetUi());
+      dispatch(resetAllEvents());
 
-      // Charger les données du joueur
+      // Load data using LOAD_SAVED_DATA actions
       if (saveData.player) {
         dispatch(LOAD_PLAYER_DATA(saveData.player));
       }
 
-      // Charger les données du jeu
       if (saveData.game) {
         dispatch(LOAD_GAME_DATA(saveData.game));
       }
 
-      // Charger les données de la carte
       if (saveData.map && saveData.map.path && saveData.map.path.length > 0) {
         dispatch(LOAD_MAP_DATA(saveData.map));
       } else {
-        // Si la carte est manquante ou vide, en générer une nouvelle
-        console.log("Carte manquante dans la sauvegarde, génération d'une nouvelle carte");
+        console.log("Missing map in save data, generating new map");
         await dispatch(generateNewMap({ width: 3, depth: 5 }));
       }
 
-      // Charger les données des cartes bonus
       if (saveData.bonusCards) {
         dispatch(LOAD_BONUS_CARDS_DATA(saveData.bonusCards));
       } else {
-        // Initialiser une collection par défaut si manquante
         dispatch(initCollection());
       }
 
-      // Charger les données de la boutique
       if (saveData.shop) {
         dispatch(LOAD_SHOP_DATA(saveData.shop));
+      }
+
+      if (saveData.event) {
+        dispatch(LOAD_EVENT_DATA(saveData.event));
       }
 
       dispatch(setLoading(false));
@@ -185,7 +182,7 @@ export const loadGame = createAsyncThunk(
         })
       );
 
-      // Si erreur, initialiser un nouveau jeu
+      // If error, initialize a new game
       dispatch(initCollection());
       await dispatch(generateNewMap({ width: 3, depth: 5 }));
 
@@ -194,12 +191,10 @@ export const loadGame = createAsyncThunk(
   }
 );
 
-// Thunk pour supprimer la sauvegarde
 export const deleteSave = createAsyncThunk(
   'save/deleteSave',
   async (_, { dispatch }) => {
     try {
-      // Supprimer la sauvegarde du localStorage
       localStorage.removeItem(SAVE_KEY);
 
       dispatch(
@@ -225,15 +220,12 @@ export const deleteSave = createAsyncThunk(
   }
 );
 
-// Thunk pour réinitialiser complètement le jeu
 export const resetEntireGame = createAsyncThunk(
   'save/resetEntireGame',
   async (_, { dispatch }) => {
     try {
-      // Supprimer la sauvegarde
       localStorage.removeItem(SAVE_KEY);
 
-      // Réinitialiser tous les états
       dispatch(resetPlayer());
       dispatch(resetGame());
       dispatch(resetCombatState());
@@ -241,11 +233,9 @@ export const resetEntireGame = createAsyncThunk(
       dispatch(resetMap());
       dispatch(resetShop());
       dispatch(resetUi());
+      dispatch(resetAllEvents());
 
-      // Générer une nouvelle carte
       dispatch(generateNewMap({ width: 3, depth: 5 }));
-      
-      // Initialiser les cartes bonus
       dispatch(initCollection());
 
       dispatch(
@@ -271,7 +261,6 @@ export const resetEntireGame = createAsyncThunk(
   }
 );
 
-// Fonction utilitaire pour vérifier si une sauvegarde existe
 export const hasSave = () => {
   return localStorage.getItem(SAVE_KEY) !== null;
 };
