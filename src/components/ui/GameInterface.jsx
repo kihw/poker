@@ -1,4 +1,4 @@
-// src/components/ui/GameInterface.jsx - Comprehensive Game Interface
+// src/components/ui/GameInterface.jsx - Enhanced Design System Header
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,191 +6,161 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { 
   Button, 
-  Card, 
   Badge, 
-  ProgressBar, 
-  Tooltip,
-  COLORS,
-  Icons 
+  Tooltip, 
+  Icons,
+  DESIGN_TOKENS 
 } from './DesignSystem';
 
+import PlayerStatus from '../combat/PlayerStatus';
 import Navigation from './Navigation';
+import SaveButton from './SaveButton';
 import ActionFeedback from './ActionFeedback';
 
-import { 
-  setGamePhase, 
-  resetGame, 
-  completeTutorial 
-} from '../../redux/slices/gameSlice';
-import { selectPlayerSaveData } from '../../redux/selectors/playerSelectors';
-import { saveGame, deleteSave } from '../../redux/thunks/saveThunks';
-import PlayerStatus from '../combat/PlayerStatus';
+// Performance and Design System Utilities
+import { performanceDebounce } from '../../utils/performance';
 
-const GameInterface = ({ children }) => {
+const GameHeader = React.memo(() => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Game and player state selectors
-  const gameState = useSelector((state) => state.game);
-  const playerStats = useSelector(selectPlayerSaveData);
-  const tutorialStatus = useSelector((state) => ({
-    step: state.game.tutorialStep,
-    showTutorial: state.game.showTutorial
+  const stage = useSelector((state) => state.game.stage);
+  const gamePhase = useSelector((state) => state.game.gamePhase);
+  const playerStats = useSelector((state) => ({
+    health: state.player.health,
+    maxHealth: state.player.maxHealth,
+    gold: state.player.gold,
+    level: state.player.level,
   }));
 
-  // UI state
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [saveNotification, setSaveNotification] = useState(false);
+  // Header menu state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Game phase and navigation management
-  useEffect(() => {
-    const handleGamePhaseChange = () => {
-      switch (gameState.gamePhase) {
-        case 'combat':
-          navigate('/');
-          break;
-        case 'exploration':
-          navigate('/map');
-          break;
-        case 'shop':
-          navigate('/shop');
-          break;
-        case 'rest':
-          navigate('/rest');
-          break;
-        case 'event':
-          navigate('/event');
-          break;
-        default:
-          break;
-      }
-    };
-
-    handleGamePhaseChange();
-  }, [gameState.gamePhase, navigate]);
-
-  // Game over and restart handling
-  const handleRestart = () => {
-    dispatch(resetGame());
-    navigate('/');
-    window.location.reload();
+  // Phase indicator styling
+  const phaseStyles = {
+    exploration: { 
+      color: DESIGN_TOKENS.colors.primary.main, 
+      icon: '🗺️' 
+    },
+    combat: { 
+      color: DESIGN_TOKENS.colors.danger.main, 
+      icon: '⚔️' 
+    },
+    shop: { 
+      color: DESIGN_TOKENS.colors.success.main, 
+      icon: '🛒' 
+    },
+    rest: { 
+      color: DESIGN_TOKENS.colors.warning.main, 
+      icon: '🏕️' 
+    },
+    event: { 
+      color: DESIGN_TOKENS.colors.secondary.main, 
+      icon: '❗' 
+    }
   };
 
-  const handleDeleteSaveAndRestart = () => {
-    dispatch(deleteSave());
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  };
-
-  // Save game handler with visual feedback
-  const handleSave = () => {
-    dispatch(saveGame());
-    setSaveNotification(true);
-    setTimeout(() => setSaveNotification(false), 2000);
-  };
-
-  // Render game over screen
-  const renderGameOver = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col items-center justify-center h-full p-8 text-center"
-    >
-      <h2 className="text-4xl font-bold text-red-500 mb-6">GAME OVER</h2>
-      <p className="text-xl text-gray-300 mb-8">Vous avez été vaincu!</p>
-
-      <Card className="p-6 max-w-md mb-8">
-        <h3 className="text-lg font-bold text-yellow-400 mb-4">
-          Statistiques finales
-        </h3>
-        <div className="grid grid-cols-2 gap-4 text-left">
-          <div className="text-gray-300">Niveau atteint:</div>
-          <div className="text-white font-bold">{gameState.stage}</div>
-
-          <div className="text-gray-300">Niveau du joueur:</div>
-          <div className="text-white font-bold">{playerStats.level}</div>
-
-          <div className="text-gray-300">Or accumulé:</div>
-          <div className="text-white font-bold">{playerStats.gold}</div>
-        </div>
-      </Card>
-
-      <div className="space-y-4">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={handleRestart}
-        >
-          Nouvelle partie
-        </Button>
-        <Button
-          variant="danger"
-          size="lg"
-          onClick={handleDeleteSaveAndRestart}
-        >
-          Supprimer la sauvegarde et recommencer
-        </Button>
-      </div>
-    </motion.div>
-  );
+  const currentPhaseStyle = phaseStyles[gamePhase] || phaseStyles.exploration;
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col text-white relative">
-      {/* Header with game navigation */}
-      <header className="p-4 bg-gray-800 border-b border-gray-700 flex justify-between items-center">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Poker Solo RPG</h1>
-          <Badge className="ml-3" variant="primary">
-            Étage {gameState.stage}
+    <motion.header 
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="sticky top-0 z-50 bg-gray-900 border-b border-gray-800 shadow-md"
+    >
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        {/* Game Logo and Stage */}
+        <div className="flex items-center space-x-4">
+          <div className="text-2xl font-bold text-white">
+            Poker Solo RPG
+          </div>
+          <Badge variant="primary">
+            Stage {stage}
           </Badge>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Tooltip content="Sauvegarder la partie">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSave}
-            >
-              💾 Sauver
-            </Button>
+        {/* Current Phase Indicator */}
+        <div 
+          className="flex items-center space-x-2"
+          style={{ color: currentPhaseStyle.color }}
+        >
+          <span className="text-xl">{currentPhaseStyle.icon}</span>
+          <span className="font-semibold capitalize">
+            {gamePhase}
+          </span>
+        </div>
+
+        {/* Player Quick Stats */}
+        <div className="flex items-center space-x-4">
+          <Tooltip content="Player Health">
+            <div className="flex items-center">
+              <Icons.health className="mr-2" />
+              <span>{playerStats.health}/{playerStats.maxHealth}</span>
+            </div>
+          </Tooltip>
+          
+          <Tooltip content="Gold">
+            <div className="flex items-center">
+              <Icons.gold className="mr-2" />
+              <span>{playerStats.gold}</span>
+            </div>
           </Tooltip>
 
-          <Tooltip content="Menu du jeu">
+          <Tooltip content="Player Level">
+            <div className="flex items-center">
+              <Icons.level className="mr-2" />
+              <span>Lv. {playerStats.level}</span>
+            </div>
+          </Tooltip>
+        </div>
+
+        {/* Game Menu and Actions */}
+        <div className="flex items-center space-x-2">
+          <SaveButton />
+          
+          <Tooltip content="Game Menu">
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => setMenuOpen(!menuOpen)}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               ☰
             </Button>
           </Tooltip>
         </div>
-      </header>
-
-      {/* Player status bar */}
-      <div className="bg-gray-800 px-4 py-3 border-b border-gray-700 flex justify-between items-center">
-        <PlayerStatus 
-          hp={playerStats.health}
-          maxHp={playerStats.maxHealth}
-          gold={playerStats.gold}
-          xp={playerStats.experience}
-          level={playerStats.level}
-          shield={playerStats.shield}
-        />
       </div>
 
-      {/* Main content area */}
-      <main className="flex-grow overflow-auto">
-        {gameState.isGameOver ? renderGameOver() : children}
+      {/* Drop-down Game Menu (Future Implementation) */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-gray-800 p-4"
+          >
+            {/* Future menu items */}
+            <div className="text-white">Game Menu Placeholder</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
+  );
+});
+
+const GameInterface = ({ children }) => {
+  return (
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      <GameHeader />
+      
+      <main className="flex-grow">
+        {children}
       </main>
 
-      {/* Action Feedback */}
-      <ActionFeedback />
-
-      {/* Navigation */}
       <Navigation />
+      <ActionFeedback />
     </div>
   );
 };
