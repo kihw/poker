@@ -1,4 +1,4 @@
-// src/pages/ShopPage.jsx - Version corrigée et améliorée
+// src/pages/ShopPage.jsx - Version refactorisée avec ProductCard
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,13 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // Redux selectors and actions
 import { selectPlayerGold } from '../redux/selectors/playerSelectors';
-import { initShop, purchaseItem } from '../redux/slices/shopSlice';
+import { initShop } from '../redux/slices/shopSlice';
 import { setGamePhase } from '../redux/slices/gameSlice';
-import { spendGold } from '../redux/slices/playerSlice';
 import { setActionFeedback } from '../redux/slices/uiSlice';
 
 // Components
 import Navigation from '../components/ui/Navigation';
+import ProductCard from '../components/shop/ProductCard';
 
 const ShopPage = () => {
   const navigate = useNavigate();
@@ -50,7 +50,8 @@ const ShopPage = () => {
       setIsLoading(true);
       dispatch(initShop())
         .then(() => setIsLoading(false))
-        .catch(() => {
+        .catch((error) => {
+          console.error("Erreur d'initialisation de la boutique:", error);
           setIsLoading(false);
           dispatch(setActionFeedback({
             message: "Erreur lors de l'initialisation de la boutique",
@@ -60,92 +61,11 @@ const ShopPage = () => {
     }
   }, [gamePhase, isGameOver, shopItems.length, dispatch, navigate]);
 
-  // Gestion de l'achat d'un article
-  const handlePurchase = (itemIndex) => {
-    if (itemIndex >= 0 && itemIndex < shopItems.length) {
-      const item = shopItems[itemIndex];
-
-      // Vérifier si le joueur a assez d'or
-      if (playerGold >= item.price) {
-        // Dépenser l'or
-        dispatch(spendGold(item.price));
-        
-        // Enregistrer l'achat
-        dispatch(purchaseItem({ itemIndex }));
-        
-        // Feedback
-        dispatch(setActionFeedback({
-          message: `${item.name} acheté !`,
-          type: "success"
-        }));
-      } else {
-        dispatch(setActionFeedback({
-          message: "Or insuffisant pour cet achat",
-          type: "warning"
-        }));
-      }
-    }
-  };
-
   // Quitter la boutique
   const handleExit = () => {
     dispatch(setGamePhase('exploration'));
     navigate('/map');
   };
-
-  // Animations
-  const itemAnimation = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.5
-      }
-    }),
-    exit: { opacity: 0, y: -10 }
-  };
-
-  // Affichage d'un article
-  const ShopItem = ({ item, index }) => (
-    <motion.div
-      custom={index}
-      variants={itemAnimation}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
-    >
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-lg font-bold text-white">{item.name}</h3>
-          <div className="bg-yellow-600 text-black px-2 py-1 rounded text-sm font-bold">
-            {item.price} or
-          </div>
-        </div>
-        <p className="text-gray-300 text-sm mb-3">{item.description}</p>
-        <div className="flex justify-between items-center">
-          <div className="text-xs text-gray-400">
-            {item.type === 'consumable' ? '🧪 Consommable' : 
-             item.type === 'permanent' ? '⬆️ Permanent' : 
-             '🃏 Cartes bonus'}
-          </div>
-          <button
-            onClick={() => handlePurchase(index)}
-            disabled={playerGold < item.price}
-            className={`px-3 py-1 rounded ${
-              playerGold >= item.price
-                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            Acheter
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  );
 
   // Écran de chargement
   if (isLoading) {
@@ -197,7 +117,7 @@ const ShopPage = () => {
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <AnimatePresence>
           {shopItems.map((item, index) => (
-            <ShopItem key={`${item.id}-${index}`} item={item} index={index} />
+            <ProductCard key={`${item.id}-${index}`} item={item} index={index} />
           ))}
         </AnimatePresence>
       </div>
