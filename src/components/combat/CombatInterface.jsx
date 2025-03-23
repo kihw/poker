@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx
+// src/components/combat/CombatInterface.jsx - Merged Improved Version
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
