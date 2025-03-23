@@ -1,9 +1,8 @@
-// src/components/combat/CombatInterface.jsx - Version améliorée
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useGameActions, useGameData } from '../../hooks/useGameActions';
+import { useGameActions } from '../../hooks/useGameActions';
 
 // Import sub-components
 import PlayerStatus from './PlayerStatus';
@@ -32,7 +31,6 @@ const CombatInterface = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const gameActions = useGameActions();
-  const gameData = useGameData();
 
   // Extraire les données nécessaires du Redux store
   const enemy = useSelector((state) => state.combat.enemy);
@@ -119,7 +117,57 @@ const CombatInterface = () => {
 
     dispatch(attackEnemy());
   };
+  // Vérifier si le tutoriel a déjà été vu
+  useEffect(() => {
+    const tutorialCompleted = localStorage.getItem('tutorialCompleted');
+    setShowTutorial(!tutorialCompleted);
+  }, []);
 
+  // Préparer les cartes à afficher selon le mode
+  const getDisplayCards = () => {
+    if (!hand) return [];
+
+    return hand.map((card, idx) => ({
+      ...card,
+      isSelected: discardMode
+        ? selectedCards.includes(idx)
+        : turnPhase === 'result'
+          ? card.isSelected
+          : selectedCards.includes(idx),
+    }));
+  };
+  const handleCardAction = (index) => {
+    if (discardMode) {
+      // Mode défausse
+      const currentDiscardCount = selectedCards.length;
+      if (
+        currentDiscardCount >= discardLimit &&
+        !selectedCards.includes(index)
+      ) {
+        dispatch(
+          setActionFeedback({
+            message: `Vous ne pouvez défausser que ${discardLimit} cartes`,
+            type: 'warning',
+          })
+        );
+        return;
+      }
+      dispatch(toggleCardSelection(index));
+    } else {
+      // Mode attaque normal
+      const currentSelectedCount = selectedCards.length;
+      if (currentSelectedCount >= 5 && !selectedCards.includes(index)) {
+        dispatch(
+          setActionFeedback({
+            message: 'Vous ne pouvez sélectionner que 5 cartes maximum',
+            type: 'warning',
+          })
+        );
+        return;
+      }
+      dispatch(toggleCardSelection(index));
+    }
+  };
   // Gérer la continuation après un combat
   const handleContinue = () => {
     const callId = Date.now() + Math.random().toString(16).slice(2);
@@ -196,20 +244,6 @@ const CombatInterface = () => {
         : 'Regardez les résultats de votre attaque';
     }
     return '';
-  };
-
-  // Préparer les cartes à afficher selon le mode
-  const getDisplayCards = () => {
-    if (!hand) return [];
-
-    return hand.map((card, idx) => ({
-      ...card,
-      isSelected: discardMode
-        ? selectedCards.includes(idx)
-        : turnPhase === 'result'
-          ? card.isSelected
-          : selectedCards.includes(idx),
-    }));
   };
 
   return (
