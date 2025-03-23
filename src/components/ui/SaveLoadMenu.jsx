@@ -2,22 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
-import { 
-  saveGame, 
-  loadGame, 
-  deleteSave, 
-  hasSave 
-} from '../../redux/thunks/saveThunks';
+import { saveGame, loadGame, deleteSave } from '../../redux/thunks/saveThunks';
 
-import { 
-  Button, 
-  Card, 
-  Badge, 
-  Icons, 
-  DESIGN_TOKENS, 
-  AnimationPresets 
-} from './DesignSystem';
-
+import { Button, Card, Badge, Icons, DESIGN_TOKENS, AnimationPresets } from './DesignSystem';
+const hasSave = () => {
+  return localStorage.getItem('pokerSoloRpgSave') !== null;
+};
 const SaveLoadMenu = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
 
@@ -58,13 +48,13 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
       await dispatch(saveGame());
       setActionResult({
         type: 'success',
-        message: 'Partie sauvegardée avec succès!'
+        message: 'Partie sauvegardée avec succès!',
       });
       setSaveExists(true);
     } catch (error) {
       setActionResult({
         type: 'error',
-        message: 'Erreur lors de la sauvegarde'
+        message: 'Erreur lors de la sauvegarde',
       });
     }
   };
@@ -77,7 +67,7 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
     } catch (error) {
       setActionResult({
         type: 'error',
-        message: 'Erreur lors du chargement'
+        message: 'Erreur lors du chargement',
       });
     }
   };
@@ -89,14 +79,14 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
         await dispatch(deleteSave());
         setActionResult({
           type: 'success',
-          message: 'Sauvegarde supprimée avec succès!'
+          message: 'Sauvegarde supprimée avec succès!',
         });
         setSaveExists(false);
         setConfirmDelete(false);
       } catch (error) {
         setActionResult({
           type: 'error',
-          message: 'Erreur lors de la suppression'
+          message: 'Erreur lors de la suppression',
         });
       }
     } else {
@@ -107,32 +97,32 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
   // Animation Configurations
   const menuVariants = {
     ...AnimationPresets.slideUp,
-    initial: { 
-      opacity: 0, 
-      scale: 0.9, 
-      y: 50 
+    initial: {
+      opacity: 0,
+      scale: 0.9,
+      y: 50,
     },
-    animate: { 
-      opacity: 1, 
-      scale: 1, 
+    animate: {
+      opacity: 1,
+      scale: 1,
       y: 0,
-      transition: { 
-        type: 'spring', 
-        stiffness: 300, 
-        damping: 20 
-      }
+      transition: {
+        type: 'spring',
+        stiffness: 300,
+        damping: 20,
+      },
     },
-    exit: { 
-      opacity: 0, 
-      scale: 0.9, 
-      y: 50 
-    }
+    exit: {
+      opacity: 0,
+      scale: 0.9,
+      y: 50,
+    },
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <motion.div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -143,27 +133,16 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
             className="w-full max-w-md bg-gray-800 rounded-xl p-6 shadow-2xl"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">
-                Sauvegarde & Gestion
-              </h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onClose}
-              >
+              <h2 className="text-2xl font-bold text-white">Sauvegarde & Gestion</h2>
+              <Button variant="ghost" size="sm" onClick={onClose}>
                 ✕
               </Button>
             </div>
 
             {/* Saved Game Information */}
             {saveExists && saveInfo && (
-              <Card 
-                variant="elevated" 
-                className="mb-6 p-4 bg-gray-700"
-              >
-                <h3 className="text-lg font-semibold mb-3 text-white">
-                  Dernière Sauvegarde
-                </h3>
+              <Card variant="elevated" className="mb-6 p-4 bg-gray-700">
+                <h3 className="text-lg font-semibold mb-3 text-white">Dernière Sauvegarde</h3>
 
                 <div className="space-y-2 text-gray-300">
                   <div className="flex justify-between">
@@ -177,8 +156,7 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
                   <div className="flex justify-between">
                     <span>PV:</span>
                     <span>
-                      {saveInfo.player?.health || 0} / 
-                      {saveInfo.player?.maxHealth || 0}
+                      {saveInfo.player?.health || 0} /{saveInfo.player?.maxHealth || 0}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -191,18 +169,13 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
 
             {/* Action Buttons */}
             <div className="space-y-4">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                className="w-full"
-                onClick={handleSave}
-              >
+              <Button variant="primary" size="lg" className="w-full" onClick={handleSave}>
                 💾 Sauvegarder
               </Button>
 
-              <Button 
-                variant="success" 
-                size="lg" 
+              <Button
+                variant="success"
+                size="lg"
                 className="w-full"
                 disabled={!saveExists}
                 onClick={handleLoad}
@@ -210,16 +183,14 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
                 📂 Charger
               </Button>
 
-              <Button 
-                variant={confirmDelete ? 'danger' : 'outline'} 
-                size="lg" 
+              <Button
+                variant={confirmDelete ? 'danger' : 'outline'}
+                size="lg"
                 className="w-full"
                 disabled={!saveExists}
                 onClick={handleDelete}
               >
-                {confirmDelete 
-                  ? '⚠️ Confirmer la suppression?' 
-                  : '🗑️ Supprimer la sauvegarde'}
+                {confirmDelete ? '⚠️ Confirmer la suppression?' : '🗑️ Supprimer la sauvegarde'}
               </Button>
             </div>
 
@@ -229,9 +200,11 @@ const SaveLoadMenu = ({ isOpen, onClose }) => {
                 {...AnimationPresets.fadeIn}
                 className={`
                   mt-4 p-3 rounded-md text-center
-                  ${actionResult.type === 'success' 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-red-600 text-white'}
+                  ${
+                    actionResult.type === 'success'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-red-600 text-white'
+                  }
                 `}
               >
                 {actionResult.message}

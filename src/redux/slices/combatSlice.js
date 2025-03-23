@@ -34,6 +34,7 @@ const combatSlice = createSlice({
     setEnemy: (state, action) => {
       state.enemy = action.payload;
     },
+
     dealHand: (state) => {
       console.log('Début dealHand - État initial:', {
         deckLength: state.deck.length,
@@ -43,33 +44,18 @@ const combatSlice = createSlice({
         selectedCards: state.selectedCards,
       });
 
-      // Garder les cartes non sélectionnées du tour précédent
-      const keptCards = [];
-
-      // Vérifier si nous avons des cartes à garder
-      if (state.hand.length > 0) {
-        // Sélectionner les cartes qui ne sont pas dans selectedCards (non utilisées)
-        for (let i = 0; i < state.hand.length; i++) {
-          const shouldKeep = !state.selectedCards.includes(i);
-          if (shouldKeep) {
-            // S'assurer que la carte n'est pas marquée comme sélectionnée
-            const card = { ...state.hand[i], isSelected: false };
-            keptCards.push(card);
-          } else {
-            // Ajouter les cartes utilisées à la pile de défausse
-            state.discard.push(state.hand[i]);
-          }
+      // Conserver toutes les cartes de la main actuelle pour la défausse si on est en phase 'result'
+      // (c'est-à-dire après une attaque)
+      if (state.turnPhase === 'result') {
+        // Ajouter la main actuelle à la défausse (y compris les cartes non utilisées)
+        if (state.hand && state.hand.length > 0) {
+          state.discard = [...state.discard, ...state.hand];
+          state.hand = [];
         }
-
-        console.log(
-          `Gardé ${keptCards.length} cartes, défaussé ${state.selectedCards.length} cartes`
-        );
-      } else {
-        console.log('Aucune carte à garder, distribution complète');
       }
 
-      // Nombre de nouvelles cartes à tirer
-      const drawCount = 7 - keptCards.length;
+      // Nombre de cartes à piocher (une main complète)
+      const drawCount = 7;
       console.log(`Besoin de tirer ${drawCount} nouvelles cartes`);
 
       // Si le deck est vide ou n'a pas assez de cartes, recréer un deck
@@ -112,14 +98,8 @@ const combatSlice = createSlice({
         }
       }
 
-      // Création de la nouvelle main avec les cartes conservées et les nouvelles cartes
-      let newHand = [...keptCards, ...drawnCards];
-      console.log(
-        `Nouvelle main créée avec ${newHand.length} cartes (${keptCards.length} conservées + ${drawnCards.length} nouvelles)`
-      );
-
       // Mettre à jour la main
-      state.hand = newHand;
+      state.hand = drawnCards;
 
       // Retirer les cartes tirées du deck
       state.deck = state.deck.slice(drawCount);

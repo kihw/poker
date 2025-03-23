@@ -1,4 +1,4 @@
-// src/components/card/Hand.jsx - Corrigé et optimisé
+// src/components/card/Hand.jsx - Version corrigée pour la sélection des cartes
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Card from './Card'; // Import du composant Card standard
@@ -20,7 +20,7 @@ const Hand = ({
       return [];
     }
     // Filtrer les cartes invalides
-    return cards.filter(card => card && typeof card === 'object');
+    return cards.filter((card) => card && typeof card === 'object');
   }, [cards]);
 
   // Animations pour les cartes
@@ -113,11 +113,7 @@ const Hand = ({
 
   // Rendu sécurisé en cas d'absence de cartes
   if (!validCards.length) {
-    return (
-      <div className="py-6 text-center text-gray-400">
-        Aucune carte disponible
-      </div>
-    );
+    return <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>;
   }
 
   return (
@@ -129,9 +125,7 @@ const Hand = ({
           className="bg-gray-800 hover:bg-gray-700 text-sm text-white rounded px-3 py-1 flex items-center"
         >
           <span className="mr-2">Tri:</span>
-          <span className="font-medium">
-            {sortByValue ? 'Par valeur' : 'Par couleur'}
-          </span>
+          <span className="font-medium">{sortByValue ? 'Par valeur' : 'Par couleur'}</span>
         </button>
       </div>
 
@@ -145,12 +139,16 @@ const Hand = ({
           // Utiliser l'index original stocké lors du tri
           const originalIndex = card.originalIndex;
 
+          // Déterminer si cette carte est désactivée (non sélectionnable)
+          const isDisabled =
+            !card.isSelected && selectedCount >= maxSelectable && selectionMode === 'attack';
+
           return (
             <motion.div
               key={getCardKey(card, originalIndex)}
               variants={cardAnimation}
               whileHover={{
-                y: -15,
+                y: isDisabled ? 0 : -15,
                 transition: { duration: 0.2 },
               }}
               onHoverStart={() => setHoverIndex(originalIndex)}
@@ -164,11 +162,7 @@ const Hand = ({
                 isHighlighted={bestHandCards.includes(originalIndex)}
                 onToggleSelect={() => handleCardSelect(originalIndex)}
                 selectionType={selectionMode}
-                disabled={
-                  !card.isSelected &&
-                  selectedCount >= maxSelectable &&
-                  selectionMode === 'attack'
-                }
+                disabled={isDisabled}
                 rarity={card.rarity || 'common'}
               />
             </motion.div>
@@ -178,13 +172,13 @@ const Hand = ({
 
       {/* Instructions */}
       {selectionMode === 'attack' && (
-        <div className="text-center text-sm text-gray-400 mt-4">
-          Sélectionnez 1 à 5 cartes pour attaquer
+        <div className="text-center text-sm text-gray-300 mt-4">
+          Sélectionnez 1 à {maxSelectable} cartes pour attaquer
         </div>
       )}
       {selectionMode === 'discard' && (
-        <div className="text-center text-sm text-gray-400 mt-4">
-          Sélectionnez les cartes à défausser
+        <div className="text-center text-sm text-gray-300 mt-4">
+          Sélectionnez jusqu'à {maxSelectable} cartes à défausser
         </div>
       )}
 
