@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { makeEventChoice } from '../../redux/thunks/eventThunks';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
-import { COLORS } from '../ui/DesignSystem';
+import { DESIGN_TOKENS } from '../ui/DesignSystem';
 
 const EventEncounter = ({ event, onClose }) => {
   const dispatch = useDispatch();
