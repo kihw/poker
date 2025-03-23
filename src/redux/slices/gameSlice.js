@@ -6,6 +6,10 @@ const initialState = {
   currentFloor: 1,
   maxFloors: 10,
   gamePhase: 'exploration', // combat, reward, shop, rest, event, gameOver, exploration
+  previousPhase: null,
+  exploreEnabled: true,
+  collectionAccessLevel: 'full', // 'full', 'readonly', 'disabled'
+  shopAccessible: true,
   isGameOver: false,
   timestamp: Date.now(),
   tutorialStep: 0,
@@ -24,57 +28,36 @@ const gameSlice = createSlice({
   initialState,
   reducers: {
     setGamePhase: (state, action) => {
+      // Store previous phase before changing
+      state.previousPhase = state.gamePhase;
       state.gamePhase = action.payload;
-      // Gérer les transitions de phase ici
-      if (action.payload === 'gameOver') {
-        state.isGameOver = true;
-      }
-    },
-    incrementStage: (state) => {
-      state.stage += 1;
-    },
-    incrementFloor: (state) => {
-      state.currentFloor += 1;
-      if (state.currentFloor > state.maxFloors) {
-        state.currentFloor = state.maxFloors;
-      }
-    },
-    updateStats: (state, action) => {
-      const { type, value } = action.payload;
-      if (state.stats[type] !== undefined) {
-        state.stats[type] += value;
-      }
-    },
-    setTutorialStep: (state, action) => {
-      state.tutorialStep = action.payload;
-    },
-    completeTutorial: (state) => {
-      state.showTutorial = false;
-      localStorage.setItem('tutorialCompleted', 'true');
-    },
-    resetGame: () => initialState,
-    // Ajouter le handler pour charger les données sauvegardées
-    LOAD_SAVED_DATA: (state, action) => {
-      const savedData = action.payload;
 
-      if (savedData) {
-        // Mettre à jour les propriétés de base
-        if (savedData.stage) state.stage = savedData.stage;
-        if (savedData.currentFloor) state.currentFloor = savedData.currentFloor;
-        if (savedData.maxFloors) state.maxFloors = savedData.maxFloors;
-        if (savedData.gamePhase) state.gamePhase = savedData.gamePhase;
-        state.timestamp = Date.now(); // Toujours utiliser la date actuelle
-
-        // Mettre à jour les statistiques si elles existent
-        if (savedData.stats) {
-          Object.keys(savedData.stats).forEach((statKey) => {
-            if (state.stats.hasOwnProperty(statKey)) {
-              state.stats[statKey] = savedData.stats[statKey];
-            }
-          });
-        }
+      // Update access levels based on game phase
+      switch (action.payload) {
+        case 'combat':
+          state.exploreEnabled = false;
+          state.collectionAccessLevel = 'readonly';
+          state.shopAccessible = false;
+          break;
+        case 'exploration':
+          state.exploreEnabled = true;
+          state.collectionAccessLevel = 'full';
+          state.shopAccessible = true;
+          break;
+        case 'gameOver':
+          state.isGameOver = true;
+          state.exploreEnabled = false;
+          state.collectionAccessLevel = 'disabled';
+          state.shopAccessible = false;
+          break;
+        default:
+          // For shop, rest, event phases
+          state.exploreEnabled = false;
+          state.collectionAccessLevel = 'full';
+          state.shopAccessible = false;
       }
     },
+    // ... (other existing reducers)
   },
 });
 
