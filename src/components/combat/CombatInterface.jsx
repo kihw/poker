@@ -35,7 +35,7 @@ import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thu
 const CombatInterface = () => {
   const dispatch = useDispatch();
 
-  // Selectors with useSelector hooks - optimized for performance
+  // Selectors avec useSelector hooks - optimisés pour la performance
   const enemy = useSelector((state) => state.combat.enemy);
   const hand = useSelector((state) => state.combat.hand);
   const selectedCards = useSelector((state) => state.combat.selectedCards);
@@ -46,7 +46,7 @@ const CombatInterface = () => {
   const actionMode = useSelector((state) => state.combat.actionMode);
   const player = useSelector((state) => state.player);
 
-  // Card Selection Handler - memoized with useCallback
+  // Card Selection Handler - mémorisé avec useCallback
   const handleCardSelection = useCallback(
     (index) => {
       dispatch(toggleCardSelection(index));
@@ -54,15 +54,7 @@ const CombatInterface = () => {
     [dispatch]
   );
 
-  // Action Selection Handler - memoized with useCallback
-  const handleActionSelect = useCallback(
-    (action) => {
-      dispatch(setActionMode(action));
-    },
-    [dispatch]
-  );
-
-  // Attack Handler - memoized with useCallback
+  // Attack Handler - mémorisé avec useCallback
   const handleAttack = useCallback(async () => {
     if (selectedCards.length === 0) return;
 
@@ -83,19 +75,37 @@ const CombatInterface = () => {
     }
   }, [dispatch, selectedCards, enemy]);
 
-  // Next Hand Handler - memoized with useCallback
-  const handleNextHand = useCallback(() => {
-    dispatch(dealHand());
-  }, [dispatch]);
-
-  // Discard Handler - memoized with useCallback
+  // Discard Handler - mémorisé avec useCallback
   const handleDiscard = useCallback(() => {
     if (selectedCards.length > 0) {
       dispatch(discardCards(selectedCards));
     }
   }, [dispatch, selectedCards]);
 
-  // Best Hand Cards - memoized with useMemo
+  // Action Selection Handler - mémorisé avec useCallback
+  // IMPORTANT: Cette définition doit venir APRÈS handleAttack et handleDiscard
+  const handleActionSelect = useCallback(
+    (action) => {
+      dispatch(setActionMode(action));
+
+      // Si l'action est "attack", on attaque immédiatement
+      if (action === 'attack') {
+        handleAttack();
+      }
+      // Si l'action est "discard", on défausse immédiatement
+      else if (action === 'discard') {
+        handleDiscard();
+      }
+    },
+    [dispatch, handleAttack, handleDiscard]
+  );
+
+  // Next Hand Handler - mémorisé avec useCallback
+  const handleNextHand = useCallback(() => {
+    dispatch(dealHand());
+  }, [dispatch]);
+
+  // Best Hand Cards - mémorisé avec useMemo
   const bestHandCards = useMemo(() => {
     return handResult ? handResult.cards.map((card) => hand.indexOf(card)) : [];
   }, [handResult, hand]);
@@ -163,38 +173,6 @@ const CombatInterface = () => {
               ) : (
                 <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
               )}
-
-              {/* Action buttons based on selected mode */}
-              <AnimatePresence>
-                {actionMode === 'attack' && selectedCards.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-4 flex justify-center"
-                  >
-                    <Button variant="primary" onClick={handleAttack} className="px-8 py-3">
-                      <span className="mr-2">⚔️</span>
-                      Attaquer avec {selectedCards.length} carte
-                      {selectedCards.length > 1 ? 's' : ''}
-                    </Button>
-                  </motion.div>
-                )}
-
-                {actionMode === 'discard' && selectedCards.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-4 flex justify-center"
-                  >
-                    <Button variant="danger" onClick={handleDiscard} className="px-8 py-3">
-                      <span className="mr-2">🔄</span>
-                      Défausser {selectedCards.length} carte{selectedCards.length > 1 ? 's' : ''}
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </>
           )}
         </Card>
@@ -237,5 +215,4 @@ const CombatInterface = () => {
   );
 };
 
-// Optimize further by memoizing the entire component
 export default React.memo(CombatInterface);

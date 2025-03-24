@@ -1,11 +1,11 @@
-// src/components/card/Card.jsx - Enhanced Design System Card
+// src/components/card/Card.jsx - Design de sélection modifié
 import React from 'react';
 import { motion } from 'framer-motion';
 import { DESIGN_TOKENS } from '../ui/DesignSystem';
 
 // Définit ces constantes localement puisqu'elles ne sont pas exportées par DesignSystem
 const COLORS = {
-  primary: { main: '#3B82F6', light: '#60A5FA', dark: '#2563EB' },
+  primary: { main: '#26bf1b', light: '#60A5FA', dark: '#2563EB' },
   danger: { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C' },
 };
 
@@ -15,7 +15,7 @@ const getRarityColor = (rarity) => {
     case 'common':
       return '#9CA3AF'; // gris
     case 'uncommon':
-      return '#60A5FA'; // bleu
+      return '#60A5FA'; // bleu clair
     case 'rare':
       return '#8B5CF6'; // violet
     case 'epic':
@@ -151,7 +151,7 @@ const Card = ({
         </div>
       </motion.div>
 
-      {/* Selection Indicator */}
+      {/* Selection Indicator*/}
       {isSelected && (
         <motion.div
           initial={{ opacity: 0, y: 5 }}
@@ -159,11 +159,11 @@ const Card = ({
           transition={{ duration: 0.2 }}
           className="absolute -bottom-2 left-0 right-0 text-xs text-center font-bold py-0.5 rounded-b-md"
           style={{
-            backgroundColor: selectionType === 'attack' ? COLORS.primary.main : COLORS.danger.main,
+            backgroundColor: COLORS.primary.main,
             color: 'white',
           }}
         >
-          {selectionType === 'attack' ? 'Attack' : 'Discard'}
+          ✔
         </motion.div>
       )}
     </motion.div>
