@@ -1,4 +1,4 @@
-// src/components/combat/CombatInterface.jsx - Avec procédure d'enchaînement
+// src/components/combat/CombatInterface.jsx - Version mise à jour pour le nouveau système de sélection
 import React, { useCallback, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,7 +27,7 @@ import {
   toggleCardSelection,
   dealHand,
   discardCards,
-  toggleDiscardMode,
+  setActionMode,
   setTurnPhase,
 } from '../../redux/slices/combatSlice';
 import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thunks/combatThunks';
@@ -43,14 +43,21 @@ const CombatInterface = React.memo(() => {
   const handResult = useSelector((state) => state.combat.handResult);
   const activeBonusCards = useSelector((state) => state.bonusCards.active);
   const discardLimit = useSelector((state) => state.combat.discardLimit);
-  const discardUsed = useSelector((state) => state.combat.discardUsed);
-  const discardMode = useSelector((state) => state.combat.discardMode);
+  const actionMode = useSelector((state) => state.combat.actionMode); // Nouveau selector
   const player = useSelector((state) => state.player);
 
   // Card Selection Handler
   const handleCardSelection = useCallback(
     (index) => {
       dispatch(toggleCardSelection(index));
+    },
+    [dispatch]
+  );
+
+  // Action Selection Handler (nouveau)
+  const handleActionSelect = useCallback(
+    (action) => {
+      dispatch(setActionMode(action));
     },
     [dispatch]
   );
@@ -88,11 +95,6 @@ const CombatInterface = React.memo(() => {
     }
   }, [dispatch, selectedCards]);
 
-  // Toggle Discard Mode Handler
-  const handleToggleDiscardMode = useCallback(() => {
-    dispatch(toggleDiscardMode());
-  }, [dispatch]);
-
   // Best Hand Cards Memoization
   const bestHandCards = useMemo(() => {
     return handResult ? handResult.cards.map((card) => hand.indexOf(card)) : [];
@@ -103,8 +105,7 @@ const CombatInterface = React.memo(() => {
     handLength: hand?.length || 0,
     enemyName: enemy?.name,
     phase: turnPhase,
-    discardMode,
-    discardUsed,
+    actionMode,
     selectedCards: selectedCards.length,
     playerHealth: player.health,
     playerMaxHealth: player.maxHealth,
@@ -161,68 +162,45 @@ const CombatInterface = React.memo(() => {
                 <Hand
                   cards={hand}
                   onToggleSelect={handleCardSelection}
+                  onActionSelect={handleActionSelect}
                   bestHandCards={bestHandCards}
-                  maxSelectable={discardMode ? Math.min(discardLimit, 2) : 5}
-                  selectionMode={discardMode ? 'discard' : 'attack'}
+                  maxSelectable={5}
                 />
               ) : (
                 <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
               )}
 
-              {/* Attack and Discard Controls with Motion */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="flex justify-between mt-4"
-              >
-                {/* Mode de défausse */}
-                {discardMode ? (
-                  <>
-                    <Tooltip
-                      content={`Défaussez jusqu'à ${Math.min(discardLimit, 2)} cartes et piochez-en autant`}
-                    >
-                      <Button
-                        variant="danger"
-                        onClick={handleDiscard}
-                        disabled={selectedCards.length === 0}
-                      >
-                        <span className="mr-2">🔄</span> Défausser {selectedCards.length} carte(s)
-                      </Button>
-                    </Tooltip>
-                    <Button variant="outline" onClick={handleToggleDiscardMode}>
-                      Annuler la défausse
+              {/* Boutons d'action basés sur le mode sélectionné */}
+              <AnimatePresence>
+                {actionMode === 'attack' && selectedCards.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-4 flex justify-center"
+                  >
+                    <Button variant="primary" onClick={handleAttack} className="px-8 py-3">
+                      <span className="mr-2">⚔️</span>
+                      Attaquer avec {selectedCards.length} carte
+                      {selectedCards.length > 1 ? 's' : ''}
                     </Button>
-                  </>
-                ) : (
-                  <>
-                    <Tooltip content="Attack with selected cards">
-                      <Button
-                        variant="primary"
-                        onClick={handleAttack}
-                        disabled={selectedCards.length === 0}
-                      >
-                        <span className="mr-2">⚔️</span> Attaquer
-                      </Button>
-                    </Tooltip>
-                    <Tooltip
-                      content={
-                        discardUsed
-                          ? 'Vous avez déjà défaussé ce tour'
-                          : `Défaussez jusqu'à ${Math.min(discardLimit, 2)} cartes`
-                      }
-                    >
-                      <Button
-                        variant="outline"
-                        onClick={handleToggleDiscardMode}
-                        disabled={discardUsed}
-                      >
-                        {discardUsed ? 'Défausse utilisée' : 'Défausser des cartes'}
-                      </Button>
-                    </Tooltip>
-                  </>
+                  </motion.div>
                 )}
-              </motion.div>
+
+                {actionMode === 'discard' && selectedCards.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-4 flex justify-center"
+                  >
+                    <Button variant="danger" onClick={handleDiscard} className="px-8 py-3">
+                      <span className="mr-2">🔄</span>
+                      Défausser {selectedCards.length} carte{selectedCards.length > 1 ? 's' : ''}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </>
           )}
         </Card>

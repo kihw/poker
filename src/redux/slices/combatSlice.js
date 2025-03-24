@@ -1,4 +1,4 @@
-// src/redux/slices/combatSlice.js
+// src/redux/slices/combatSlice.js - Modifié pour le nouveau système de sélection
 import { createSlice } from '@reduxjs/toolkit';
 import { createDeck, shuffleDeck, drawCards } from '../../core/deck.js';
 import {
@@ -16,8 +16,7 @@ const initialState = {
   discard: [],
   turnPhase: 'draw', // draw, select, result
   discardLimit: 2,
-  discardUsed: false,
-  discardMode: false,
+  actionMode: null, // Nouveau: null, 'attack', 'discard'
   bestHandCards: [],
   handResult: null,
   combatLog: [],
@@ -108,8 +107,7 @@ const combatSlice = createSlice({
       state.selectedCards = [];
       state.bestHandCards = [];
       state.handResult = null;
-      state.discardUsed = false;
-      state.discardMode = false;
+      state.actionMode = null; // Réinitialiser le mode d'action
 
       // Passer en phase "select"
       state.turnPhase = 'select';
@@ -121,6 +119,7 @@ const combatSlice = createSlice({
         phase: state.turnPhase,
       });
     },
+
     toggleCardSelection: (state, action) => {
       const index = action.payload;
       console.log('toggleCardSelection appelé, index:', index, 'phase:', state.turnPhase);
@@ -137,44 +136,33 @@ const combatSlice = createSlice({
         return;
       }
 
-      // Si en mode défausse, gérer la sélection différemment
-      if (state.discardMode) {
-        // Compter le nombre actuel de cartes sélectionnées
-        const currentDiscardCount = state.hand.filter((card) => card.isSelected).length;
+      // Si la carte est déjà sélectionnée, on la désélectionne toujours
+      if (state.hand[index].isSelected) {
+        state.hand[index].isSelected = false;
 
-        // Si la carte est déjà sélectionnée, on permet toujours de la désélectionner
-        if (state.hand[index].isSelected) {
-          state.hand[index].isSelected = false;
-          console.log('Carte', index, 'désélectionnée en mode défausse');
+        // Si la carte désélectionnée était la seule sélectionnée, réinitialiser le mode d'action
+        const selectedCount = state.hand.filter((card) => card.isSelected).length;
+        if (selectedCount === 0) {
+          state.actionMode = null;
         }
-        // Sinon, vérifier si on a atteint la limite
-        else if (currentDiscardCount >= state.discardLimit) {
-          console.log('Limite de défausse atteinte:', currentDiscardCount, '/', state.discardLimit);
-          return; // Empêcher la sélection si la limite est déjà atteinte
-        }
-        // On peut sélectionner la carte
-        else {
+      }
+      // Sinon, gestion de la sélection en fonction du mode
+      else {
+        // Si aucune carte sélectionnée et aucun mode d'action, permettre la sélection
+        if (state.selectedCards.length === 0) {
           state.hand[index].isSelected = true;
-          console.log('Carte', index, 'sélectionnée en mode défausse');
         }
-      } else {
-        // Mode attaque normal (limiter à 5 cartes)
-        const currentSelectedCount = state.hand.filter((card) => card.isSelected).length;
-
-        // Si la carte est déjà sélectionnée, on permet toujours de la désélectionner
-        if (state.hand[index].isSelected) {
-          state.hand[index].isSelected = false;
-          console.log('Carte', index, 'désélectionnée');
+        // Si mode attaque, vérifier limite de 5 cartes
+        else if (state.actionMode === 'attack') {
+          if (state.selectedCards.length < 5) {
+            state.hand[index].isSelected = true;
+          }
         }
-        // Sinon, vérifier si on a atteint la limite de 5 cartes
-        else if (currentSelectedCount >= 5) {
-          console.log("Limite de 5 cartes atteinte pour l'attaque");
-          return; // Ne pas permettre plus de 5 cartes
-        }
-        // On peut sélectionner la carte
-        else {
-          state.hand[index].isSelected = true;
-          console.log('Carte', index, 'sélectionnée');
+        // Si mode défausse, vérifier limite de défausse
+        else if (state.actionMode === 'discard') {
+          if (state.selectedCards.length < state.discardLimit) {
+            state.hand[index].isSelected = true;
+          }
         }
       }
 
@@ -185,6 +173,13 @@ const combatSlice = createSlice({
 
       console.log('selectedCards mis à jour:', state.selectedCards);
     },
+
+    // Nouveau reducer pour définir le mode d'action
+    setActionMode: (state, action) => {
+      state.actionMode = action.payload;
+      console.log(`Mode d'action défini à: ${action.payload}`);
+    },
+
     evaluateSelectedHand: (state, action) => {
       if (state.selectedCards.length < 1 || state.enemy === null) return;
 
@@ -235,7 +230,10 @@ const combatSlice = createSlice({
 
       // Passer en phase "result"
       state.turnPhase = 'result';
+      // Réinitialiser le mode d'action après l'attaque
+      state.actionMode = null;
     },
+
     discardCards: (state, action) => {
       const indices = action.payload;
       console.log('discardCards appelé avec indices:', indices);
@@ -247,14 +245,8 @@ const combatSlice = createSlice({
       }
 
       // Vérifier que l'on n'essaie pas de défausser plus que la limite
-      if (indices.length > state.discardLimit) {
-        console.log(`Limite de défausse dépassée: ${indices.length}/${state.discardLimit}`);
-        // On ne garde que les premières cartes jusqu'à la limite
-        indices = indices.slice(0, state.discardLimit);
-      }
-
-      // Marquer la défausse comme utilisée
-      state.discardUsed = true;
+      const indicesToUse =
+        indices.length > state.discardLimit ? indices.slice(0, state.discardLimit) : indices;
 
       // Sauvegarder les cartes défaussées dans la pile de défausse
       const discardedCards = [];
@@ -263,7 +255,7 @@ const combatSlice = createSlice({
       const newHand = [...state.hand];
 
       // Trier les indices par ordre décroissant pour éviter les problèmes lorsqu'on supprime des éléments
-      const sortedIndices = [...indices].sort((a, b) => b - a);
+      const sortedIndices = [...indicesToUse].sort((a, b) => b - a);
 
       // Supprimer les cartes de la nouvelle main et les ajouter à la pile de défausse
       sortedIndices.forEach((index) => {
@@ -314,8 +306,8 @@ const combatSlice = createSlice({
       // Reset des cartes sélectionnées
       state.selectedCards = [];
 
-      // Désactiver le mode défausse
-      state.discardMode = false;
+      // Réinitialiser le mode d'action
+      state.actionMode = null;
 
       // Rester en phase de sélection
       state.turnPhase = 'select';
@@ -370,78 +362,61 @@ const combatSlice = createSlice({
       state.playerDamagedLastTurn = damage > 0;
       console.log('playerDamagedLastTurn mis à jour:', state.playerDamagedLastTurn);
     },
+
     addToCombatLog: (state, action) => {
       state.combatLog.unshift(action.payload);
     },
+
     setTurnPhase: (state, action) => {
       state.turnPhase = action.payload;
     },
-    toggleDiscardMode: (state) => {
-      // Ne pas permettre le mode défausse s'il a déjà été utilisé ce tour
-      if (state.discardUsed && !state.discardMode) {
-        console.log('Défausse déjà utilisée ce tour');
-        return;
-      }
 
-      // Basculer le mode défausse
-      state.discardMode = !state.discardMode;
-      console.log(`Mode défausse ${state.discardMode ? 'activé' : 'désactivé'}`);
-
-      // Réinitialiser les sélections lors du changement de mode
-      state.selectedCards = [];
-      state.hand.forEach((card) => {
-        card.isSelected = false;
-      });
-
-      // Si le mode défausse est activé, afficher le nombre de cartes pouvant être défaussées
-      if (state.discardMode) {
-        console.log(`Vous pouvez défausser jusqu'à ${state.discardLimit} cartes`);
-      }
-    },
     setPendingDamageBonus: (state, action) => {
       state.pendingDamageBonus = action.payload;
     },
+
     setPendingDamageMultiplier: (state, action) => {
       state.pendingDamageMultiplier = action.payload;
     },
+
     setInvulnerableNextTurn: (state, action) => {
       state.invulnerableNextTurn = action.payload;
     },
+
     resetCombatState: () => initialState,
-  },
 
-  startCombat: (state, action) => {
-    // Réinitialiser TOUS les états de combat à leurs valeurs initiales
-    // C'est crucial pour éviter les bugs entre les combats
-    state.enemy = action.payload;
-    state.hand = [];
-    state.selectedCards = [];
-    state.deck = shuffleDeck(createDeck());
-    state.discard = [];
-    state.turnPhase = 'draw'; // Toujours commencer en phase de tirage
-    state.discardLimit = 2;
-    state.discardUsed = false;
-    state.discardMode = false;
-    state.bestHandCards = [];
-    state.handResult = null;
-    state.pendingDamageBonus = 0;
-    state.pendingDamageMultiplier = 1;
-    state.invulnerableNextTurn = false;
-    state.playerDamagedLastTurn = false;
+    startCombat: (state, action) => {
+      // Réinitialiser TOUS les états de combat à leurs valeurs initiales
+      // C'est crucial pour éviter les bugs entre les combats
+      state.enemy = action.payload;
+      state.hand = [];
+      state.selectedCards = [];
+      state.deck = shuffleDeck(createDeck());
+      state.discard = [];
+      state.turnPhase = 'draw'; // Toujours commencer en phase de tirage
+      state.discardLimit = 2;
+      state.actionMode = null; // Réinitialiser le mode d'action
+      state.bestHandCards = [];
+      state.handResult = null;
+      state.pendingDamageBonus = 0;
+      state.pendingDamageMultiplier = 1;
+      state.invulnerableNextTurn = false;
+      state.playerDamagedLastTurn = false;
 
-    // Journal de combat
-    state.combatLog = [`Combat début! Vous affrontez un ${action.payload.name}.`];
+      // Journal de combat
+      state.combatLog = [`Combat début! Vous affrontez un ${action.payload.name}.`];
 
-    console.log(
-      'Combat complètement réinitialisé, ennemi:',
-      action.payload.name,
-      'phase:',
-      state.turnPhase,
-      'deck:',
-      state.deck.length,
-      'main:',
-      state.hand.length
-    );
+      console.log(
+        'Combat complètement réinitialisé, ennemi:',
+        action.payload.name,
+        'phase:',
+        state.turnPhase,
+        'deck:',
+        state.deck.length,
+        'main:',
+        state.hand.length
+      );
+    },
   },
 });
 
@@ -449,13 +424,13 @@ export const {
   setEnemy,
   dealHand,
   toggleCardSelection,
+  setActionMode, // Nouvelle action exportée
   evaluateSelectedHand,
   discardCards,
   enemyAction,
   addToCombatLog,
   startCombat,
   setTurnPhase,
-  toggleDiscardMode,
   setPendingDamageBonus,
   setPendingDamageMultiplier,
   setInvulnerableNextTurn,

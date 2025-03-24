@@ -1,4 +1,4 @@
-// src/components/card/Hand.jsx - Version corrigée pour la sélection des cartes
+// src/components/card/Hand.jsx - Version mise à jour pour le nouveau système de sélection
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Card from './Card'; // Import du composant Card standard
@@ -8,10 +8,11 @@ const Hand = ({
   onToggleSelect,
   bestHandCards = [],
   maxSelectable = 5,
-  selectionMode = 'attack', // 'attack', 'discard', 'view'
+  onActionSelect, // Nouvelle prop pour gérer le choix d'action après sélection
 }) => {
   const [hoverIndex, setHoverIndex] = useState(null);
   const [sortByValue, setSortByValue] = useState(true); // true = valeur, false = couleur
+  const [selectionMode, setSelectionMode] = useState(null); // null = aucune sélection en cours
 
   // Validation pour éviter les erreurs
   const validCards = useMemo(() => {
@@ -48,13 +49,44 @@ const Hand = ({
   // Fonction pour gérer la sélection des cartes
   const handleCardSelect = useCallback(
     (index) => {
-      if (onToggleSelect && selectionMode !== 'view' && index >= 0 && index < validCards.length) {
+      if (onToggleSelect && index >= 0 && index < validCards.length) {
         // Log pour déboguer la sélection
         console.log('Selecting card at index:', index);
-        onToggleSelect(index);
+
+        // Si une carte est déjà sélectionnée, on la désélectionne
+        if (validCards[index].isSelected) {
+          onToggleSelect(index);
+          setSelectionMode(null); // Réinitialiser le mode de sélection
+          return;
+        }
+
+        // Si aucune carte n'est sélectionnée et qu'on clique sur une nouvelle carte
+        if (selectedCount === 0) {
+          onToggleSelect(index);
+          // Afficher les options d'action (attaque/défausse)
+          setSelectionMode('choosing');
+        }
+        // Si on est en mode attaque ou défausse, on peut sélectionner d'autres cartes
+        else if (selectionMode === 'attack' && selectedCount < maxSelectable) {
+          onToggleSelect(index);
+        } else if (selectionMode === 'discard' && selectedCount < 2) {
+          // Limite de 2 pour défausse
+          onToggleSelect(index);
+        }
       }
     },
-    [onToggleSelect, selectionMode, validCards.length]
+    [onToggleSelect, validCards, selectedCount, maxSelectable, selectionMode]
+  );
+
+  // Fonction pour choisir l'action après sélection d'une carte
+  const handleActionChoice = useCallback(
+    (action) => {
+      setSelectionMode(action);
+      if (onActionSelect) {
+        onActionSelect(action);
+      }
+    },
+    [onActionSelect]
   );
 
   // Fonction pour basculer entre tri par valeur et tri par couleur
@@ -129,6 +161,24 @@ const Hand = ({
         </button>
       </div>
 
+      {/* Menu de choix d'action après sélection de carte */}
+      {selectionMode === 'choosing' && selectedCount > 0 && (
+        <div className="mb-4 flex justify-center space-x-4">
+          <button
+            onClick={() => handleActionChoice('attack')}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            ⚔️ Attaquer
+          </button>
+          <button
+            onClick={() => handleActionChoice('discard')}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          >
+            🔄 Défausser
+          </button>
+        </div>
+      )}
+
       <motion.div
         className="flex justify-center items-end flex-wrap gap-2"
         variants={container}
@@ -141,7 +191,10 @@ const Hand = ({
 
           // Déterminer si cette carte est désactivée (non sélectionnable)
           const isDisabled =
-            !card.isSelected && selectedCount >= maxSelectable && selectionMode === 'attack';
+            !card.isSelected &&
+            selectedCount > 0 &&
+            selectionMode !== 'attack' &&
+            selectionMode !== 'discard';
 
           return (
             <motion.div
@@ -161,7 +214,7 @@ const Hand = ({
                 isSelected={card.isSelected}
                 isHighlighted={bestHandCards.includes(originalIndex)}
                 onToggleSelect={() => handleCardSelect(originalIndex)}
-                selectionType={selectionMode}
+                selectionType={selectionMode === 'discard' ? 'discard' : 'attack'}
                 disabled={isDisabled}
                 rarity={card.rarity || 'common'}
               />
@@ -178,7 +231,12 @@ const Hand = ({
       )}
       {selectionMode === 'discard' && (
         <div className="text-center text-sm text-gray-300 mt-4">
-          Sélectionnez jusqu'à {maxSelectable} cartes à défausser
+          Sélectionnez jusqu'à 2 cartes à défausser
+        </div>
+      )}
+      {(!selectionMode || selectionMode === 'choosing') && (
+        <div className="text-center text-sm text-gray-300 mt-4">
+          Sélectionnez une carte puis choisissez une action
         </div>
       )}
 
@@ -186,6 +244,7 @@ const Hand = ({
       {process.env.NODE_ENV === 'development' && (
         <div className="text-center text-xs text-yellow-400 mt-2">
           Cartes sélectionnées: {validCards.filter((c) => c.isSelected).length}
+          {selectionMode && ` (Mode: ${selectionMode})`}
         </div>
       )}
     </div>
