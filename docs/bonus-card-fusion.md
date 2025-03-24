@@ -1,3 +1,5 @@
+## **FONCTION A RETIRER DU JEU**
+
 ## **Fusion des cartes bonus – Fonctionnement complet**
 
 #### **1. Concept et déclenchement de la fusion**
