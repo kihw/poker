@@ -45,6 +45,33 @@ const BONUS_EFFECT_HANDLERS = {
     store.dispatch(addToCombatLog(`${card.name} réduira les dégâts subis de ${value} points`));
     return `${card.name} réduira les dégâts de ${value} points`;
   },
+  fusionEffect: (store, effect) => {
+    const { type, value } = effect;
+
+    if (type === 'damage') {
+      store.dispatch(setPendingDamageBonus(value));
+      store.dispatch(addToCombatLog(`Fusion de cartes: +${value} points de dégâts`));
+      return `Fusion de cartes: +${value} points de dégâts`;
+    } else if (type === 'damageMultiplier') {
+      store.dispatch(setPendingDamageMultiplier(value));
+      store.dispatch(addToCombatLog(`Fusion de cartes: Dégâts multipliés par ${value}`));
+      return `Fusion de cartes: Dégâts multipliés par ${value}`;
+    } else if (type === 'heal') {
+      store.dispatch(heal(value));
+      store.dispatch(addToCombatLog(`Fusion de cartes: Récupération de ${value} PV`));
+      return `Fusion de cartes: Récupération de ${value} PV`;
+    } else if (type === 'shield') {
+      store.dispatch(addShield(value));
+      store.dispatch(addToCombatLog(`Fusion de cartes: +${value} points de bouclier`));
+      return `Fusion de cartes: +${value} points de bouclier`;
+    } else if (type === 'invulnerable') {
+      store.dispatch(setInvulnerableNextTurn(true));
+      store.dispatch(addToCombatLog(`Fusion de cartes: Invulnérabilité au prochain tour`));
+      return `Fusion de cartes: Invulnérabilité au prochain tour`;
+    }
+
+    return null;
+  },
 };
 
 /**

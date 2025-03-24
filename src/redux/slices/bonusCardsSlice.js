@@ -354,7 +354,47 @@ const bonusCardsSlice = createSlice({
         }
       }
     },
+    setCardPlayingValues: (state, action) => {
+      const { cardId, cardValue, cardSuit } = action.payload;
 
+      // Trouver la carte dans la collection
+      const cardIndex = state.collection.findIndex((card) => card.id === cardId);
+
+      if (cardIndex !== -1) {
+        // Mettre à jour les valeurs de carte à jouer
+        state.collection[cardIndex].cardValue = cardValue;
+        state.collection[cardIndex].cardSuit = cardSuit;
+
+        // Mettre à jour également la carte active si elle est équipée
+        const activeIndex = state.active.findIndex((card) => card.id === cardId);
+        if (activeIndex !== -1) {
+          state.active[activeIndex].cardValue = cardValue;
+          state.active[activeIndex].cardSuit = cardSuit;
+        }
+
+        // Sauvegarder dans le localStorage
+        try {
+          localStorage.setItem('bonusCardCollection', JSON.stringify(state.collection));
+        } catch (error) {
+          console.error('Erreur lors de la sauvegarde de la collection:', error);
+        }
+      }
+    },
+
+    // Aussi, ajoutez un support pour fusionner des cartes bonus
+    fuseBonusCards: (state, action) => {
+      const { cardIds, effect } = action.payload;
+
+      // Marquer les cartes comme utilisées pour la fusion (pour éviter une utilisation multiple dans le même tour)
+      if (cardIds && cardIds.length > 0) {
+        cardIds.forEach((id) => {
+          const cardIndex = state.active.findIndex((card) => card.id === id);
+          if (cardIndex !== -1) {
+            state.active[cardIndex].fusedThisTurn = true;
+          }
+        });
+      }
+    },
     // Charger les données du localStorage
     loadFromLocalStorage: (state) => {
       try {

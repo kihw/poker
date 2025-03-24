@@ -1,4 +1,4 @@
-// src/data/bonus-cards.js
+// src/data/bonus-cards.js - Updated with playing card values
 
 export const CARD_RARITIES = {
   COMMON: 'common',
@@ -22,6 +22,9 @@ export const ALL_BONUS_CARDS = [
       value: 2,
       originalValue: 2,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '2',
+    cardSuit: 'hearts',
   },
   {
     id: 2,
@@ -35,6 +38,9 @@ export const ALL_BONUS_CARDS = [
       value: 3,
       originalValue: 3,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '3',
+    cardSuit: 'clubs',
   },
   {
     id: 3,
@@ -49,6 +55,9 @@ export const ALL_BONUS_CARDS = [
       value: 2,
       originalValue: 2,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '4',
+    cardSuit: 'diamonds',
   },
   {
     id: 4,
@@ -62,6 +71,9 @@ export const ALL_BONUS_CARDS = [
       value: 5,
       originalValue: 5,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '5',
+    cardSuit: 'spades',
   },
   {
     id: 5,
@@ -75,6 +87,9 @@ export const ALL_BONUS_CARDS = [
       value: 2,
       originalValue: 2,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '6',
+    cardSuit: 'hearts',
   },
 
   // Uncommon cards
@@ -90,6 +105,9 @@ export const ALL_BONUS_CARDS = [
       value: 5,
       originalValue: 5,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '7',
+    cardSuit: 'clubs',
   },
   {
     id: 11,
@@ -103,6 +121,9 @@ export const ALL_BONUS_CARDS = [
       value: 10,
       originalValue: 10,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '8',
+    cardSuit: 'diamonds',
   },
   {
     id: 12,
@@ -116,6 +137,9 @@ export const ALL_BONUS_CARDS = [
       value: 5,
       originalValue: 5,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '9',
+    cardSuit: 'spades',
   },
   {
     id: 13,
@@ -129,6 +153,9 @@ export const ALL_BONUS_CARDS = [
       value: 7,
       originalValue: 7,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '10',
+    cardSuit: 'hearts',
   },
   {
     id: 14,
@@ -142,6 +169,9 @@ export const ALL_BONUS_CARDS = [
       value: 8,
       originalValue: 8,
     },
+    // Valeur de carte à jouer associée
+    cardValue: 'J',
+    cardSuit: 'clubs',
   },
 
   // Rare cards
@@ -157,6 +187,9 @@ export const ALL_BONUS_CARDS = [
       value: 3,
       originalValue: 3,
     },
+    // Valeur de carte à jouer associée
+    cardValue: 'Q',
+    cardSuit: 'diamonds',
   },
   {
     id: 19,
@@ -170,6 +203,9 @@ export const ALL_BONUS_CARDS = [
       value: 3,
       originalValue: 3,
     },
+    // Valeur de carte à jouer associée
+    cardValue: 'K',
+    cardSuit: 'spades',
   },
   {
     id: 20,
@@ -183,6 +219,9 @@ export const ALL_BONUS_CARDS = [
       value: 15,
       originalValue: 15,
     },
+    // Valeur de carte à jouer associée
+    cardValue: 'A',
+    cardSuit: 'hearts',
   },
   {
     id: 21,
@@ -194,6 +233,9 @@ export const ALL_BONUS_CARDS = [
     bonus: {
       type: 'invulnerable',
     },
+    // Valeur de carte à jouer associée
+    cardValue: '2',
+    cardSuit: 'clubs',
   },
 
   // Epic cards
@@ -209,6 +251,9 @@ export const ALL_BONUS_CARDS = [
       value: 25,
       originalValue: 25,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '3',
+    cardSuit: 'diamonds',
   },
   {
     id: 26,
@@ -222,6 +267,9 @@ export const ALL_BONUS_CARDS = [
       value: 3,
       originalValue: 3,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '4',
+    cardSuit: 'spades',
   },
   {
     id: 27,
@@ -235,6 +283,9 @@ export const ALL_BONUS_CARDS = [
       value: 20,
       originalValue: 20,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '5',
+    cardSuit: 'hearts',
   },
 
   // Legendary cards
@@ -250,6 +301,9 @@ export const ALL_BONUS_CARDS = [
       value: 2,
       originalValue: 2,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '6',
+    cardSuit: 'clubs',
   },
   {
     id: 31,
@@ -263,5 +317,8 @@ export const ALL_BONUS_CARDS = [
       value: 1.5,
       originalValue: 1.5,
     },
+    // Valeur de carte à jouer associée
+    cardValue: '7',
+    cardSuit: 'diamonds',
   },
 ];
