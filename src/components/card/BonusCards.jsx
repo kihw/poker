@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { useCard } from '../../redux/slices/bonusCardsSlice';
+import { useCard } from '../../hooks/useCard'; // Changé pour importer depuis un hook
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 const BonusCards = () => {
@@ -80,11 +80,7 @@ const BonusCards = () => {
     const card = bonusCards[index];
 
     // Vérifier si la carte peut être utilisée
-    if (
-      card.effect !== 'active' ||
-      card.usesRemaining <= 0 ||
-      card.available === false
-    ) {
+    if (card.effect !== 'active' || card.usesRemaining <= 0 || card.available === false) {
       dispatch(
         setActionFeedback({
           message: 'Cette carte ne peut pas être utilisée actuellement',
@@ -94,8 +90,8 @@ const BonusCards = () => {
       return;
     }
 
-    // Dispatche l'action pour utiliser la carte
-    dispatch(useCard(index));
+    // Dispatch l'action useCard (définie dans thunks/bonusCardsThunks.js)
+    dispatch({ type: 'bonusCards/useCard', payload: index });
 
     // Feedback visuel
     dispatch(
@@ -130,19 +126,15 @@ const BonusCards = () => {
                             : 'hover:scale-105'
                         }`}
             disabled={
-              bonus.available === false ||
-              bonus.usesRemaining <= 0 ||
-              bonus.effect !== 'active'
+              bonus.available === false || bonus.usesRemaining <= 0 || bonus.effect !== 'active'
             }
             title={bonus.description}
             aria-label={`${bonus.name} - ${bonus.description} - ${bonus.effect === 'active' ? 'Cliquer pour utiliser' : 'Effet passif'}`}
             whileHover={{
-              scale:
-                bonus.effect === 'active' && bonus.usesRemaining > 0 ? 1.05 : 1,
+              scale: bonus.effect === 'active' && bonus.usesRemaining > 0 ? 1.05 : 1,
             }}
             whileTap={{
-              scale:
-                bonus.effect === 'active' && bonus.usesRemaining > 0 ? 0.95 : 1,
+              scale: bonus.effect === 'active' && bonus.usesRemaining > 0 ? 0.95 : 1,
             }}
           >
             <div className="flex items-center">
@@ -160,8 +152,8 @@ const BonusCards = () => {
 
       <div className="mt-2 text-xs text-gray-400">
         <p>
-          Les effets passifs (🔄) s'activent automatiquement. Cliquez sur les
-          effets actifs pour les utiliser.
+          Les effets passifs (🔄) s'activent automatiquement. Cliquez sur les effets actifs pour les
+          utiliser.
         </p>
       </div>
     </div>

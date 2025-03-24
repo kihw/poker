@@ -4,13 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { 
-  Button, 
-  Badge, 
-  Tooltip, 
-  Icons,
-  DESIGN_TOKENS 
-} from './DesignSystem';
+import { Button, Badge, Tooltip, Icons, DESIGN_TOKENS } from './DesignSystem';
 
 import PlayerStatus from '../combat/PlayerStatus';
 import Navigation from './Navigation';
@@ -19,6 +13,72 @@ import ActionFeedback from './ActionFeedback';
 
 // Performance and Design System Utilities
 import { performanceDebounce } from '../../utils/performance';
+
+// Composant GameHeader ajouté
+const GameHeader = React.memo(() => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Sélecteurs pour les statistiques du jeu
+  const stage = useSelector((state) => state.game.stage);
+  const gamePhase = useSelector((state) => state.game.gamePhase);
+  const playerStats = useSelector((state) => ({
+    health: state.player.health,
+    maxHealth: state.player.maxHealth,
+    gold: state.player.gold,
+    level: state.player.level,
+  }));
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: -50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between"
+    >
+      <div className="flex items-center">
+        <div className="mr-4">
+          <span className="text-2xl font-bold">Poker RPG</span>
+          <Badge variant="primary" className="ml-2">
+            Stage {stage}
+          </Badge>
+        </div>
+        <div className="text-sm text-gray-400">
+          {gamePhase === 'combat' && 'Combat en cours'}
+          {gamePhase === 'exploration' && 'Exploration'}
+          {gamePhase === 'shop' && 'Boutique'}
+          {gamePhase === 'rest' && 'Repos'}
+          {gamePhase === 'event' && 'Événement'}
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-3">
+        <Tooltip content="Points de vie">
+          <div className="flex items-center bg-gray-700 px-2 py-1 rounded">
+            <span className="text-red-500 mr-1">❤️</span>
+            <span>
+              {playerStats.health}/{playerStats.maxHealth}
+            </span>
+          </div>
+        </Tooltip>
+
+        <Tooltip content="Or">
+          <div className="flex items-center bg-gray-700 px-2 py-1 rounded">
+            <span className="text-yellow-500 mr-1">💰</span>
+            <span>{playerStats.gold}</span>
+          </div>
+        </Tooltip>
+
+        <Tooltip content="Niveau">
+          <div className="flex items-center bg-gray-700 px-2 py-1 rounded">
+            <span className="text-blue-500 mr-1">📊</span>
+            <span>Lv. {playerStats.level}</span>
+          </div>
+        </Tooltip>
+      </div>
+    </motion.header>
+  );
+});
 
 const GameFooter = React.memo(() => {
   const dispatch = useDispatch();
@@ -40,26 +100,26 @@ const GameFooter = React.memo(() => {
       icon: '🗺️',
       label: 'Carte',
       action: () => navigate('/map'),
-      isEnabled: gamePhase !== 'combat'
+      isEnabled: gamePhase !== 'combat',
     },
     {
       icon: '🏪',
       label: 'Boutique',
       action: () => navigate('/shop'),
-      isEnabled: gamePhase === 'exploration'
+      isEnabled: gamePhase === 'exploration',
     },
     {
       icon: '🏕️',
       label: 'Repos',
       action: () => navigate('/rest'),
-      isEnabled: gamePhase === 'exploration'
+      isEnabled: gamePhase === 'exploration',
     },
     {
       icon: '🃏',
       label: 'Collection',
       action: () => navigate('/collection'),
-      isEnabled: true
-    }
+      isEnabled: true,
+    },
   ];
 
   return (
@@ -73,21 +133,23 @@ const GameFooter = React.memo(() => {
       <div className="flex items-center space-x-4">
         <Tooltip content="Points de vie">
           <div className="flex items-center">
-            <Icons.health className="mr-2" />
-            <span>{playerStats.health}/{playerStats.maxHealth}</span>
+            <span className="mr-2">❤️</span>
+            <span>
+              {playerStats.health}/{playerStats.maxHealth}
+            </span>
           </div>
         </Tooltip>
-        
+
         <Tooltip content="Or">
           <div className="flex items-center">
-            <Icons.gold className="mr-2" />
+            <span className="mr-2">💰</span>
             <span>{playerStats.gold}</span>
           </div>
         </Tooltip>
 
         <Tooltip content="Niveau">
           <div className="flex items-center">
-            <Icons.level className="mr-2" />
+            <span className="mr-2">📊</span>
             <span>Lv. {playerStats.level}</span>
           </div>
         </Tooltip>
@@ -123,10 +185,8 @@ const GameInterface = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <GameHeader />
-      
-      <main className="flex-grow">
-        {children}
-      </main>
+
+      <main className="flex-grow">{children}</main>
 
       <GameFooter />
       <ActionFeedback />

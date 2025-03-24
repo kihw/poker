@@ -112,7 +112,12 @@ const CombatInterface = React.memo(() => {
   });
 
   return (
-    <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl">
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       {/* Section Ennemie */}
       <div className="md:col-span-2">
         <EnemyStatus

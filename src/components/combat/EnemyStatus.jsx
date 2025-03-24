@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 
 const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
-  const hpPercent = (hp / maxHp) * 100;
+  const hpPercent = maxHp ? (hp / maxHp) * 100 : 0;
   const controls = useAnimation();
   const [prevHp, setPrevHp] = useState(hp);
 
@@ -22,6 +22,9 @@ const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
 
   // Déterminer l'emoji approprié pour l'ennemi
   const getEnemyEmoji = () => {
+    // Vérifier si name est défini avant d'utiliser includes
+    if (!name) return '👾'; // Emoji par défaut si name est undefined
+
     if (name.includes('Goblin')) return '👺';
     if (name.includes('Dragon')) return '🐉';
     if (name.includes('Squelette') || name.includes('Skeleton')) return '💀';
@@ -36,19 +39,28 @@ const EnemyStatus = ({ name, hp, maxHp, nextAttack }) => {
 
   // État de santé pour l'affichage
   const getHealthStatus = () => {
+    if (!maxHp) return { text: 'Inconnu', class: 'text-gray-500' };
+
     if (hp <= maxHp * 0.25)
       return {
         text: 'Critique',
         class: 'text-red-500 font-bold animate-pulse',
       };
-    if (hp <= maxHp * 0.5)
-      return { text: 'Blessé', class: 'text-orange-500 font-bold' };
-    if (hp <= maxHp * 0.75)
-      return { text: 'Légèrement blessé', class: 'text-yellow-500' };
+    if (hp <= maxHp * 0.5) return { text: 'Blessé', class: 'text-orange-500 font-bold' };
+    if (hp <= maxHp * 0.75) return { text: 'Légèrement blessé', class: 'text-yellow-500' };
     return { text: 'En forme', class: 'text-green-500' };
   };
 
   const healthStatus = getHealthStatus();
+
+  // Si l'ennemi n'est pas défini, montrer un état de chargement
+  if (!name) {
+    return (
+      <div className="p-4 bg-gray-800 text-white rounded-md shadow-lg relative overflow-hidden text-center">
+        <p>Chargement de l'ennemi...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div
