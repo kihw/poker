@@ -13,7 +13,7 @@ const bonusCardsSlice = createSlice({
   initialState,
   reducers: {
     initCollection: (state) => {
-      // Initialiser avec les cartes de départ
+      // Initialize with starter cards
       const startingCardIds = [1, 2, 10, 14, 18];
       state.collection = startingCardIds
         .map((id) => {
@@ -22,7 +22,7 @@ const bonusCardsSlice = createSlice({
         })
         .filter((card) => card !== null);
 
-      // Équiper les premières cartes
+      // Equip the first few cards
       state.active = state.collection
         .slice(0, state.maxSlots)
         .map((card) => ({ ...card, usesRemaining: card.uses || 0 }));
@@ -41,7 +41,7 @@ const bonusCardsSlice = createSlice({
     equipCard: (state, action) => {
       const cardId = action.payload;
 
-      // Vérifier si la carte n'est pas déjà équipée
+      // Check if card is already equipped
       const isEquipped = state.active.some((card) => card.id === cardId);
       if (isEquipped || state.active.length >= state.maxSlots) return;
 
@@ -71,9 +71,7 @@ const bonusCardsSlice = createSlice({
     },
     upgradeCard: (state, action) => {
       const { cardId } = action.payload;
-      const cardIndex = state.collection.findIndex(
-        (card) => card.id === cardId
-      );
+      const cardIndex = state.collection.findIndex((card) => card.id === cardId);
 
       if (cardIndex !== -1) {
         const card = state.collection[cardIndex];
@@ -81,18 +79,16 @@ const bonusCardsSlice = createSlice({
         if (!card.level) card.level = 1;
         card.level += 1;
 
-        // Améliorer la valeur du bonus
+        // Upgrade the bonus value
         if (card.bonus) {
           if (!card.bonus.originalValue) {
             card.bonus.originalValue = card.bonus.value;
           }
 
-          card.bonus.value = Math.floor(
-            card.bonus.originalValue * (1 + 0.2 * (card.level - 1))
-          );
+          card.bonus.value = Math.floor(card.bonus.originalValue * (1 + 0.2 * (card.level - 1)));
         }
 
-        // Mettre à jour la carte active si équipée
+        // Update active card if equipped
         const activeIndex = state.active.findIndex((c) => c.id === cardId);
         if (activeIndex !== -1) {
           state.active[activeIndex] = {
@@ -106,22 +102,20 @@ const bonusCardsSlice = createSlice({
       state.maxSlots += action.payload || 1;
     },
     resetBonusCards: () => initialState,
-    // Ajouter le handler pour charger les données sauvegardées
+    // Handler to load saved data
     LOAD_SAVED_DATA: (state, action) => {
       const savedData = action.payload;
 
       if (savedData) {
-        // Réinitialiser les collections existantes
+        // Reset existing collections
         state.collection = [];
         state.active = [];
 
-        // Charger la collection si elle existe
+        // Load collection if it exists
         if (savedData.collection && Array.isArray(savedData.collection)) {
-          // Reconstituer la collection à partir des IDs sauvegardés
+          // Reconstruct collection from saved IDs
           savedData.collection.forEach((savedCard) => {
-            const cardTemplate = ALL_BONUS_CARDS.find(
-              (card) => card.id === savedCard.id
-            );
+            const cardTemplate = ALL_BONUS_CARDS.find((card) => card.id === savedCard.id);
             if (cardTemplate) {
               const card = {
                 ...cardTemplate,
@@ -129,7 +123,7 @@ const bonusCardsSlice = createSlice({
                 level: savedCard.level || 1,
               };
 
-              // Ajuster la valeur du bonus en fonction du niveau
+              // Adjust bonus value based on level
               if (card.bonus && card.level > 1) {
                 if (!card.bonus.originalValue) {
                   card.bonus.originalValue = card.bonus.value;
@@ -144,7 +138,7 @@ const bonusCardsSlice = createSlice({
           });
         }
 
-        // Charger les cartes actives si elles existent
+        // Load active cards if they exist
         if (savedData.active && Array.isArray(savedData.active)) {
           savedData.active.forEach((activeCard) => {
             const card = state.collection.find((c) => c.id === activeCard.id);
@@ -160,7 +154,7 @@ const bonusCardsSlice = createSlice({
           });
         }
 
-        // Charger le nombre maximum d'emplacements
+        // Load max slots
         if (savedData.maxSlots !== undefined) {
           state.maxSlots = savedData.maxSlots;
         }
@@ -179,7 +173,7 @@ export const {
   upgradeCard,
   increaseMaxSlots,
   resetBonusCards,
-  LOAD_SAVED_DATA, // Exporter la nouvelle action
+  LOAD_SAVED_DATA,
 } = bonusCardsSlice.actions;
 
 export default bonusCardsSlice.reducer;

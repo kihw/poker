@@ -68,20 +68,24 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
   if (action.type === 'bonusCards/useCard') {
     const state = store.getState();
     const cardIndex = action.payload;
-    const card = state.bonusCards.active[cardIndex];
 
-    // Vérifier que la carte existe et peut être utilisée
-    if (card && card.effect === 'active' && card.usesRemaining > 0) {
-      const effectMessage = applyCardEffect(store, card);
+    // Check if state.bonusCards and state.bonusCards.active exist before accessing
+    if (state.bonusCards && Array.isArray(state.bonusCards.active)) {
+      const card = state.bonusCards.active[cardIndex];
 
-      // Afficher un feedback si nécessaire
-      if (effectMessage) {
-        store.dispatch(
-          setActionFeedback({
-            message: effectMessage,
-            type: 'success',
-          })
-        );
+      // Vérifier que la carte existe et peut être utilisée
+      if (card && card.effect === 'active' && card.usesRemaining > 0) {
+        const effectMessage = applyCardEffect(store, card);
+
+        // Afficher un feedback si nécessaire
+        if (effectMessage) {
+          store.dispatch(
+            setActionFeedback({
+              message: effectMessage,
+              type: 'success',
+            })
+          );
+        }
       }
     }
   }
@@ -89,7 +93,13 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
   // Intercepter l'action d'attaque pour appliquer les bonus passifs
   if (action.type === 'combat/attackEnemy/pending') {
     const state = store.getState();
-    const activeBonusCards = state.bonusCards.active;
+
+    // Check if required state properties exist
+    if (!state.bonusCards || !state.combat) {
+      return next(action);
+    }
+
+    const activeBonusCards = state.bonusCards.active || [];
     const currentHandName = state.combat.handResult?.handName;
     const playerDamagedLastTurn = state.combat.playerDamagedLastTurn;
 
@@ -97,27 +107,27 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
 
     // Appliquer les effets passifs conditionnels
     activeBonusCards.forEach((card) => {
-      if (card.effect === 'passive') {
-        let shouldApply = false;
+      if (!card || card.effect !== 'passive') return;
 
-        // Vérifier la condition
-        if (card.condition === 'always') {
-          shouldApply = true;
-        } else if (card.condition === 'damageTaken' && playerDamagedLastTurn) {
-          shouldApply = true;
-        } else if (card.condition === currentHandName) {
-          shouldApply = true;
-        } else if (card.condition === 'lowHealth') {
-          const player = state.player;
-          shouldApply = player.health < player.maxHealth * 0.25;
-        }
+      let shouldApply = false;
 
-        // Appliquer l'effet si la condition est remplie
-        if (shouldApply) {
-          const effectMessage = applyCardEffect(store, card);
-          if (effectMessage) {
-            bonusMessages.push(effectMessage);
-          }
+      // Vérifier la condition
+      if (card.condition === 'always') {
+        shouldApply = true;
+      } else if (card.condition === 'damageTaken' && playerDamagedLastTurn) {
+        shouldApply = true;
+      } else if (card.condition === currentHandName) {
+        shouldApply = true;
+      } else if (card.condition === 'lowHealth' && state.player) {
+        const player = state.player;
+        shouldApply = player.health < player.maxHealth * 0.25;
+      }
+
+      // Appliquer l'effet si la condition est remplie
+      if (shouldApply) {
+        const effectMessage = applyCardEffect(store, card);
+        if (effectMessage) {
+          bonusMessages.push(effectMessage);
         }
       }
     });

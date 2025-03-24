@@ -96,7 +96,7 @@ export const {
   setTutorialStep,
   completeTutorial,
   resetGame,
-  LOAD_SAVED_DATA, // Export the new action
+  LOAD_SAVED_DATA,
 } = gameSlice.actions;
 
 export default gameSlice.reducer;

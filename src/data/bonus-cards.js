@@ -9,7 +9,7 @@ export const CARD_RARITIES = {
 };
 
 export const ALL_BONUS_CARDS = [
-  // Cartes communes
+  // Common cards
   {
     id: 1,
     name: 'Soutien tactique',
@@ -77,7 +77,7 @@ export const ALL_BONUS_CARDS = [
     },
   },
 
-  // Cartes peu communes
+  // Uncommon cards
   {
     id: 10,
     name: 'Double frappe',
@@ -144,7 +144,7 @@ export const ALL_BONUS_CARDS = [
     },
   },
 
-  // Cartes rares
+  // Rare cards
   {
     id: 18,
     name: 'Chance du débutant',
@@ -196,7 +196,7 @@ export const ALL_BONUS_CARDS = [
     },
   },
 
-  // Cartes épiques
+  // Epic cards
   {
     id: 25,
     name: 'Main royale',
@@ -237,7 +237,7 @@ export const ALL_BONUS_CARDS = [
     },
   },
 
-  // Cartes légendaires
+  // Legendary cards
   {
     id: 30,
     name: 'Âme du joueur',
@@ -254,8 +254,7 @@ export const ALL_BONUS_CARDS = [
   {
     id: 31,
     name: 'Adrénaline',
-    description:
-      'Lorsque vos PV sont inférieurs à 25%, tous vos dégâts sont augmentés de 50%',
+    description: 'Lorsque vos PV sont inférieurs à 25%, tous vos dégâts sont augmentés de 50%',
     effect: 'passive',
     condition: 'lowHealth',
     rarity: CARD_RARITIES.LEGENDARY,

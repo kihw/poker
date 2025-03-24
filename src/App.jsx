@@ -26,8 +26,8 @@ function App() {
   const dispatch = useDispatch();
 
   // Redux state
-  const loading = useSelector((state) => state.ui.loading);
-  const error = useSelector((state) => state.ui.error);
+  const loading = useSelector((state) => state.ui?.loading);
+  const error = useSelector((state) => state.ui?.error);
 
   // Initialize app on first load
   useEffect(() => {

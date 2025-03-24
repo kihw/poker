@@ -28,7 +28,7 @@ textarea {
   transition: var(--transition-default);
 }
 
-/* Additional styles remain the same as in your original file */
+/* Additional styles for 3D effects */
 .perspective-500 {
   perspective: 1000px;
 }

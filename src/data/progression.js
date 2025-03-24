@@ -1,20 +1,20 @@
 // src/data/progression.js
 
-// Expérience requise pour monter de niveau
+// Experience required for level up
 export const LEVEL_XP_REQUIREMENTS = [
-  0, // Niveau 0 -> 1
-  100, // Niveau 1 -> 2
-  250, // Niveau 2 -> 3
-  500, // Niveau 3 -> 4
-  1000, // Niveau 4 -> 5
-  1500, // Niveau 5 -> 6
-  2500, // Niveau 6 -> 7
-  4000, // Niveau 7 -> 8
-  6000, // Niveau 8 -> 9
-  10000, // Niveau 9 -> 10
+  0, // Level 0 -> 1
+  100, // Level 1 -> 2
+  250, // Level 2 -> 3
+  500, // Level 3 -> 4
+  1000, // Level 4 -> 5
+  1500, // Level 5 -> 6
+  2500, // Level 6 -> 7
+  4000, // Level 7 -> 8
+  6000, // Level 8 -> 9
+  10000, // Level 9 -> 10
 ];
 
-// Récompenses pour chaque niveau
+// Rewards for each level
 export const LEVEL_REWARDS = {
   1: {
     maxHealth: 10,
@@ -68,9 +68,9 @@ export const LEVEL_REWARDS = {
   },
 };
 
-// Articles de la boutique
+// Shop items
 export const SHOP_ITEMS = [
-  // Articles consommables
+  // Consumable items
   {
     id: 'potion_small',
     name: 'Petite potion',
@@ -133,7 +133,7 @@ export const SHOP_ITEMS = [
     },
   },
 
-  // Articles permanents
+  // Permanent items
   {
     id: 'heart_crystal',
     name: 'Cristal de vie',
@@ -158,12 +158,11 @@ export const SHOP_ITEMS = [
     },
   },
 
-  // Packs de cartes bonus
+  // Bonus card packs
   {
     id: 'card_pack_basic',
     name: 'Pack de cartes bonus basique',
-    description:
-      'Ajoute 2 cartes bonus communes ou peu communes à votre collection',
+    description: 'Ajoute 2 cartes bonus communes ou peu communes à votre collection',
     price: 50,
     type: 'bonus_card_pack',
     count: 2,

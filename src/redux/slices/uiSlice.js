@@ -35,13 +35,7 @@ const uiSlice = createSlice({
   },
 });
 
-export const {
-  setActionFeedback,
-  clearActionFeedback,
-  setLoading,
-  setError,
-  clearError,
-  resetUi,
-} = uiSlice.actions;
+export const { setActionFeedback, clearActionFeedback, setLoading, setError, clearError, resetUi } =
+  uiSlice.actions;
 
 export default uiSlice.reducer;

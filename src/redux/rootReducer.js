@@ -16,7 +16,7 @@ const rootReducer = combineReducers({
   bonusCards: bonusCardsReducer,
   map: mapReducer,
   shop: shopReducer,
-  event: eventReducer, // Ajouté la nouvelle slice d'événements
+  event: eventReducer,
   ui: uiReducer,
 });
 
