@@ -26,7 +26,9 @@ export const generateNewMap = createAsyncThunk(
       const mapWidth = width || Math.min(3 + Math.floor(stage / 3), 6);
       const mapDepth = depth || Math.min(5 + Math.floor(stage / 2), 8);
 
-      console.log(`Génération de la carte - Niveau: ${stage}, Largeur: ${mapWidth}, Profondeur: ${mapDepth}`);
+      console.log(
+        `Génération de la carte - Niveau: ${stage}, Largeur: ${mapWidth}, Profondeur: ${mapDepth}`
+      );
 
       // Générer la carte
       const nodes = generateRoguelikeMap(stage, mapWidth, mapDepth);
@@ -43,7 +45,7 @@ export const generateNewMap = createAsyncThunk(
       dispatch(mapGenerationSuccess(nodes));
 
       // Sélectionner automatiquement le nœud de départ
-      const startNode = nodes.find(node => node.type === 'start');
+      const startNode = nodes.find((node) => node.type === 'start');
       if (startNode) {
         dispatch(selectNode(startNode.id));
       }
@@ -75,8 +77,8 @@ export const generateNewMap = createAsyncThunk(
       try {
         const fallbackNodes = generateRoguelikeMap(1, 3, 5);
         dispatch(mapGenerationSuccess(fallbackNodes));
-        
-        const startNode = fallbackNodes.find(node => node.type === 'start');
+
+        const startNode = fallbackNodes.find((node) => node.type === 'start');
         if (startNode) {
           dispatch(selectNode(startNode.id));
         }
@@ -102,20 +104,38 @@ function isNodeAccessible(currentNodeId, targetNodeId, nodes) {
   const currentNode = nodes.find((node) => node.id === currentNodeId);
 
   // Un nœud est accessible s'il est un enfant du nœud actuel
-  return (
-    currentNode &&
-    currentNode.childIds &&
-    currentNode.childIds.includes(targetNodeId)
-  );
+  return currentNode && currentNode.childIds && currentNode.childIds.includes(targetNodeId);
 }
 
 // Thunk pour gérer la sélection d'un nœud et les actions correspondantes
 export const handleNodeSelection = createAsyncThunk(
   'map/handleNodeSelection',
   async (nodeId, { dispatch, getState }) => {
+    console.log('handleNodeSelection - Début', { nodeId });
+
     try {
       const state = getState();
       const nodes = state.map.path;
+      const currentGamePhase = state.game.gamePhase;
+
+      console.log('handleNodeSelection - État actuel', {
+        gamePhase: currentGamePhase,
+        currentNodeId: state.map.currentNodeId,
+      });
+
+      // Vérifier que nous sommes bien en phase d'exploration
+      if (currentGamePhase !== 'exploration') {
+        console.warn('Tentative de sélection de nœud hors phase exploration');
+
+        // Feedback pour l'utilisateur
+        dispatch(
+          setActionFeedback({
+            message: 'Navigation impossible dans la phase actuelle',
+            type: 'warning',
+          })
+        );
+        return { success: false, reason: 'wrong_phase' };
+      }
 
       // Trouver le nœud sélectionné
       const selectedNode = nodes.find((node) => node.id === nodeId);
@@ -124,16 +144,14 @@ export const handleNodeSelection = createAsyncThunk(
       }
 
       // Vérifier si le nœud est accessible depuis la position actuelle
-      const isAccessible = isNodeAccessible(
-        state.map.currentNodeId,
-        nodeId,
-        nodes
-      );
+      const isAccessible = isNodeAccessible(state.map.currentNodeId, nodeId, nodes);
+
       if (!isAccessible) {
+        console.warn(`Nœud ${nodeId} inaccessible`);
+
         dispatch(
           setActionFeedback({
-            message:
-              "Ce lieu n'est pas accessible depuis votre position actuelle",
+            message: "Ce lieu n'est pas accessible depuis votre position actuelle",
             type: 'warning',
           })
         );
@@ -144,33 +162,40 @@ export const handleNodeSelection = createAsyncThunk(
       dispatch(selectNode(nodeId));
 
       // Déterminer l'action en fonction du type de nœud
+      console.log('Type de nœud:', selectedNode.type);
       switch (selectedNode.type) {
         case 'combat':
-          dispatch(startNewCombat({ isElite: false, isBoss: false }));
+          console.log("Démarrage d'un combat standard");
+          await dispatch(startNewCombat({ isElite: false, isBoss: false }));
           break;
 
         case 'elite':
-          dispatch(startNewCombat({ isElite: true, isBoss: false }));
+          console.log("Démarrage d'un combat d'élite");
+          await dispatch(startNewCombat({ isElite: true, isBoss: false }));
           break;
 
         case 'boss':
-          dispatch(startNewCombat({ isElite: false, isBoss: true }));
+          console.log("Démarrage d'un combat de boss");
+          await dispatch(startNewCombat({ isElite: false, isBoss: true }));
           break;
 
         case 'shop':
+          console.log('Accès à la boutique');
           dispatch(setGamePhase('shop'));
           break;
 
         case 'rest':
+          console.log('Accès au site de repos');
           dispatch(setGamePhase('rest'));
           break;
 
         case 'event':
+          console.log("Déclenchement d'un événement");
           dispatch(setGamePhase('event'));
           break;
 
         default:
-          // Pour les nœuds de type 'start' ou autres, rester en exploration
+          console.log("Nœud de type non géré, retour à l'exploration");
           dispatch(setGamePhase('exploration'));
           break;
       }
@@ -180,7 +205,7 @@ export const handleNodeSelection = createAsyncThunk(
         nodeType: selectedNode.type,
       };
     } catch (error) {
-      console.error('Error selecting node:', error);
+      console.error('Erreur lors de la sélection du nœud:', error);
 
       dispatch(
         setActionFeedback({
@@ -197,3 +222,9 @@ export const handleNodeSelection = createAsyncThunk(
     }
   }
 );
+
+// Exporter tous les thunks pour utilisation
+export default {
+  generateNewMap,
+  handleNodeSelection,
+};

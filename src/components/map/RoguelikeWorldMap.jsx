@@ -67,35 +67,11 @@ const RoguelikeWorldMap = ({
 }) => {
   const dispatch = useDispatch();
   const svgRef = useRef(null);
-  // Use useMemo for node positions calculation
-  const nodePositions = useMemo(() => {
-    if (!nodes || nodes.length === 0) return {};
 
-    console.log('Calculating node positions for', nodes.length, 'nodes');
-
-    // Get max depth and width for scaling
-    const maxDepth = Math.max(...nodes.map((node) => node.y)) || 1;
-    const maxWidth = Math.max(...nodes.map((node) => node.x)) || 1;
-
-    // Scale factors
-    const width = mapSize.width;
-    const height = mapSize.height;
-    const horizontalScale = width / (maxWidth + 1);
-    const verticalScale = height / (maxDepth + 1);
-
-    // Calculate positions
-    const positions = {};
-    nodes.forEach((node) => {
-      const x = (node.x + 0.5) * horizontalScale;
-      const y = (node.y + 0.5) * verticalScale;
-      positions[node.id] = { x, y };
-    });
-
-    console.log('Node positions calculated:', Object.keys(positions).length);
-    return positions;
-  }, [nodes, mapSize]);
-  const [hoveredNode, setHoveredNode] = useState(null);
+  // Initialize mapSize with a default value
   const [mapSize, setMapSize] = useState({ width: 1000, height: 600 });
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [nodePositions, setNodePositions] = useState({});
 
   // Check if exploration is enabled
   const exploreEnabled = useSelector((state) => state.game.exploreEnabled !== false);
@@ -204,15 +180,6 @@ const RoguelikeWorldMap = ({
 
   return (
     <div className="bg-gray-900 rounded-xl p-4 shadow-2xl relative">
-      {/* Show warning overlay if navigation is blocked */}
-      {!exploreEnabled && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 rounded-xl">
-          <div className="text-white text-xl bg-red-600 p-4 rounded-lg">
-            Navigation bloquée pendant le combat
-          </div>
-        </div>
-      )}
-
       {/* Map header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-white">

@@ -1,5 +1,5 @@
-// src/pages/MapPage.jsx - Version corrigée
-import React, { useEffect, useState } from 'react';
+// src/pages/MapPage.jsx - Version corrigée pour éviter les redirections excessives
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -25,7 +25,7 @@ const MapPage = () => {
   const [mapLoading, setMapLoading] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  // Regroupez tous les sélecteurs ici pour éviter les problèmes
+  // Sélecteurs Redux
   const path = useSelector(selectMapPath);
   const currentNodeId = useSelector(selectCurrentNodeId);
   const isGameOver = useSelector(selectIsGameOver);
@@ -44,56 +44,40 @@ const MapPage = () => {
     gold: playerGold || 0,
   };
 
-  // Navigation automatique en fonction de la phase
+  // Effet de redirection
   useEffect(() => {
+    console.log('MapPage - Current Game Phase:', gamePhase);
+
     if (isGameOver) {
       navigate('/');
       return;
     }
 
-    // Redirection basée sur la phase de jeu actuelle
+    // Redirections spécifiques
     switch (gamePhase) {
       case 'combat':
       case 'reward':
-        console.log('Redirection vers la page de combat');
+        console.log('Redirection automatique vers combat');
         navigate('/');
         break;
       case 'shop':
-        console.log('Redirection vers la boutique');
         navigate('/shop');
         break;
       case 'rest':
-        console.log('Redirection vers le site de repos');
         navigate('/rest');
         break;
       case 'event':
-        console.log("Redirection vers la page d'événement");
         navigate('/event');
         break;
-      default:
-        // Rester sur la page de carte
-        break;
     }
-  }, [gamePhase, navigate, isGameOver]);
-  // In MapPage.jsx, update the redirection logic:
-  useEffect(() => {
-    if (gamePhase === 'combat' && !hasRedirected) {
-      setHasRedirected(true);
-      navigate('/');
-    }
-  }, [gamePhase, navigate, hasRedirected]);
+  }, [gamePhase, isGameOver, navigate]);
 
-  // Reset the redirection flag when necessary
-  useEffect(() => {
-    return () => {
-      setHasRedirected(false);
-    };
-  }, []);
-  // Generate map if not exists or empty
+  // Générer une nouvelle carte si nécessaire
   useEffect(() => {
     const tryGenerateMap = async () => {
       console.log('Vérification de la carte', {
         pathExists: safePath.length > 0,
+        mapLoading: mapLoading,
       });
 
       // Ensure path is empty before generating a new map
@@ -127,6 +111,7 @@ const MapPage = () => {
     tryGenerateMap();
   }, [safePath, dispatch, mapLoading]);
 
+  // Reste du code de rendu inchangé...
   if (mapLoading) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">

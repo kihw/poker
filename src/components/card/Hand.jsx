@@ -1,4 +1,4 @@
-// src/components/card/Hand.jsx - Version mise à jour pour le nouveau système de sélection
+// src/components/card/Hand.jsx - Version améliorée pour sélection flexible
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Card from './Card'; // Import du composant Card standard
@@ -41,41 +41,39 @@ const Hand = ({
   };
 
   // Calcule le nombre de cartes sélectionnées
-  const selectedCount = useMemo(
-    () => validCards.filter((card) => card.isSelected).length,
-    [validCards]
-  );
+  const selectedCards = useMemo(() => validCards.filter((card) => card.isSelected), [validCards]);
 
   // Fonction pour gérer la sélection des cartes
   const handleCardSelect = useCallback(
     (index) => {
       if (onToggleSelect && index >= 0 && index < validCards.length) {
-        // Log pour déboguer la sélection
-        console.log('Selecting card at index:', index);
+        const card = validCards[index];
 
-        // Si une carte est déjà sélectionnée, on la désélectionne
-        if (validCards[index].isSelected) {
+        // Si aucune carte n'est sélectionnée, initialiser le mode de sélection
+        if (selectedCards.length === 0) {
           onToggleSelect(index);
-          setSelectionMode(null); // Réinitialiser le mode de sélection
+          setSelectionMode('choosing');
           return;
         }
 
-        // Si aucune carte n'est sélectionnée et qu'on clique sur une nouvelle carte
-        if (selectedCount === 0) {
-          onToggleSelect(index);
-          // Afficher les options d'action (attaque/défausse)
-          setSelectionMode('choosing');
+        // Mode défausse : limite de 2 cartes
+        if (selectionMode === 'discard') {
+          if (selectedCards.length < 2 || card.isSelected) {
+            onToggleSelect(index);
+          }
+          return;
         }
-        // Si on est en mode attaque ou défausse, on peut sélectionner d'autres cartes
-        else if (selectionMode === 'attack' && selectedCount < maxSelectable) {
-          onToggleSelect(index);
-        } else if (selectionMode === 'discard' && selectedCount < 2) {
-          // Limite de 2 pour défausse
-          onToggleSelect(index);
+
+        // Mode attaque : limite de 5 cartes
+        if (selectionMode === 'attack') {
+          if (selectedCards.length < 5 || card.isSelected) {
+            onToggleSelect(index);
+          }
+          return;
         }
       }
     },
-    [onToggleSelect, validCards, selectedCount, maxSelectable, selectionMode]
+    [onToggleSelect, validCards, selectedCards, selectionMode]
   );
 
   // Fonction pour choisir l'action après sélection d'une carte
@@ -162,7 +160,7 @@ const Hand = ({
       </div>
 
       {/* Menu de choix d'action après sélection de carte */}
-      {selectionMode === 'choosing' && selectedCount > 0 && (
+      {selectionMode === 'choosing' && selectedCards.length > 0 && (
         <div className="mb-4 flex justify-center space-x-4">
           <button
             onClick={() => handleActionChoice('attack')}
@@ -185,16 +183,16 @@ const Hand = ({
         initial="hidden"
         animate="show"
       >
-        {sortedCards.map((card) => {
+        {sortedCards.map((card, index) => {
           // Utiliser l'index original stocké lors du tri
           const originalIndex = card.originalIndex;
 
-          // Déterminer si cette carte est désactivée (non sélectionnable)
+          // Déterminer si cette carte est désactivée
           const isDisabled =
             !card.isSelected &&
-            selectedCount > 0 &&
-            selectionMode !== 'attack' &&
-            selectionMode !== 'discard';
+            selectedCards.length > 0 &&
+            ((selectionMode === 'attack' && selectedCards.length >= 5) ||
+              (selectionMode === 'discard' && selectedCards.length >= 2));
 
           return (
             <motion.div
@@ -226,7 +224,7 @@ const Hand = ({
       {/* Instructions */}
       {selectionMode === 'attack' && (
         <div className="text-center text-sm text-gray-300 mt-4">
-          Sélectionnez 1 à {maxSelectable} cartes pour attaquer
+          Sélectionnez 1 à 5 cartes pour attaquer
         </div>
       )}
       {selectionMode === 'discard' && (
@@ -243,7 +241,7 @@ const Hand = ({
       {/* Debugging - Afficher les indices des cartes sélectionnées */}
       {process.env.NODE_ENV === 'development' && (
         <div className="text-center text-xs text-yellow-400 mt-2">
-          Cartes sélectionnées: {validCards.filter((c) => c.isSelected).length}
+          Cartes sélectionnées: {selectedCards.length}
           {selectionMode && ` (Mode: ${selectionMode})`}
         </div>
       )}
