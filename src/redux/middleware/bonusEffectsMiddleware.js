@@ -1,4 +1,4 @@
-// src/redux/middleware/bonusEffectsMiddleware.js - Version corrigée
+// src/redux/middleware/bonusEffectsMiddleware.js - Fixed version
 import {
   setPendingDamageBonus,
   setPendingDamageMultiplier,
@@ -7,8 +7,7 @@ import {
 import { heal, addShield } from '../slices/playerSlice';
 import { setActionFeedback } from '../slices/uiSlice';
 
-// Configuration des types d'effet de carte bonus et leur mapping avec les actions Redux
-// Utilisation du pattern d'inversion de dépendances pour éviter les références circulaires
+// Configuration of card bonus effect types and their mapping to Redux actions
 const BONUS_EFFECT_HANDLERS = {
   damage: (store, card, value) => {
     store.dispatch(setPendingDamageBonus(value));
@@ -31,22 +30,22 @@ const BONUS_EFFECT_HANDLERS = {
     return `${card.name} vous rend invulnérable au prochain tour`;
   },
   discard: (store, card, value) => {
-    // Nous ne modifions pas directement l'état ici, juste un retour de message
-    // Le comportement est géré par le thunk discardCards
+    // We don't directly modify state here, just return a message
+    // The behavior is handled by the discardCards thunk
     return `${card.name} vous permet de défausser jusqu'à ${value} cartes`;
   },
-  damageReduction: () => {
-    // Géré dans le reducer de l'action enemyAction
-    return null;
+  damageReduction: (store, card, value) => {
+    // This is handled in the enemyAction reducer
+    return `${card.name} réduira les dégâts de ${value} points`;
   },
 };
 
 /**
- * Applique les effets d'une carte bonus active
- * Cette fonction est exportée pour être utilisable par les thunks sans créer de dépendance circulaire
- * @param {Object} store - Le store Redux
- * @param {Object} card - La carte bonus à utiliser
- * @returns {String|null} - Message de feedback ou null
+ * Applies effects of an active bonus card
+ * This function is exported to be usable by thunks without creating circular dependencies
+ * @param {Object} store - The Redux store
+ * @param {Object} card - The bonus card to use
+ * @returns {String|null} - Feedback message or null
  */
 export function applyCardEffect(store, card) {
   if (!card || !card.bonus || !card.bonus.type) {
@@ -55,16 +54,19 @@ export function applyCardEffect(store, card) {
 
   const handler = BONUS_EFFECT_HANDLERS[card.bonus.type];
   if (!handler) {
-    console.warn(`Handler non défini pour le type d'effet: ${card.bonus.type}`);
+    console.warn(`Handler not defined for effect type: ${card.bonus.type}`);
     return null;
   }
 
   return handler(store, card, card.bonus.value);
 }
 
-// Le middleware proprement dit
+/**
+ * Middleware that intercepts bonus card related actions
+ * and applies their effects to the game state
+ */
 const bonusEffectsMiddleware = (store) => (next) => (action) => {
-  // Intercepter l'action d'utilisation de carte bonus
+  // Handle use of bonus card
   if (action.type === 'bonusCards/useCard') {
     const state = store.getState();
     const cardIndex = action.payload;
@@ -73,11 +75,11 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
     if (state.bonusCards && Array.isArray(state.bonusCards.active)) {
       const card = state.bonusCards.active[cardIndex];
 
-      // Vérifier que la carte existe et peut être utilisée
+      // Check if card can be used
       if (card && card.effect === 'active' && card.usesRemaining > 0) {
         const effectMessage = applyCardEffect(store, card);
 
-        // Afficher un feedback si nécessaire
+        // Show feedback if necessary
         if (effectMessage) {
           store.dispatch(
             setActionFeedback({
@@ -90,7 +92,7 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
     }
   }
 
-  // Intercepter l'action d'attaque pour appliquer les bonus passifs
+  // Handle player attack to apply passive bonuses
   if (action.type === 'combat/attackEnemy/pending') {
     const state = store.getState();
 
@@ -103,15 +105,15 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
     const currentHandName = state.combat.handResult?.handName;
     const playerDamagedLastTurn = state.combat.playerDamagedLastTurn;
 
-    let bonusMessages = [];
+    const bonusMessages = [];
 
-    // Appliquer les effets passifs conditionnels
+    // Apply conditional passive effects
     activeBonusCards.forEach((card) => {
       if (!card || card.effect !== 'passive') return;
 
       let shouldApply = false;
 
-      // Vérifier la condition
+      // Check condition
       if (card.condition === 'always') {
         shouldApply = true;
       } else if (card.condition === 'damageTaken' && playerDamagedLastTurn) {
@@ -123,7 +125,7 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
         shouldApply = player.health < player.maxHealth * 0.25;
       }
 
-      // Appliquer l'effet si la condition est remplie
+      // Apply effect if condition is met
       if (shouldApply) {
         const effectMessage = applyCardEffect(store, card);
         if (effectMessage) {
@@ -132,7 +134,7 @@ const bonusEffectsMiddleware = (store) => (next) => (action) => {
       }
     });
 
-    // Envoyer un feedback global si plusieurs effets ont été appliqués
+    // Send global feedback if multiple effects were applied
     if (bonusMessages.length > 0) {
       store.dispatch(
         setActionFeedback({

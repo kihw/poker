@@ -1,11 +1,8 @@
 // src/components/core/GameManager.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  selectGamePhase,
-  selectIsGameOver,
-} from '../../redux/selectors/gameSelectors';
+import { selectGamePhase, selectIsGameOver } from '../../redux/selectors/gameSelectors';
 import { selectPlayerHealth } from '../../redux/selectors/playerSelectors';
 import { setGamePhase } from '../../redux/slices/gameSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
@@ -25,15 +22,15 @@ const GameManager = ({ children }) => {
   const gamePhase = useSelector(selectGamePhase);
   const isGameOver = useSelector(selectIsGameOver);
   const playerHealth = useSelector(selectPlayerHealth);
-  
+
   // Récupérer ces infos de manière sécurisée en gérant les cas undefined
-  const mapInitialized = useSelector(
-    (state) => state.map?.path && state.map.path.length > 0
-  ) || false;
-  
-  const bonusCardsInitialized = useSelector(
-    (state) => state.bonusCards?.collection && state.bonusCards.collection.length > 0
-  ) || false;
+  const mapInitialized =
+    useSelector((state) => state.map?.path && state.map.path.length > 0) || false;
+
+  const bonusCardsInitialized =
+    useSelector(
+      (state) => state.bonusCards?.collection && state.bonusCards.collection.length > 0
+    ) || false;
 
   // État local pour éviter les redirections multiples
   const [hasRedirected, setHasRedirected] = useState(false);
@@ -43,7 +40,7 @@ const GameManager = ({ children }) => {
   useEffect(() => {
     // Éviter les initialisations multiples
     if (isInitialized) return;
-    
+
     const initGame = async () => {
       try {
         // Vérifier si une sauvegarde existe et la charger
@@ -79,7 +76,7 @@ const GameManager = ({ children }) => {
             })
           );
         }
-        
+
         setIsInitialized(true);
       } catch (error) {
         console.error("Erreur lors de l'initialisation du jeu:", error);
@@ -89,20 +86,20 @@ const GameManager = ({ children }) => {
             type: 'error',
           })
         );
-        
+
         // Tentative de réinitialisation d'urgence
         if (!bonusCardsInitialized) {
           dispatch(initCollection());
         }
-        
+
         if (!mapInitialized) {
           try {
             await dispatch(generateNewMap({})).unwrap();
           } catch (mapError) {
-            console.error("Erreur critique lors de la génération de carte:", mapError);
+            console.error('Erreur critique lors de la génération de carte:', mapError);
           }
         }
-        
+
         setIsInitialized(true);
       }
     };
@@ -110,17 +107,17 @@ const GameManager = ({ children }) => {
     initGame();
   }, [dispatch, mapInitialized, bonusCardsInitialized, isInitialized]);
 
-  // Gestion des redirections en fonction de la phase du jeu
-  useEffect(() => {
+  // Rédirection basée sur la phase du jeu, via un usecallback pour éviter les re-renders
+  const handlePhaseRedirection = useCallback(() => {
     // Ne pas effectuer de redirections pendant l'initialisation
     if (!isInitialized) return;
-    
+
     // Éviter les redirections répétées
     if (hasRedirected) {
       setHasRedirected(false);
       return;
     }
-    
+
     // Gérer le game over
     if (isGameOver || playerHealth <= 0) {
       setHasRedirected(true);
@@ -168,6 +165,11 @@ const GameManager = ({ children }) => {
     }
   }, [gamePhase, isGameOver, playerHealth, navigate, dispatch, hasRedirected, isInitialized]);
 
+  // Appliquer les redirections quand nécessaire
+  useEffect(() => {
+    handlePhaseRedirection();
+  }, [handlePhaseRedirection]);
+
   // Vérification périodique de l'état du joueur
   useEffect(() => {
     const checkPlayerHealth = () => {
@@ -194,14 +196,14 @@ const GameManager = ({ children }) => {
   useEffect(() => {
     // Ne pas sauvegarder pendant l'initialisation
     if (!isInitialized) return;
-    
+
     // Ne pas sauvegarder en game over
     if (isGameOver) return;
-    
+
     const autoSaveInterval = setInterval(() => {
       dispatch(saveGame());
     }, 60000); // Sauvegarde toutes les minutes
-    
+
     // Nettoyage de l'interval à la destruction du composant
     return () => clearInterval(autoSaveInterval);
   }, [dispatch, isInitialized, isGameOver]);

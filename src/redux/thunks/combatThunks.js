@@ -83,15 +83,13 @@ export const startNewCombat = createAsyncThunk(
       const enemy = generateEnemy(stage, isElite, isBoss);
       console.log('Ennemi généré:', enemy);
 
-      // Dispatcher l'action pour définir l'ennemi
-      dispatch(setEnemy(enemy));
+      // Initialiser correctement le combat
+      dispatch(startCombatAction(enemy));
 
-      // Solution alternative: Nous n'utilisons pas startCombat mais nous construisons
-      // directement l'état de combat en utilisant les actions disponibles
-      // Changer la phase du jeu en premier
+      // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
 
-      // Ensuite distribuer les cartes
+      // Distribuer les cartes
       dispatch(dealHand());
 
       console.log('Combat initialisé avec succès');
@@ -184,7 +182,7 @@ export const processEnemyAttack = createAsyncThunk(
     // Faire attaquer l'ennemi (mettre à jour le journal)
     dispatch(enemyAction());
 
-    // CORRECTION: Ajouter cette ligne pour infliger directement les dégâts
+    // CORRECTION: Utiliser la fonction takeDamage pour appliquer les dégâts au joueur
     dispatch(takeDamage(enemy.attack));
 
     console.log(`Joueur a subi ${enemy.attack} dégâts`);

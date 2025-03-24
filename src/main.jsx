@@ -1,4 +1,4 @@
-// src/main.jsx - Mise à jour avec le Provider Redux
+// src/main.jsx - Updated with Redux Provider
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

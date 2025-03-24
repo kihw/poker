@@ -1,5 +1,5 @@
-// src/App.jsx - Optimisé et corrigé
-import React, { useEffect } from 'react';
+// src/App.jsx - Optimized with correct error handling
+import React, { useEffect, memo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 
@@ -22,7 +22,7 @@ import { loadGame } from './redux/thunks/saveThunks';
 import { setActionFeedback } from './redux/slices/uiSlice';
 import { setGamePhase } from './redux/slices/gameSlice';
 
-function App() {
+const App = () => {
   const dispatch = useDispatch();
 
   // Redux state
@@ -92,6 +92,7 @@ function App() {
       </GameManager>
     </div>
   );
-}
+};
 
-export default App;
+// Optimize with memo to prevent unnecessary re-renders
+export default memo(App);

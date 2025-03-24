@@ -1,4 +1,4 @@
-// src/redux/rootReducer.js
+// src/redux/rootReducer.js - Combines all Redux slices
 import { combineReducers } from '@reduxjs/toolkit';
 import gameReducer from './slices/gameSlice';
 import playerReducer from './slices/playerSlice';

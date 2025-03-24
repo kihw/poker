@@ -1,5 +1,5 @@
-// src/components/combat/CombatInterface.jsx - Version mise à jour pour le nouveau système de sélection
-import React, { useCallback, useMemo, useState } from 'react';
+// src/components/combat/CombatInterface.jsx - Optimized with proper memoization
+import React, { useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,10 +32,10 @@ import {
 } from '../../redux/slices/combatSlice';
 import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thunks/combatThunks';
 
-const CombatInterface = React.memo(() => {
+const CombatInterface = () => {
   const dispatch = useDispatch();
 
-  // Selectors and Performance Optimization
+  // Selectors with useSelector hooks - optimized for performance
   const enemy = useSelector((state) => state.combat.enemy);
   const hand = useSelector((state) => state.combat.hand);
   const selectedCards = useSelector((state) => state.combat.selectedCards);
@@ -43,10 +43,10 @@ const CombatInterface = React.memo(() => {
   const handResult = useSelector((state) => state.combat.handResult);
   const activeBonusCards = useSelector((state) => state.bonusCards.active);
   const discardLimit = useSelector((state) => state.combat.discardLimit);
-  const actionMode = useSelector((state) => state.combat.actionMode); // Nouveau selector
+  const actionMode = useSelector((state) => state.combat.actionMode);
   const player = useSelector((state) => state.player);
 
-  // Card Selection Handler
+  // Card Selection Handler - memoized with useCallback
   const handleCardSelection = useCallback(
     (index) => {
       dispatch(toggleCardSelection(index));
@@ -54,7 +54,7 @@ const CombatInterface = React.memo(() => {
     [dispatch]
   );
 
-  // Action Selection Handler (nouveau)
+  // Action Selection Handler - memoized with useCallback
   const handleActionSelect = useCallback(
     (action) => {
       dispatch(setActionMode(action));
@@ -62,7 +62,7 @@ const CombatInterface = React.memo(() => {
     [dispatch]
   );
 
-  // Attack Handler - Enchaînement après attaque
+  // Attack Handler - memoized with useCallback
   const handleAttack = useCallback(async () => {
     if (selectedCards.length === 0) return;
 
@@ -83,33 +83,22 @@ const CombatInterface = React.memo(() => {
     }
   }, [dispatch, selectedCards, enemy]);
 
-  // Fonction pour passer à la main suivante
+  // Next Hand Handler - memoized with useCallback
   const handleNextHand = useCallback(() => {
     dispatch(dealHand());
   }, [dispatch]);
 
-  // Discard Handler
+  // Discard Handler - memoized with useCallback
   const handleDiscard = useCallback(() => {
     if (selectedCards.length > 0) {
       dispatch(discardCards(selectedCards));
     }
   }, [dispatch, selectedCards]);
 
-  // Best Hand Cards Memoization
+  // Best Hand Cards - memoized with useMemo
   const bestHandCards = useMemo(() => {
     return handResult ? handResult.cards.map((card) => hand.indexOf(card)) : [];
   }, [handResult, hand]);
-
-  // Log pour débogage
-  console.log('État du combat:', {
-    handLength: hand?.length || 0,
-    enemyName: enemy?.name,
-    phase: turnPhase,
-    actionMode,
-    selectedCards: selectedCards.length,
-    playerHealth: player.health,
-    playerMaxHealth: player.maxHealth,
-  });
 
   return (
     <motion.div
@@ -118,7 +107,7 @@ const CombatInterface = React.memo(() => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Section Ennemie */}
+      {/* Enemy Section */}
       <div className="md:col-span-2">
         <EnemyStatus
           name={enemy?.name}
@@ -128,15 +117,15 @@ const CombatInterface = React.memo(() => {
         />
       </div>
 
-      {/* Section Journal de Combat */}
+      {/* Combat Log Section */}
       <div className="md:col-span-1 md:row-span-2">
         <CombatLog />
       </div>
 
-      {/* Section Main de Combat */}
+      {/* Combat Hand Section */}
       <div className="md:col-span-2">
         <Card variant="elevated" className="p-4">
-          {/* Phase d'affichage */}
+          {/* Display Phase */}
           {turnPhase === 'result' ? (
             <div className="py-6 text-center">
               <motion.div
@@ -161,7 +150,7 @@ const CombatInterface = React.memo(() => {
               </Button>
             </div>
           ) : (
-            /* Phase de jeu normal */
+            /* Normal play phase */
             <>
               {hand && hand.length > 0 ? (
                 <Hand
@@ -175,7 +164,7 @@ const CombatInterface = React.memo(() => {
                 <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
               )}
 
-              {/* Boutons d'action basés sur le mode sélectionné */}
+              {/* Action buttons based on selected mode */}
               <AnimatePresence>
                 {actionMode === 'attack' && selectedCards.length > 0 && (
                   <motion.div
@@ -211,7 +200,7 @@ const CombatInterface = React.memo(() => {
         </Card>
       </div>
 
-      {/* Section Résultat de main et Cartes Bonus */}
+      {/* Hand Result and Bonus Cards Section */}
       <div className="md:col-span-2 space-y-4">
         <AnimatePresence>
           {handResult && turnPhase !== 'result' && (
@@ -234,7 +223,7 @@ const CombatInterface = React.memo(() => {
         <BonusCards />
       </div>
 
-      {/* Section pour le statut du joueur */}
+      {/* Player Status Section */}
       <div className="md:col-span-3 mt-4">
         <PlayerStatus
           hp={player.health}
@@ -246,6 +235,7 @@ const CombatInterface = React.memo(() => {
       </div>
     </motion.div>
   );
-});
+};
 
-export default CombatInterface;
+// Optimize further by memoizing the entire component
+export default React.memo(CombatInterface);
