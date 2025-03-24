@@ -109,16 +109,16 @@ const GameManager = ({ children }) => {
 
   // Rédirection basée sur la phase du jeu, via un usecallback pour éviter les re-renders
   const handlePhaseRedirection = useCallback(() => {
-    // Ne pas effectuer de redirections pendant l'initialisation
+    // Don't redirect during initialization
     if (!isInitialized) return;
 
-    // Éviter les redirections répétées
+    // Avoid repeated redirections
     if (hasRedirected) {
       setHasRedirected(false);
       return;
     }
 
-    // Gérer le game over
+    // Handle game over first
     if (isGameOver || playerHealth <= 0) {
       setHasRedirected(true);
       dispatch(setGamePhase('gameOver'));
@@ -126,7 +126,7 @@ const GameManager = ({ children }) => {
       return;
     }
 
-    // Redirection automatique basée sur la phase
+    // Then handle phase-specific redirects
     switch (gamePhase) {
       case 'exploration':
         if (window.location.pathname === '/') {

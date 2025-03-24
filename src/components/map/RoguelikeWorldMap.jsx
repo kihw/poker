@@ -67,7 +67,33 @@ const RoguelikeWorldMap = ({
 }) => {
   const dispatch = useDispatch();
   const svgRef = useRef(null);
-  const [nodePositions, setNodePositions] = useState({});
+  // Use useMemo for node positions calculation
+  const nodePositions = useMemo(() => {
+    if (!nodes || nodes.length === 0) return {};
+
+    console.log('Calculating node positions for', nodes.length, 'nodes');
+
+    // Get max depth and width for scaling
+    const maxDepth = Math.max(...nodes.map((node) => node.y)) || 1;
+    const maxWidth = Math.max(...nodes.map((node) => node.x)) || 1;
+
+    // Scale factors
+    const width = mapSize.width;
+    const height = mapSize.height;
+    const horizontalScale = width / (maxWidth + 1);
+    const verticalScale = height / (maxDepth + 1);
+
+    // Calculate positions
+    const positions = {};
+    nodes.forEach((node) => {
+      const x = (node.x + 0.5) * horizontalScale;
+      const y = (node.y + 0.5) * verticalScale;
+      positions[node.id] = { x, y };
+    });
+
+    console.log('Node positions calculated:', Object.keys(positions).length);
+    return positions;
+  }, [nodes, mapSize]);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [mapSize, setMapSize] = useState({ width: 1000, height: 600 });
 

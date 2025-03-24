@@ -169,6 +169,7 @@ export const attackEnemy = createAsyncThunk(
 /**
  * Traite l'attaque de l'ennemi
  */
+
 export const processEnemyAttack = createAsyncThunk(
   'combat/processEnemyAttack',
   async (_, { dispatch, getState }) => {
@@ -179,13 +180,13 @@ export const processEnemyAttack = createAsyncThunk(
       return { attacked: false };
     }
 
-    // Faire attaquer l'ennemi (mettre à jour le journal)
+    // Make the enemy attack (update log)
     dispatch(enemyAction());
 
-    // CORRECTION: Utiliser la fonction takeDamage pour appliquer les dégâts au joueur
+    // IMPORTANT: Use takeDamage to apply damage to the player
     dispatch(takeDamage(enemy.attack));
 
-    console.log(`Joueur a subi ${enemy.attack} dégâts`);
+    console.log(`Player took ${enemy.attack} damage`);
 
     return {
       attacked: true,

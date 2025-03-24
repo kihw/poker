@@ -50,7 +50,7 @@ const MapPage = () => {
       navigate('/');
       return;
     }
-    
+
     // Redirection basée sur la phase de jeu actuelle
     switch (gamePhase) {
       case 'combat':
@@ -75,7 +75,20 @@ const MapPage = () => {
         break;
     }
   }, [gamePhase, navigate, isGameOver]);
+  // In MapPage.jsx, update the redirection logic:
+  useEffect(() => {
+    if (gamePhase === 'combat' && !hasRedirected) {
+      setHasRedirected(true);
+      navigate('/');
+    }
+  }, [gamePhase, navigate, hasRedirected]);
 
+  // Reset the redirection flag when necessary
+  useEffect(() => {
+    return () => {
+      setHasRedirected(false);
+    };
+  }, []);
   // Generate map if not exists or empty
   useEffect(() => {
     const tryGenerateMap = async () => {
@@ -88,12 +101,12 @@ const MapPage = () => {
         try {
           setMapLoading(true);
           console.log('Génération de la carte roguelike');
-          
+
           // Utiliser await pour s'assurer que la carte est générée
           const result = await dispatch(generateNewMap({})).unwrap();
-          
+
           console.log('Carte générée:', result);
-          
+
           setFeedback({
             message: 'Carte générée avec succès',
             type: 'success',
@@ -128,13 +141,10 @@ const MapPage = () => {
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
         <div className="text-white text-center">
           <h2 className="text-2xl mb-4">Carte non disponible</h2>
-          <p className="mb-4">
-            La carte du jeu n'a pas pu être générée ou chargée
-          </p>
+          <p className="mb-4">La carte du jeu n'a pas pu être générée ou chargée</p>
           <div className="mt-4 p-4 bg-gray-800 rounded-md max-w-md">
             <p className="text-sm text-gray-400">
-              Si ce problème persiste, essayez de retourner au combat ou de
-              réinitialiser le jeu.
+              Si ce problème persiste, essayez de retourner au combat ou de réinitialiser le jeu.
             </p>
           </div>
           <button
@@ -168,19 +178,13 @@ const MapPage = () => {
     >
       {/* Afficher le feedback si présent */}
       {feedback && (
-        <ActionFeedback
-          message={feedback.message}
-          type={feedback.type}
-          duration={2000}
-        />
+        <ActionFeedback message={feedback.message} type={feedback.type} duration={2000} />
       )}
 
       {/* Titre et informations */}
       <div className="mb-4 text-center text-white">
         <h1 className="text-2xl font-bold mb-1">Carte de l'aventure</h1>
-        <p className="text-sm text-gray-300">
-          Choisissez votre prochain lieu à explorer
-        </p>
+        <p className="text-sm text-gray-300">Choisissez votre prochain lieu à explorer</p>
       </div>
 
       {/* Carte roguelike avec z-index élevé */}
@@ -197,8 +201,8 @@ const MapPage = () => {
       {/* Légende de la carte (optionnel) */}
       <div className="mt-4 bg-gray-800 p-3 rounded-md text-white text-sm max-w-md text-center">
         <p>
-          Cliquez sur un lieu connecté pour vous y rendre. Les lieux plus
-          lumineux sont accessibles depuis votre position actuelle.
+          Cliquez sur un lieu connecté pour vous y rendre. Les lieux plus lumineux sont accessibles
+          depuis votre position actuelle.
         </p>
         <div className="flex flex-wrap justify-center mt-2 gap-2">
           <span>⚔️ Combat</span>
