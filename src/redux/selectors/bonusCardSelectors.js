@@ -24,9 +24,8 @@ export const selectMaxBonusCardSlots = createSelector(
 
 // Filtrer les cartes par rareté
 export const makeSelectCardsByRarity = () => {
-  return createSelector(
-    [selectBonusCardCollection, (_, rarity) => rarity],
-    (collection, rarity) => collection.filter((card) => card.rarity === rarity)
+  return createSelector([selectBonusCardCollection, (_, rarity) => rarity], (collection, rarity) =>
+    collection.filter((card) => card.rarity === rarity)
   );
 };
 
@@ -34,35 +33,28 @@ export const makeSelectCardsByRarity = () => {
 export const makeSelectCardsByEffect = () => {
   return createSelector(
     [selectBonusCardCollection, (_, effectType) => effectType],
-    (collection, effectType) =>
-      collection.filter((card) => card.bonus?.type === effectType)
+    (collection, effectType) => collection.filter((card) => card.bonus?.type === effectType)
   );
 };
 
 // Sélecteur pour les cartes améliorables
-export const selectUpgradeableCards = createSelector(
-  [selectBonusCardCollection],
-  (collection) =>
-    collection.filter((card) => card.owned && (!card.level || card.level < 3))
+export const selectUpgradeableCards = createSelector([selectBonusCardCollection], (collection) =>
+  collection.filter((card) => card.owned && (!card.level || card.level < 3))
 );
 
 // Sélecteur pour vérifier si une carte est équipée
 export const makeSelectIsCardEquipped = () => {
-  return createSelector(
-    [selectActiveBonusCards, (_, cardId) => cardId],
-    (activeCards, cardId) => activeCards.some((card) => card.id === cardId)
+  return createSelector([selectActiveBonusCards, (_, cardId) => cardId], (activeCards, cardId) =>
+    activeCards.some((card) => card.id === cardId)
   );
 };
 
 // Sélecteur pour vérifier si une carte a des utilisations restantes
 export const makeSelectCardRemainingUses = () => {
-  return createSelector(
-    [selectActiveBonusCards, (_, cardId) => cardId],
-    (activeCards, cardId) => {
-      const card = activeCards.find((c) => c.id === cardId);
-      return card ? card.usesRemaining : 0;
-    }
-  );
+  return createSelector([selectActiveBonusCards, (_, cardId) => cardId], (activeCards, cardId) => {
+    const card = activeCards.find((c) => c.id === cardId);
+    return card ? card.usesRemaining : 0;
+  });
 };
 
 // Sélecteur pour les cartes actives utilisables
@@ -71,9 +63,7 @@ export const selectUsableActiveCards = createSelector(
   (activeCards, combatState) =>
     activeCards.filter(
       (card) =>
-        card.effect === 'active' &&
-        card.usesRemaining > 0 &&
-        combatState.turnPhase !== 'draw'
+        card.effect === 'active' && card.usesRemaining > 0 && combatState.turnPhase !== 'draw'
     )
 );
 
@@ -89,10 +79,7 @@ export const selectActivePassiveEffects = createSelector(
         // Vérifier la condition
         if (card.condition === 'always') {
           isActive = true;
-        } else if (
-          card.condition === 'damageTaken' &&
-          combatState.playerDamagedLastTurn
-        ) {
+        } else if (card.condition === 'damageTaken' && combatState.playerDamagedLastTurn) {
           isActive = true;
         } else if (card.condition === combatState.handResult?.handName) {
           isActive = true;
@@ -121,32 +108,27 @@ export const selectCardsAvailableToEquip = createSelector(
     const equippedIds = activeCards.map((card) => card.id);
 
     // Renvoyer les cartes possédées qui ne sont pas déjà équipées
-    return collection.filter(
-      (card) => card.owned && !equippedIds.includes(card.id)
-    );
+    return collection.filter((card) => card.owned && !equippedIds.includes(card.id));
   }
 );
 
 // Sélecteur pour calculer les bonus totaux par type
-export const selectTotalBonusValues = createSelector(
-  [selectActiveBonusCards],
-  (activeCards) => {
-    const bonusValues = {
-      damage: 0,
-      damageReduction: 0,
-      heal: 0,
-      shield: 0,
-    };
+export const selectTotalBonusValues = createSelector([selectActiveBonusCards], (activeCards) => {
+  const bonusValues = {
+    damage: 0,
+    damageReduction: 0,
+    heal: 0,
+    shield: 0,
+  };
 
-    activeCards.forEach((card) => {
-      if (card.bonus && card.bonus.type in bonusValues && card.bonus.value) {
-        bonusValues[card.bonus.type] += card.bonus.value;
-      }
-    });
+  activeCards.forEach((card) => {
+    if (card.bonus && card.bonus.type in bonusValues && card.bonus.value) {
+      bonusValues[card.bonus.type] += card.bonus.value;
+    }
+  });
 
-    return bonusValues;
-  }
-);
+  return bonusValues;
+});
 
 // Sélecteur pour les cartes que le joueur n'a pas encore
 export const selectUnownedCards = createSelector(

@@ -1,14 +1,15 @@
-// src/modules/bonus-cards.js
-import { ALL_BONUS_CARDS, CARD_RARITIES } from '../data/bonus-cards.js';
-import { HAND_TYPES } from '../core/hand-evaluation.js';
+// src/modules/BonusCardSystem.js
+import { ALL_BONUS_CARDS, CARD_RARITIES } from '../data/bonus-cards';
+import { HAND_TYPES } from '../core/hand-evaluation';
 
 /**
- * Gestion des cartes bonus et de leurs effets
+ * Système de gestion des cartes bonus
+ *
+ * Gérer à la fois la collection permanente du joueur et les cartes actives
+ * Permet d'appliquer les effets de cartes pendant les combats
+ * Calcule les combinaisons de poker et leurs bonus
  */
 export class BonusCardSystem {
-  /**
-   * @param {Object} gameState - L'état global du jeu
-   */
   constructor(gameState) {
     this.gameState = gameState;
     this.allBonusCards = ALL_BONUS_CARDS;
@@ -60,17 +61,13 @@ export class BonusCardSystem {
     }
 
     // Vérifier si la carte existe
-    const newCardTemplate = this.allBonusCards.find(
-      (card) => card.id === cardId
-    );
+    const newCardTemplate = this.allBonusCards.find((card) => card.id === cardId);
     if (!newCardTemplate) {
       console.error(`Card with ID ${cardId} not found in allBonusCards`);
       return false;
     }
 
-    const cardIndex = this.gameState.bonusCardCollection.findIndex(
-      (card) => card.id === cardId
-    );
+    const cardIndex = this.gameState.bonusCardCollection.findIndex((card) => card.id === cardId);
 
     if (cardIndex === -1) {
       // Si la carte n'est pas dans la collection, l'ajouter
@@ -79,9 +76,7 @@ export class BonusCardSystem {
 
       // Ajouter au journal de combat
       if (this.gameState.combatLog) {
-        this.gameState.combatLog.unshift(
-          `Nouvelle carte bonus obtenue: ${newCard.name}!`
-        );
+        this.gameState.combatLog.unshift(`Nouvelle carte bonus obtenue: ${newCard.name}!`);
       }
 
       // Feedback visuel
@@ -157,9 +152,7 @@ export class BonusCardSystem {
     }
 
     // Vérifier s'il y a de la place dans les emplacements de cartes bonus
-    if (
-      this.gameState.activeBonusCards.length >= this.gameState.maxBonusCardSlots
-    ) {
+    if (this.gameState.activeBonusCards.length >= this.gameState.maxBonusCardSlots) {
       console.warn('No space for more cards');
 
       // Feedback visuel pour l'utilisateur
@@ -182,11 +175,7 @@ export class BonusCardSystem {
 
     // Feedback visuel
     if (this.gameState.setActionFeedback) {
-      this.gameState.setActionFeedback(
-        `${card.name} équipée avec succès.`,
-        'success',
-        2000
-      );
+      this.gameState.setActionFeedback(`${card.name} équipée avec succès.`, 'success', 2000);
     }
 
     console.log('Card equipped successfully', card.name);
@@ -204,9 +193,7 @@ export class BonusCardSystem {
       return false;
     }
 
-    const cardIndex = this.gameState.activeBonusCards.findIndex(
-      (card) => card.id === cardId
-    );
+    const cardIndex = this.gameState.activeBonusCards.findIndex((card) => card.id === cardId);
 
     if (cardIndex !== -1) {
       // Récupère la carte pour le log
@@ -217,11 +204,7 @@ export class BonusCardSystem {
 
       // Feedback visuel
       if (this.gameState.setActionFeedback) {
-        this.gameState.setActionFeedback(
-          `${removedCard.name} retirée.`,
-          'info',
-          2000
-        );
+        this.gameState.setActionFeedback(`${removedCard.name} retirée.`, 'info', 2000);
       }
 
       console.log('Card unequipped successfully', removedCard.name);
@@ -287,8 +270,7 @@ export class BonusCardSystem {
 
         if (fallbackCards.length > 0) {
           // Sélectionner une carte aléatoire
-          const randomCard =
-            fallbackCards[Math.floor(Math.random() * fallbackCards.length)];
+          const randomCard = fallbackCards[Math.floor(Math.random() * fallbackCards.length)];
           return randomCard.id;
         }
       }
@@ -298,8 +280,7 @@ export class BonusCardSystem {
     }
 
     // Sélectionner une carte aléatoire
-    const randomCard =
-      possibleCards[Math.floor(Math.random() * possibleCards.length)];
+    const randomCard = possibleCards[Math.floor(Math.random() * possibleCards.length)];
     return randomCard.id;
   }
 
@@ -391,19 +372,14 @@ export class BonusCardSystem {
     console.log(`DEBUG - Condition pour bonus: ${condition}`);
 
     // Vérifier que activeBonusCards existe et est un tableau
-    if (
-      !this.gameState.activeBonusCards ||
-      !Array.isArray(this.gameState.activeBonusCards)
-    ) {
+    if (!this.gameState.activeBonusCards || !Array.isArray(this.gameState.activeBonusCards)) {
       console.warn('activeBonusCards non initialisé ou invalide');
       return { damage, bonusEffects };
     }
 
     try {
       // Appliquer les effets des cartes bonus actives
-      console.log(
-        `DEBUG - Nombre de bonus actifs: ${this.gameState.activeBonusCards.length}`
-      );
+      console.log(`DEBUG - Nombre de bonus actifs: ${this.gameState.activeBonusCards.length}`);
 
       for (const bonusCard of this.gameState.activeBonusCards) {
         // Ignorer les cartes invalides
@@ -419,8 +395,7 @@ export class BonusCardSystem {
         // Effets passifs qui s'appliquent à cette main ou toujours
         if (
           bonusCard.effect === 'passive' &&
-          (bonusCard.condition === condition ||
-            bonusCard.condition === 'always')
+          (bonusCard.condition === condition || bonusCard.condition === 'always')
         ) {
           console.log(`DEBUG - Condition valide pour ${bonusCard.name}`);
 
@@ -432,9 +407,7 @@ export class BonusCardSystem {
                 console.log(
                   `DEBUG - Ajout bonus ${bonusCard.name}: ${previousDamage} + ${bonusCard.bonus.value} = ${damage}`
                 );
-                bonusEffects.push(
-                  `${bonusCard.name} added ${bonusCard.bonus.value} damage`
-                );
+                bonusEffects.push(`${bonusCard.name} added ${bonusCard.bonus.value} damage`);
               }
               break;
 
@@ -450,9 +423,7 @@ export class BonusCardSystem {
                 if (healAmount > 0) {
                   this.gameState.player.health += healAmount;
                   console.log(`DEBUG - Soin appliqué: ${healAmount}`);
-                  bonusEffects.push(
-                    `${bonusCard.name} healed ${healAmount} HP`
-                  );
+                  bonusEffects.push(`${bonusCard.name} healed ${healAmount} HP`);
                 }
               }
               break;
@@ -464,20 +435,14 @@ export class BonusCardSystem {
                 this.gameState.player.shield =
                   (this.gameState.player.shield || 0) + bonusCard.bonus.value;
 
-                console.log(
-                  `DEBUG - Bouclier ajouté: ${bonusCard.bonus.value}`
-                );
-                bonusEffects.push(
-                  `${bonusCard.name} gave ${bonusCard.bonus.value} shield`
-                );
+                console.log(`DEBUG - Bouclier ajouté: ${bonusCard.bonus.value}`);
+                bonusEffects.push(`${bonusCard.name} gave ${bonusCard.bonus.value} shield`);
               }
               break;
 
             // DEBUG - Ajouter traitement pour tous les autres types de bonus
             default:
-              console.log(
-                `DEBUG - Type de bonus non géré: ${bonusCard.bonus?.type}`
-              );
+              console.log(`DEBUG - Type de bonus non géré: ${bonusCard.bonus?.type}`);
               break;
           }
         } else {
@@ -494,17 +459,12 @@ export class BonusCardSystem {
         console.log(
           `DEBUG - Bonus en attente appliqué: ${prevDamage} + ${this.gameState.pendingDamageBonus} = ${damage}`
         );
-        bonusEffects.push(
-          `Bonus damage: +${this.gameState.pendingDamageBonus}`
-        );
+        bonusEffects.push(`Bonus damage: +${this.gameState.pendingDamageBonus}`);
         this.gameState.pendingDamageBonus = 0;
       }
 
       // Appliquer le multiplicateur de dégâts en attente
-      if (
-        this.gameState.pendingDamageMultiplier &&
-        this.gameState.pendingDamageMultiplier !== 1
-      ) {
+      if (this.gameState.pendingDamageMultiplier && this.gameState.pendingDamageMultiplier !== 1) {
         const baseValue = damage;
         damage = Math.floor(damage * this.gameState.pendingDamageMultiplier);
         console.log(
@@ -667,8 +627,7 @@ export class BonusCardSystem {
     } catch (error) {
       console.error("Erreur lors de l'utilisation d'une carte bonus:", error);
       result.success = false;
-      result.message =
-        "Une erreur s'est produite lors de l'utilisation de la carte bonus";
+      result.message = "Une erreur s'est produite lors de l'utilisation de la carte bonus";
     }
 
     return result;
@@ -734,15 +693,10 @@ export class BonusCardSystem {
       }
 
       // Augmenter la valeur du bonus de 20% par niveau
-      card.bonus.value = Math.floor(
-        card.bonus.originalValue * (1 + 0.2 * (card.level - 1))
-      );
+      card.bonus.value = Math.floor(card.bonus.originalValue * (1 + 0.2 * (card.level - 1)));
 
       // Mettre à jour la description
-      if (
-        card.description &&
-        card.description.includes(String(card.bonus.originalValue))
-      ) {
+      if (card.description && card.description.includes(String(card.bonus.originalValue))) {
         card.description = card.description.replace(
           String(card.bonus.originalValue),
           String(card.bonus.value)
