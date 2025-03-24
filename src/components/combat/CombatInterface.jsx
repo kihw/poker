@@ -21,7 +21,7 @@ import EnemyStatus from './EnemyStatus';
 import HandCombinationDisplay from './HandCombinationDisplay';
 import CombatLog from './CombatLog';
 import PlayerStatus from './PlayerStatus';
-
+import BonusCardFusion from '../card/BonusCardFusion';
 // Redux Actions
 import {
   toggleCardSelection,
@@ -197,6 +197,9 @@ const CombatInterface = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Ajouter le composant de fusion ici, avant BonusCards */}
+        <BonusCardFusion />
 
         <BonusCards />
       </div>

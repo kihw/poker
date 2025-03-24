@@ -1,7 +1,7 @@
 // src/redux/thunks/bonusCardsThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ALL_BONUS_CARDS } from '../../data/bonus-cards';
-
+import { generateRandomPlayingCard } from '../../utils/cardValueGenerator';
 import { spendGold } from '../slices/playerSlice';
 import { updateStats } from '../slices/gameSlice';
 
@@ -81,7 +81,15 @@ export const generateBonusCardReward = createAsyncThunk(
 
       // Ajouter la carte à la collection
       dispatch(addCard(cardId));
-
+      // Puis définir les valeurs de carte à jouer
+      dispatch({
+        type: 'bonusCards/setCardPlayingValues',
+        payload: {
+          cardId: cardId,
+          cardValue: playingCardValues.cardValue,
+          cardSuit: playingCardValues.cardSuit,
+        },
+      });
       // Notification visuelle
       dispatch(
         setActionFeedback({
@@ -203,17 +211,13 @@ export const applyBonusCardEffects = createAsyncThunk(
       // Appliquer le bonus de dégâts en attente
       if (combatState.pendingDamageBonus) {
         result.totalDamage += combatState.pendingDamageBonus;
-        result.bonusEffects.push(
-          `Bonus de dégâts: +${combatState.pendingDamageBonus}`
-        );
+        result.bonusEffects.push(`Bonus de dégâts: +${combatState.pendingDamageBonus}`);
       }
 
       // Appliquer le multiplicateur de dégâts en attente
       if (combatState.pendingDamageMultiplier > 1) {
         const baseValue = result.totalDamage;
-        result.totalDamage = Math.floor(
-          result.totalDamage * combatState.pendingDamageMultiplier
-        );
+        result.totalDamage = Math.floor(result.totalDamage * combatState.pendingDamageMultiplier);
         result.bonusEffects.push(
           `Multiplicateur: ×${combatState.pendingDamageMultiplier} (${baseValue} → ${result.totalDamage})`
         );
@@ -223,24 +227,14 @@ export const applyBonusCardEffects = createAsyncThunk(
       for (const card of activeBonusCards) {
         if (card.effect === 'passive') {
           // Bonus pour certains types de mains
-          if (
-            card.condition === handResult.handName &&
-            card.bonus?.type === 'damage'
-          ) {
+          if (card.condition === handResult.handName && card.bonus?.type === 'damage') {
             result.totalDamage += card.bonus.value;
-            result.bonusEffects.push(
-              `${card.name} added ${card.bonus.value} damage`
-            );
+            result.bonusEffects.push(`${card.name} added ${card.bonus.value} damage`);
           }
           // Bonus constant
-          else if (
-            card.condition === 'always' &&
-            card.bonus?.type === 'damage'
-          ) {
+          else if (card.condition === 'always' && card.bonus?.type === 'damage') {
             result.totalDamage += card.bonus.value;
-            result.bonusEffects.push(
-              `${card.name} added ${card.bonus.value} damage`
-            );
+            result.bonusEffects.push(`${card.name} added ${card.bonus.value} damage`);
           }
           // Bonus après avoir subi des dégâts
           else if (
@@ -260,9 +254,7 @@ export const applyBonusCardEffects = createAsyncThunk(
             card.bonus?.type === 'damageMultiplier'
           ) {
             const beforeMultiplier = result.totalDamage;
-            result.totalDamage = Math.floor(
-              result.totalDamage * card.bonus.value
-            );
+            result.totalDamage = Math.floor(result.totalDamage * card.bonus.value);
             result.bonusEffects.push(
               `${card.name} multiplied damage by ${card.bonus.value} (${beforeMultiplier} → ${result.totalDamage})`
             );
