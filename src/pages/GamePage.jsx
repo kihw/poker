@@ -8,6 +8,8 @@ import { setGamePhase } from '../redux/slices/gameSlice';
 import Navigation from '../components/ui/Navigation';
 import CombatInterface from '../components/combat/CombatInterface';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
 const GamePage = () => {
   const gamePhase = useSelector(selectGamePhase);
   const isGameOver = useSelector(selectIsGameOver);
