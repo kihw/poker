@@ -1,10 +1,11 @@
-// src/components/card/BonusCardFusion.jsx
+// src/components/card/BonusCardFusion.jsx - Amélioré pour les combinaisons de poker
 import React, { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { evaluatePartialHand } from '../../core/hand-evaluation';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 import { addToCombatLog } from '../../redux/slices/combatSlice';
+import { getSuitSymbol, getNumericValue } from '../../utils/cardValuesGenerator';
 
 /**
  * Composant de fusion de cartes bonus qui permet au joueur de créer
@@ -91,8 +92,15 @@ const BonusCardFusion = () => {
     // Déterminer l'effet selon le type de main
     let effect = determineEffectFromHand(handResult);
 
-    // Appliquer l'effet
-    applyFusionEffect(effect, handResult);
+    // Dispatch pour appliquer l'effet
+    dispatch({
+      type: 'bonusCards/fuseBonusCards',
+      payload: {
+        cardIds: selectedCardIds,
+        effect,
+        handResult,
+      },
+    });
 
     // Mettre à jour l'état avec le résultat
     setFusionResult({
@@ -182,22 +190,6 @@ const BonusCardFusion = () => {
     }
   };
 
-  // Applique l'effet de fusion au combat
-  const applyFusionEffect = (effect, handResult) => {
-    // Utiliser les actions/reducers Redux existants pour appliquer les effets
-    if (effect.type === 'damage') {
-      dispatch({ type: 'combat/setPendingDamageBonus', payload: effect.value });
-    } else if (effect.type === 'damageMultiplier') {
-      dispatch({ type: 'combat/setPendingDamageMultiplier', payload: effect.value });
-    } else if (effect.type === 'heal') {
-      dispatch({ type: 'player/heal', payload: effect.value });
-    } else if (effect.type === 'shield') {
-      dispatch({ type: 'player/addShield', payload: effect.value });
-    } else if (effect.type === 'invulnerable') {
-      dispatch({ type: 'combat/setInvulnerableNextTurn', payload: true });
-    }
-  };
-
   return (
     <div className="p-4 bg-gray-800 rounded-md mb-4">
       <div className="flex justify-between items-center mb-2">
@@ -279,35 +271,6 @@ function getRandomCardValue() {
 function getRandomCardSuit() {
   const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
   return suits[Math.floor(Math.random() * suits.length)];
-}
-
-function getNumericValue(value) {
-  const valueMap = {
-    2: 2,
-    3: 3,
-    4: 4,
-    5: 5,
-    6: 6,
-    7: 7,
-    8: 8,
-    9: 9,
-    10: 10,
-    J: 11,
-    Q: 12,
-    K: 13,
-    A: 14,
-  };
-  return valueMap[value] || parseInt(value) || 2;
-}
-
-function getSuitSymbol(suit) {
-  const suitSymbols = {
-    hearts: '♥️',
-    diamonds: '♦️',
-    clubs: '♣️',
-    spades: '♠️',
-  };
-  return suitSymbols[suit] || '♠️';
 }
 
 function truncate(str, maxLength) {

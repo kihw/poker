@@ -1,6 +1,7 @@
 // src/redux/slices/bonusCardsSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 import { ALL_BONUS_CARDS } from '../../data/bonus-cards';
+import { generateRandomPlayingCard } from '../../utils/CardValuesGenerator';
 
 const initialState = {
   // Collection complète des cartes bonus possédées par le joueur (inventaire permanent)
@@ -55,22 +56,19 @@ const bonusCardsSlice = createSlice({
       // Vérifier si la carte existe déjà dans la collection
       const existingCardIndex = state.collection.findIndex((card) => card.id === cardId);
 
-      if (existingCardIndex !== -1) {
-        // Si la carte existe mais n'est pas possédée, la marquer comme possédée
-        if (!state.collection[existingCardIndex].owned) {
-          state.collection[existingCardIndex].owned = true;
-        } else {
-          // Si la carte est déjà possédée, ne rien faire
-          return;
-        }
-      } else {
+      if (existingCardIndex === -1) {
         // Ajouter une nouvelle carte à la collection
         const cardTemplate = ALL_BONUS_CARDS.find((card) => card.id === cardId);
         if (cardTemplate) {
+          // Générer des valeurs de carte à jouer aléatoires
+          const playingCardValues = generateRandomPlayingCard();
+
           state.collection.push({
             ...cardTemplate,
             owned: true,
             level: 1,
+            cardValue: playingCardValues.cardValue,
+            cardSuit: playingCardValues.cardSuit,
           });
         }
       }
@@ -251,6 +249,8 @@ const bonusCardsSlice = createSlice({
                 ...cardTemplate,
                 owned: savedCard.owned !== false,
                 level: savedCard.level || 1,
+                cardValue: savedCard.cardValue, // Conserver la valeur de la carte
+                cardSuit: savedCard.cardSuit, // Conserver la couleur de la carte
               };
 
               // Ajuster la valeur du bonus en fonction du niveau
@@ -427,6 +427,32 @@ const bonusCardsSlice = createSlice({
       } catch (error) {
         console.error('Erreur lors du chargement des données depuis le localStorage:', error);
         state.error = 'Erreur lors du chargement des cartes bonus';
+      }
+    },
+    setCardPlayingValues: (state, action) => {
+      const { cardId, cardValue, cardSuit } = action.payload;
+
+      // Trouver la carte dans la collection
+      const cardIndex = state.collection.findIndex((card) => card.id === cardId);
+
+      if (cardIndex !== -1) {
+        // Mettre à jour les valeurs de carte à jouer
+        state.collection[cardIndex].cardValue = cardValue;
+        state.collection[cardIndex].cardSuit = cardSuit;
+
+        // Mettre à jour également la carte active si elle est équipée
+        const activeIndex = state.active.findIndex((card) => card.id === cardId);
+        if (activeIndex !== -1) {
+          state.active[activeIndex].cardValue = cardValue;
+          state.active[activeIndex].cardSuit = cardSuit;
+        }
+
+        // Sauvegarder dans le localStorage
+        try {
+          localStorage.setItem('bonusCardCollection', JSON.stringify(state.collection));
+        } catch (error) {
+          console.error('Erreur lors de la sauvegarde de la collection:', error);
+        }
       }
     },
   },

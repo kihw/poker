@@ -1,7 +1,7 @@
 // src/redux/thunks/bonusCardsThunks.js
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { ALL_BONUS_CARDS } from '../../data/bonus-cards';
-import { generateRandomPlayingCard } from '../../utils/cardValueGenerator';
+import { generateRandomPlayingCard } from '../../utils/cardValuesGenerator';
 import { spendGold } from '../slices/playerSlice';
 import { updateStats } from '../slices/gameSlice';
 

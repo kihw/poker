@@ -1,7 +1,7 @@
-// src/utils/cardValueGenerator.js
+// src/utils/CardValuesGenerator.js
 
 /**
- * Utilitaire pour générer des valeurs de cartes à jouer aléatoires
+ * Utilitaire pour générer et gérer les valeurs de cartes classiques
  * pour les cartes bonus
  */
 
@@ -35,27 +35,6 @@ export function generateRandomPlayingCard() {
   return {
     cardValue: generateRandomCardValue(),
     cardSuit: generateRandomCardSuit(),
-  };
-}
-
-/**
- * Génère une carte à jouer spécifique (non aléatoire)
- * @param {string} value - La valeur de la carte ('2' à '10', 'J', 'Q', 'K', 'A')
- * @param {string} suit - La couleur de la carte ('hearts', 'diamonds', 'clubs', 'spades')
- * @returns {Object} Objet contenant cardValue et cardSuit
- */
-export function generateSpecificPlayingCard(value, suit) {
-  // Vérifier que la valeur et la couleur sont valides
-  if (!CARD_VALUES.includes(value) || !CARD_SUITS.includes(suit)) {
-    console.warn(
-      'Valeur ou couleur de carte invalide, utilisation de valeurs aléatoires à la place'
-    );
-    return generateRandomPlayingCard();
-  }
-
-  return {
-    cardValue: value,
-    cardSuit: suit,
   };
 }
 
@@ -98,13 +77,50 @@ export function getNumericValue(value) {
   return valueMap[value] || parseInt(value) || 2;
 }
 
+/**
+ * Obtient la représentation textuelle d'une carte
+ * @param {Object} card - Objet carte avec cardValue et cardSuit
+ * @returns {string} Représentation textuelle (ex: "As de Cœur")
+ */
+export function getCardDisplayName(card) {
+  if (!card || !card.cardValue || !card.cardSuit) return 'Carte inconnue';
+
+  const valueNames = {
+    2: '2',
+    3: '3',
+    4: '4',
+    5: '5',
+    6: '6',
+    7: '7',
+    8: '8',
+    9: '9',
+    10: '10',
+    J: 'Valet',
+    Q: 'Dame',
+    K: 'Roi',
+    A: 'As',
+  };
+
+  const suitNames = {
+    hearts: 'de Cœur',
+    diamonds: 'de Carreau',
+    clubs: 'de Trèfle',
+    spades: 'de Pique',
+  };
+
+  const valueName = valueNames[card.cardValue] || card.cardValue;
+  const suitName = suitNames[card.cardSuit] || card.cardSuit;
+
+  return `${valueName} ${suitName}`;
+}
+
 export default {
   generateRandomCardValue,
   generateRandomCardSuit,
   generateRandomPlayingCard,
-  generateSpecificPlayingCard,
   getSuitSymbol,
   getNumericValue,
+  getCardDisplayName,
   CARD_VALUES,
   CARD_SUITS,
 };
