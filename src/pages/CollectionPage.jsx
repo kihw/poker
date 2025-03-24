@@ -1,4 +1,5 @@
-// src/pages/CollectionPage.jsx
+// src/pages/CollectionPage.jsx - Amélioration pour supporter le mode lecture seule
+
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
@@ -7,7 +8,7 @@ import CollectionPreview from '../components/card/CollectionPreview';
 import CombatLog from '../components/combat/CombatLog';
 import Navigation from '../components/ui/Navigation';
 import { Card, DESIGN_TOKENS, Icons } from '../components/ui/DesignSystem';
-import { useNavigate } from 'react-router-dom';
+import { setActionFeedback } from '../redux/slices/uiSlice';
 
 // Fixed StatBlock Component
 const StatBlock = ({ label, value, icon }) => (
@@ -28,7 +29,6 @@ const StatBlock = ({ label, value, icon }) => (
 
 const CollectionPage = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   // Get card collection from Redux state
   const bonusCardCollection = useSelector((state) => state.bonusCards?.collection || []);
@@ -41,13 +41,6 @@ const CollectionPage = () => {
     averageLevel: 0,
     totalEffect: 0,
   });
-
-  // Handling access restrictions
-  useEffect(() => {
-    if (gamePhase === 'combat' && collectionAccessLevel !== 'readonly') {
-      navigate('/');
-    }
-  }, [gamePhase, collectionAccessLevel, navigate]);
 
   // Calculate statistics when collection changes
   useEffect(() => {
@@ -81,11 +74,30 @@ const CollectionPage = () => {
     }
   }, [bonusCardCollection]);
 
+  // Afficher un message pour avertir l'utilisateur que la collection est en mode lecture seule
+  useEffect(() => {
+    if (collectionAccessLevel === 'readonly' && gamePhase === 'combat') {
+      dispatch(
+        setActionFeedback({
+          message: 'Collection en mode lecture seule pendant le combat',
+          type: 'info',
+          duration: 3000,
+        })
+      );
+    }
+  }, [collectionAccessLevel, gamePhase, dispatch]);
+
   const renderContent = () => {
     if (collectionAccessLevel === 'disabled') {
       return (
         <div className="h-full flex items-center justify-center text-gray-400">
-          Collection inaccessible
+          <div className="text-center bg-gray-800 p-6 rounded-lg shadow-lg">
+            <div className="text-4xl mb-4">🔒</div>
+            <h2 className="text-xl font-bold mb-2">Collection inaccessible</h2>
+            <p className="text-gray-500">
+              La collection n'est pas disponible dans la phase de jeu actuelle.
+            </p>
+          </div>
         </div>
       );
     }
@@ -93,13 +105,13 @@ const CollectionPage = () => {
     return (
       <>
         {collectionAccessLevel === 'readonly' && (
-          <div className="absolute top-0 left-0 right-0 bg-yellow-600 text-white text-center p-2 z-10">
-            Vue limitée en combat
+          <div className="bg-yellow-600 text-white text-center p-2 rounded-t-lg mb-1 z-10">
+            <span className="inline-flex items-center">
+              <span className="mr-2">🔍</span> Mode lecture seule pendant le combat
+            </span>
           </div>
         )}
-        <CollectionPreview 
-          readOnly={collectionAccessLevel === 'readonly'} 
-        />
+        <CollectionPreview readOnly={collectionAccessLevel === 'readonly'} />
       </>
     );
   };
@@ -113,13 +125,29 @@ const CollectionPage = () => {
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
         {/* Collection Preview */}
-        <div className="md:col-span-2">
-          {renderContent()}
-        </div>
+        <div className="md:col-span-2">{renderContent()}</div>
 
-        {/* Combat Log */}
+        {/* Combat Log - Display only in combat phase */}
         <div>
-          <CombatLog />
+          {gamePhase === 'combat' && <CombatLog />}
+          {gamePhase !== 'combat' && (
+            <Card variant="elevated" className="p-4">
+              <h2 className="text-lg font-bold mb-4">
+                <span className="mr-2">📊</span>
+                Statistiques
+              </h2>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center p-2 bg-gray-800 rounded">
+                  <span>Phase actuelle:</span>
+                  <span className="font-semibold">{gamePhase}</span>
+                </div>
+                <div className="flex justify-between items-center p-2 bg-gray-800 rounded">
+                  <span>Mode d'accès:</span>
+                  <span className="font-semibold">{collectionAccessLevel}</span>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Bonus Card Statistics */}

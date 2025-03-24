@@ -1,4 +1,5 @@
-// src/components/ui/Navigation.jsx - Design System Enhanced
+// src/components/ui/Navigation.jsx - Amélioration pour gérer les restrictions d'accès
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -7,7 +8,31 @@ import { selectStage, selectGamePhase } from '../../redux/selectors/gameSelector
 import { selectPlayerGold } from '../../redux/selectors/playerSelectors';
 import { Button, Icons, DESIGN_TOKENS, AnimationPresets } from './DesignSystem';
 
-const NavigationItem = ({ to, icon, label, isActive, gamePhase }) => {
+const NavigationItem = ({ to, icon, label, isActive, isDisabled, disabledMessage }) => {
+  // Si l'élément est désactivé, empêcher la navigation
+  if (isDisabled) {
+    return (
+      <motion.div
+        {...AnimationPresets.scaleIn}
+        className="opacity-50 cursor-not-allowed"
+        title={disabledMessage || 'Inaccessible dans la phase actuelle'}
+      >
+        <div
+          className={`
+            flex flex-col items-center justify-center 
+            px-3 py-2 rounded-md 
+            transition-all duration-200
+            bg-gray-800 text-gray-500
+          `}
+        >
+          <span className="text-xl mb-1">{icon}</span>
+          <span className="text-xs">{label}</span>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Sinon, afficher le lien normal
   return (
     <motion.div
       {...AnimationPresets.scaleIn}
@@ -37,24 +62,46 @@ const Navigation = () => {
   const gold = useSelector(selectPlayerGold);
   const gamePhase = useSelector(selectGamePhase);
 
+  // Déterminer quels éléments de navigation sont accessibles dans la phase actuelle
+  const isInCombat = gamePhase === 'combat' || gamePhase === 'reward';
+  const isInShop = gamePhase === 'shop';
+  const isInEvent = gamePhase === 'event';
+  const isInRest = gamePhase === 'rest';
+  const isGameOver = gamePhase === 'gameOver';
+
+  // Définir les règles d'accessibilité pour chaque élément de navigation
   const navigationItems = [
     {
       to: '/',
       icon: '⚔️',
       label: 'Combat',
       activeRoutes: ['/'],
+      isDisabled: !isInCombat && !isGameOver, // Désactivé si pas en combat
+      disabledMessage: 'Disponible uniquement pendant un combat',
     },
     {
       to: '/map',
       icon: '🗺️',
       label: 'Carte',
       activeRoutes: ['/map'],
+      isDisabled: isInCombat || isInShop || isInEvent || isInRest || isGameOver, // Désactivé si pas en exploration
+      disabledMessage: 'Accessible uniquement en exploration',
     },
     {
       to: '/collection',
       icon: '🃏',
       label: 'Collection',
       activeRoutes: ['/collection'],
+      isDisabled: isGameOver, // Accessible en lecture seule pendant le combat
+      disabledMessage: 'Non disponible en mode Game Over',
+    },
+    {
+      to: '/shop',
+      icon: '🛒',
+      label: 'Boutique',
+      activeRoutes: ['/shop'],
+      isDisabled: isInCombat || isInEvent || isInRest || isGameOver || !isInShop, // Disponible uniquement quand on est déjà dans la boutique
+      disabledMessage: isInShop ? '' : 'Disponible uniquement dans les lieux de boutique',
     },
   ];
 

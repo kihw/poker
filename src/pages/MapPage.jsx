@@ -1,4 +1,5 @@
-// src/pages/MapPage.jsx - Version corrigée pour éviter les redirections excessives
+// src/pages/MapPage.jsx - Suppression de la redirection automatique
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -35,6 +36,7 @@ const MapPage = () => {
   const playerGold = useSelector(selectPlayerGold);
   const currentFloor = useSelector((state) => state.game?.currentFloor) || 1;
   const maxFloors = useSelector((state) => state.game?.maxFloors) || 10;
+  const exploreEnabled = useSelector((state) => state.game.exploreEnabled);
 
   // S'assurer que path est un tableau valide
   const safePath = Array.isArray(path) ? path : [];
@@ -44,33 +46,17 @@ const MapPage = () => {
     gold: playerGold || 0,
   };
 
-  // Effet de redirection
+  // Afficher un message si l'exploration n'est pas disponible
   useEffect(() => {
-    console.log('MapPage - Current Game Phase:', gamePhase);
-
-    if (isGameOver) {
-      navigate('/');
-      return;
+    if (!exploreEnabled && gamePhase === 'combat') {
+      dispatch(
+        setActionFeedback({
+          message: 'Exploration bloquée pendant un combat',
+          type: 'warning',
+        })
+      );
     }
-
-    // Redirections spécifiques
-    switch (gamePhase) {
-      case 'combat':
-      case 'reward':
-        console.log('Redirection automatique vers combat');
-        navigate('/');
-        break;
-      case 'shop':
-        navigate('/shop');
-        break;
-      case 'rest':
-        navigate('/rest');
-        break;
-      case 'event':
-        navigate('/event');
-        break;
-    }
-  }, [gamePhase, isGameOver, navigate]);
+  }, [exploreEnabled, gamePhase, dispatch]);
 
   // Générer une nouvelle carte si nécessaire
   useEffect(() => {
@@ -111,7 +97,38 @@ const MapPage = () => {
     tryGenerateMap();
   }, [safePath, dispatch, mapLoading]);
 
-  // Reste du code de rendu inchangé...
+  if (gamePhase === 'combat') {
+    return (
+      <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
+        <div className="bg-red-800 p-6 rounded-lg max-w-md text-white text-center mb-8">
+          <h2 className="text-2xl font-bold mb-4">⚠️ Combat en cours</h2>
+          <p className="mb-6">
+            Vous êtes actuellement en combat. La carte n'est pas accessible pendant cette phase.
+          </p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold"
+          >
+            Retourner au combat
+          </button>
+        </div>
+
+        {/* Version désactivée et floutée de la carte pour l'effet visuel */}
+        <div className="w-full max-w-4xl opacity-50 pointer-events-none blur-sm">
+          <RoguelikeWorldMap
+            currentFloor={currentFloor}
+            maxFloors={maxFloors}
+            nodes={safePath}
+            currentNodeId={currentNodeId}
+            playerStats={safePlayer}
+          />
+        </div>
+
+        <Navigation />
+      </div>
+    );
+  }
+
   if (mapLoading) {
     return (
       <div className="min-h-screen bg-gray-900 p-4 flex flex-col items-center justify-center">
@@ -164,6 +181,13 @@ const MapPage = () => {
       {/* Afficher le feedback si présent */}
       {feedback && (
         <ActionFeedback message={feedback.message} type={feedback.type} duration={2000} />
+      )}
+
+      {/* Message d'avertissement si exploration non activée mais pas en combat */}
+      {!exploreEnabled && gamePhase !== 'combat' && (
+        <div className="w-full max-w-4xl mb-4 bg-yellow-600 text-white p-3 rounded-lg text-center">
+          L'exploration est actuellement limitée. Certaines actions peuvent être indisponibles.
+        </div>
       )}
 
       {/* Titre et informations */}

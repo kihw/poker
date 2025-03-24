@@ -375,8 +375,70 @@ const combatSlice = createSlice({
       state.pendingDamageMultiplier = action.payload;
       console.log(`Multiplicateur de dégâts en attente défini à: ${action.payload}`);
     },
+    LOAD_SAVED_DATA: (state, action) => {
+      // Prévenir le chargement de données de combat non valides
+      if (!action.payload) return;
 
-    // Autres reducers existants...
+      const savedData = action.payload;
+
+      // Charger l'ennemi
+      if (savedData.enemy) {
+        state.enemy = savedData.enemy;
+      }
+
+      // Charger la main
+      if (savedData.hand && Array.isArray(savedData.hand)) {
+        state.hand = savedData.hand;
+      }
+
+      // Charger les cartes sélectionnées
+      if (savedData.selectedCards && Array.isArray(savedData.selectedCards)) {
+        state.selectedCards = savedData.selectedCards;
+      }
+
+      // Charger le deck
+      if (savedData.deck && Array.isArray(savedData.deck)) {
+        state.deck = savedData.deck;
+      }
+
+      // Charger la défausse
+      if (savedData.discard && Array.isArray(savedData.discard)) {
+        state.discard = savedData.discard;
+      }
+
+      // Charger la phase du tour
+      if (savedData.turnPhase) {
+        state.turnPhase = savedData.turnPhase;
+      }
+
+      // Charger le résultat de la main
+      if (savedData.handResult) {
+        state.handResult = savedData.handResult;
+      }
+
+      // Charger le journal de combat
+      if (savedData.combatLog && Array.isArray(savedData.combatLog)) {
+        state.combatLog = savedData.combatLog;
+      }
+
+      // Charger d'autres états relevants
+      if (savedData.pendingDamageBonus !== undefined) {
+        state.pendingDamageBonus = savedData.pendingDamageBonus;
+      }
+
+      if (savedData.pendingDamageMultiplier !== undefined) {
+        state.pendingDamageMultiplier = savedData.pendingDamageMultiplier;
+      }
+
+      if (savedData.invulnerableNextTurn !== undefined) {
+        state.invulnerableNextTurn = savedData.invulnerableNextTurn;
+      }
+
+      if (savedData.playerDamagedLastTurn !== undefined) {
+        state.playerDamagedLastTurn = savedData.playerDamagedLastTurn;
+      }
+    },
+
     resetCombatState: () => initialState,
   },
 });
@@ -396,6 +458,7 @@ export const {
   setInvulnerableNextTurn,
   setPendingDamageBonus,
   setPendingDamageMultiplier,
+  LOAD_SAVED_DATA,
 } = combatSlice.actions;
 
 export default combatSlice.reducer;

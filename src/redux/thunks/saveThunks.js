@@ -1,9 +1,16 @@
-// src/redux/thunks/saveThunks.js
+// src/redux/thunks/saveThunks.js - Correction pour le chargement de l'état de combat
+
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { setLoading, setError, setActionFeedback } from '../slices/uiSlice';
 import { resetPlayer, LOAD_SAVED_DATA as LOAD_PLAYER_DATA } from '../slices/playerSlice';
-import { resetGame, LOAD_SAVED_DATA as LOAD_GAME_DATA } from '../slices/gameSlice';
-import { resetCombatState } from '../slices/combatSlice';
+import { resetGame, LOAD_SAVED_DATA as LOAD_GAME_DATA, setGamePhase } from '../slices/gameSlice';
+import {
+  resetCombatState,
+  LOAD_SAVED_DATA as LOAD_COMBAT_DATA,
+  startCombat,
+  setEnemy,
+  setTurnPhase,
+} from '../slices/combatSlice';
 import {
   resetBonusCards,
   LOAD_SAVED_DATA as LOAD_BONUS_CARDS_DATA,
@@ -25,14 +32,75 @@ const SAVE_KEY = 'pokerSoloRpgSave';
 export const saveGame = createAsyncThunk('save/saveGame', async (_, { dispatch, getState }) => {
   try {
     const state = getState();
-    const gameStateSave = selectGameSaveState(state);
 
-    if (!gameStateSave) {
-      throw new Error("Impossible de récupérer l'état du jeu");
-    }
+    // Structure de sauvegarde plus complète incluant l'état de combat
+    const saveData = {
+      version: '1.2',
+      timestamp: Date.now(),
+      player: {
+        health: state.player.health,
+        maxHealth: state.player.maxHealth,
+        gold: state.player.gold,
+        level: state.player.level,
+        experience: state.player.experience,
+        inventory: state.player.inventory || [],
+        shield: state.player.shield || 0,
+      },
+      game: {
+        stage: state.game.stage,
+        currentFloor: state.game.currentFloor || 1,
+        maxFloors: state.game.maxFloors || 10,
+        gamePhase: state.game.gamePhase || 'exploration',
+        exploreEnabled: state.game.exploreEnabled,
+        collectionAccessLevel: state.game.collectionAccessLevel,
+        shopAccessible: state.game.shopAccessible,
+        stats: state.game.stats || {},
+      },
+      map: {
+        path: state.map.path || [],
+        currentNodeId: state.map.currentNodeId,
+      },
+      bonusCards: {
+        collection: state.bonusCards.collection.map((card) => ({
+          id: card.id,
+          owned: card.owned !== false,
+          level: card.level || 1,
+        })),
+        active: state.bonusCards.active.map((card) => ({
+          id: card.id,
+          usesRemaining: card.usesRemaining || 0,
+        })),
+        maxSlots: state.bonusCards.maxSlots,
+      },
+      combat:
+        state.game.gamePhase === 'combat'
+          ? {
+              enemy: state.combat.enemy,
+              hand: state.combat.hand,
+              selectedCards: state.combat.selectedCards,
+              deck: state.combat.deck,
+              discard: state.combat.discard,
+              turnPhase: state.combat.turnPhase,
+              handResult: state.combat.handResult,
+              combatLog: state.combat.combatLog || [],
+            }
+          : null,
+      shop: {
+        items: state.shop.items || [],
+        itemsPurchased: state.shop.itemsPurchased || {},
+      },
+      event:
+        state.game.gamePhase === 'event'
+          ? {
+              currentEvent: state.event.currentEvent,
+              eventResult: state.event.eventResult,
+              eventHistory: state.event.eventHistory || [],
+            }
+          : null,
+    };
 
     // Sauvegarder dans le localStorage
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameStateSave));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
     // Feedback de succès
     dispatch(
@@ -58,6 +126,9 @@ export const saveGame = createAsyncThunk('save/saveGame', async (_, { dispatch, 
   }
 });
 
+/**
+ * Charge une sauvegarde depuis le localStorage
+ */
 export const loadGame = createAsyncThunk('save/loadGame', async (_, { dispatch }) => {
   try {
     dispatch(setLoading(true));
@@ -80,6 +151,7 @@ export const loadGame = createAsyncThunk('save/loadGame', async (_, { dispatch }
     }
 
     const saveData = JSON.parse(savedData);
+    console.log('Données de sauvegarde chargées:', saveData);
 
     // Reset all states first
     dispatch(resetPlayer());
@@ -94,10 +166,6 @@ export const loadGame = createAsyncThunk('save/loadGame', async (_, { dispatch }
     // Load each slice's saved data
     if (saveData.player) {
       dispatch(LOAD_PLAYER_DATA(saveData.player));
-    }
-
-    if (saveData.game) {
-      dispatch(LOAD_GAME_DATA(saveData.game));
     }
 
     if (saveData.map && saveData.map.path && saveData.map.path.length) {
@@ -117,8 +185,41 @@ export const loadGame = createAsyncThunk('save/loadGame', async (_, { dispatch }
       dispatch(LOAD_SHOP_DATA(saveData.shop));
     }
 
+    // Load combat state explicitly if in combat phase
+    if (saveData.combat && saveData.game.gamePhase === 'combat') {
+      // Important: Pour les états de combat, nous devons utiliser les actions spécifiques
+      // au lieu de LOAD_COMBAT_DATA générique qui pourrait ne pas traiter tous les aspects
+
+      console.log("Chargement de l'état de combat:", saveData.combat);
+
+      // D'abord, démarrer un nouveau combat avec l'ennemi sauvegardé
+      if (saveData.combat.enemy) {
+        dispatch(startCombat(saveData.combat.enemy));
+        dispatch(setEnemy(saveData.combat.enemy));
+      }
+
+      // Ensuite, charger le reste des données de combat
+      dispatch(LOAD_COMBAT_DATA(saveData.combat));
+
+      // Assurez-vous que la phase de tour est correctement définie
+      if (saveData.combat.turnPhase) {
+        dispatch(setTurnPhase(saveData.combat.turnPhase));
+      }
+    }
+
     if (saveData.event) {
       dispatch(LOAD_EVENT_DATA(saveData.event));
+    }
+
+    // Important: Charger la phase du jeu en dernier pour s'assurer
+    // que toutes les données spécifiques à la phase sont déjà chargées
+    if (saveData.game) {
+      dispatch(LOAD_GAME_DATA(saveData.game));
+
+      // Réappliquer explicitement la phase du jeu pour déclencher toutes les logiques associées
+      if (saveData.game.gamePhase) {
+        dispatch(setGamePhase(saveData.game.gamePhase));
+      }
     }
 
     dispatch(setLoading(false));
@@ -150,6 +251,7 @@ export const loadGame = createAsyncThunk('save/loadGame', async (_, { dispatch }
   }
 });
 
+// Autres fonctions existantes...
 /**
  * Supprime la sauvegarde du localStorage
  * @returns {Promise<{success: boolean}>} - Résultat de la suppression
