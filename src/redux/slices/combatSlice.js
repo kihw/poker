@@ -24,6 +24,11 @@ const initialState = {
   pendingDamageMultiplier: 1,
   invulnerableNextTurn: false,
   playerDamagedLastTurn: false,
+  globalDamageBonus: 0,
+  criticalChanceBonus: 0,
+  nextSkillBonus: 0,
+  actionSpeedBonus: 0,
+  invulnerableNextTurn: false,
 };
 
 const combatSlice = createSlice({
@@ -438,7 +443,44 @@ const combatSlice = createSlice({
         state.playerDamagedLastTurn = savedData.playerDamagedLastTurn;
       }
     },
+    // Combat bonus state management
+    setCriticalChanceBonus: (state, action) => {
+      state.criticalChanceBonus = action.payload;
+    },
+    setGlobalDamageBonus: (state, action) => {
+      state.globalDamageBonus = action.payload;
+    },
+    setNextSkillBonus: (state, action) => {
+      state.nextSkillBonus = action.payload;
+    },
+    clearNextSkillBonus: (state) => {
+      state.nextSkillBonus = 0;
+    },
+    setActionSpeedBonus: (state, action) => {
+      state.actionSpeedBonus = action.payload;
+    },
+    setInvulnerableNextTurn: (state, action) => {
+      state.invulnerableNextTurn = action.payload;
+    },
+    triggerUltimateEffect: (state, action) => {
+      // Ultimate effects can be handled specifically based on their details
+      const effect = action.payload;
 
+      if (effect.type === 'ultimateSkill' && effect.value === 'powerfulAttack') {
+        // Apply a powerful attack effect
+        state.pendingUltimateAttack = {
+          multiplier: 2,
+          targetsAll: true,
+        };
+      } else if (effect.type === 'ultimate' && effect.value === 'domination') {
+        // Apply domination effect
+        state.pendingUltimateAttack = {
+          multiplier: 3,
+          targetsAll: true,
+        };
+        state.invulnerableNextTurn = true;
+      }
+    },
     resetCombatState: () => initialState,
   },
 });
@@ -459,6 +501,12 @@ export const {
   setPendingDamageBonus,
   setPendingDamageMultiplier,
   LOAD_SAVED_DATA,
+  setCriticalChanceBonus,
+  setGlobalDamageBonus,
+  setNextSkillBonus,
+  clearNextSkillBonus,
+  setActionSpeedBonus,
+  triggerUltimateEffect,
 } = combatSlice.actions;
 
 export default combatSlice.reducer;

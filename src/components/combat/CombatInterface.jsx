@@ -1,5 +1,5 @@
-// src/components/combat/CombatInterface.jsx - Optimized with proper memoization
-import React, { useCallback, useMemo } from 'react';
+// src/components/combat/CombatInterface.jsx - Modified to show bonus card combinations
+import React, { useCallback, useMemo, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,6 +17,8 @@ import {
 // Component Imports
 import Hand from '../card/Hand';
 import BonusCards from '../card/BonusCardDeck';
+import BonusDeckCombination from '../card/BonusDeckCombination'; // Nouveau composant
+import ActiveBonusCards from '../card/ActiveBonusCards';
 import EnemyStatus from './EnemyStatus';
 import HandCombinationDisplay from './HandCombinationDisplay';
 import CombatLog from './CombatLog';
@@ -31,6 +33,7 @@ import {
   setTurnPhase,
 } from '../../redux/slices/combatSlice';
 import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thunks/combatThunks';
+import { evaluateBonusDeck } from '../../redux/thunks/bonusDeckThunks';
 
 const CombatInterface = () => {
   const dispatch = useDispatch();
@@ -45,6 +48,14 @@ const CombatInterface = () => {
   const discardLimit = useSelector((state) => state.combat.discardLimit);
   const actionMode = useSelector((state) => state.combat.actionMode);
   const player = useSelector((state) => state.player);
+  const bonusDeckCombination = useSelector((state) => state.bonusCards.deckCombination);
+
+  // Évaluer la combinaison de bonus dès le chargement du combat
+  useEffect(() => {
+    if (activeBonusCards && activeBonusCards.length > 0 && !bonusDeckCombination.isActive) {
+      dispatch(evaluateBonusDeck());
+    }
+  }, [dispatch, activeBonusCards, bonusDeckCombination.isActive]);
 
   // Card Selection Handler - mémorisé avec useCallback
   const handleCardSelection = useCallback(
@@ -132,6 +143,11 @@ const CombatInterface = () => {
         <CombatLog />
       </div>
 
+      {/* Bonus Card Combination Section - NEW */}
+      <div className="md:col-span-2">
+        <BonusDeckCombination />
+      </div>
+
       {/* Combat Hand Section */}
       <div className="md:col-span-2">
         <Card variant="elevated" className="p-4">
@@ -178,7 +194,7 @@ const CombatInterface = () => {
         </Card>
       </div>
 
-      {/* Hand Result and Bonus Cards Section */}
+      {/* Hand Result and Active Bonus Cards Section */}
       <div className="md:col-span-2 space-y-4">
         <AnimatePresence>
           {handResult && turnPhase !== 'result' && (
@@ -197,6 +213,9 @@ const CombatInterface = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Active Bonus Cards */}
+        <ActiveBonusCards />
       </div>
 
       {/* Player Status Section */}
@@ -207,6 +226,8 @@ const CombatInterface = () => {
           gold={player.gold}
           xp={player.experience || 0}
           level={player.level || 1}
+          shield={player.shield || 0}
+          defenseBonus={player.defenseBonus || 0}
         />
       </div>
     </motion.div>

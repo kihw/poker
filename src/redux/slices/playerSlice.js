@@ -8,6 +8,7 @@ const initialState = {
   level: 1,
   experience: 0,
   shield: 0,
+  defenseBonus: 0,
   inventory: [],
 };
 
@@ -59,6 +60,10 @@ const playerSlice = createSlice({
     removeShield: (state, action) => {
       state.shield = Math.max(0, state.shield - action.payload);
     },
+    // Set defense bonus from bonus card combinations
+    setDefenseBonus: (state, action) => {
+      state.defenseBonus = action.payload;
+    },
     addToInventory: (state, action) => {
       state.inventory.push(action.payload);
     },
@@ -97,6 +102,7 @@ export const {
   removeFromInventory,
   resetPlayer,
   LOAD_SAVED_DATA,
+  setDefenseBonus,
 } = playerSlice.actions;
 
 export default playerSlice.reducer;

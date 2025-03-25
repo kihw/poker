@@ -1,4 +1,4 @@
-// src/redux/slices/bonusCardsSlice.js
+// src/redux/slices/bonusCardsSlice.js - Version mise à jour avec la gestion des combinaisons
 
 import { createSlice } from '@reduxjs/toolkit';
 import { ALL_BONUS_CARDS } from '../../data/bonus-cards';
@@ -11,6 +11,13 @@ const initialState = {
   active: [],
   // Nombre maximum de cartes bonus qui peuvent être équipées simultanément
   maxSlots: 5,
+  // État actuel de la combinaison des cartes bonus équipées
+  deckCombination: {
+    combination: null,
+    effect: null,
+    description: null,
+    isActive: false,
+  },
   loading: false,
   error: null,
 };
@@ -96,12 +103,28 @@ const bonusCardsSlice = createSlice({
         usesRemaining: cardToEquip.uses || 0,
         available: true,
       });
+
+      // Réinitialiser la combinaison car elle a changé
+      state.deckCombination = {
+        combination: null,
+        effect: null,
+        description: null,
+        isActive: false,
+      };
     },
 
     // Retirer une carte des emplacements actifs
     unequipCard: (state, action) => {
       const cardId = action.payload;
       state.active = state.active.filter((card) => card.id !== cardId);
+
+      // Réinitialiser la combinaison car elle a changé
+      state.deckCombination = {
+        combination: null,
+        effect: null,
+        description: null,
+        isActive: false,
+      };
     },
 
     // Utiliser une carte bonus active
@@ -121,6 +144,24 @@ const bonusCardsSlice = createSlice({
           state.active[index].available = false;
         }
       }
+    },
+
+    // Définir le résultat de l'évaluation du deck
+    setDeckCombination: (state, action) => {
+      state.deckCombination = {
+        ...action.payload,
+        isActive: true,
+      };
+    },
+
+    // Réinitialiser l'évaluation du deck
+    resetDeckCombination: (state) => {
+      state.deckCombination = {
+        combination: null,
+        effect: null,
+        description: null,
+        isActive: false,
+      };
     },
 
     // Réinitialiser les utilisations des cartes pour un nouveau combat
@@ -170,8 +211,41 @@ const bonusCardsSlice = createSlice({
             available: state.active[activeIndex].available,
           };
         }
+
+        // Réinitialiser la combinaison car une carte a été améliorée
+        state.deckCombination = {
+          combination: null,
+          effect: null,
+          description: null,
+          isActive: false,
+        };
       }
     },
+
+    // Réinitialiser l'ensemble des cartes bonus
+    resetBonusCards: () => initialState,
+  },
+  // Gestion des thunks
+  extraReducers: (builder) => {
+    builder
+      // Gérer les états de thunk evaluateBonusDeck
+      .addCase('bonusCards/evaluateDeck/pending', (state) => {
+        state.loading = true;
+      })
+      .addCase('bonusCards/evaluateDeck/fulfilled', (state, action) => {
+        state.loading = false;
+
+        if (action.payload.success && action.payload.evaluation) {
+          state.deckCombination = {
+            ...action.payload.evaluation,
+            isActive: true,
+          };
+        }
+      })
+      .addCase('bonusCards/evaluateDeck/rejected', (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
   },
 });
 
@@ -183,6 +257,9 @@ export const {
   useCard,
   resetCardUses,
   upgradeCard,
+  setDeckCombination,
+  resetDeckCombination,
+  resetBonusCards,
 } = bonusCardsSlice.actions;
 
 export default bonusCardsSlice.reducer;

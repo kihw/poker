@@ -1,4 +1,4 @@
-// src/redux/thunks/combatThunks.js
+// src/redux/thunks/combatThunks.js - Mise à jour avec l'intégration des combinaisons de cartes bonus
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
   setEnemy,
@@ -9,8 +9,9 @@ import {
 } from '../slices/combatSlice';
 import { setGamePhase, incrementStage } from '../slices/gameSlice';
 import { setActionFeedback } from '../slices/uiSlice';
-import { takeDamage } from '../slices/playerSlice'; // Important import for damage handling
+import { takeDamage } from '../slices/playerSlice';
 import { evaluatePartialHand } from '../../core/hand-evaluation.js';
+import { evaluateBonusDeck, resetBonusDeckEffects } from './bonusDeckThunks';
 
 // Import and re-export specific thunks from combatCycleThunks
 import {
@@ -37,6 +38,9 @@ export const continueAfterVictory = createAsyncThunk(
     try {
       // Traiter la victoire si ce n'est pas déjà fait
       await dispatch(processCombatVictory());
+
+      // Réinitialiser les effets du deck bonus
+      await dispatch(resetBonusDeckEffects());
 
       // Vérifier si c'était un boss
       const state = getState();
@@ -89,6 +93,9 @@ export const startNewCombat = createAsyncThunk(
       // Changer la phase du jeu
       dispatch(setGamePhase('combat'));
 
+      // Évaluer le deck bonus pour appliquer les effets de combinaison
+      await dispatch(evaluateBonusDeck());
+
       // Distribuer les cartes
       dispatch(dealHand());
 
@@ -114,6 +121,10 @@ export const attackEnemy = createAsyncThunk(
       const hand = state.combat.hand;
       const selectedCardsIndices = state.combat.selectedCards;
 
+      // Obtenir les bonus globaux de dégâts du deck bonus
+      const bonusDeckCombination = state.bonusCards.deckCombination;
+      const globalDamageBonus = state.combat.globalDamageBonus || 0;
+
       console.log('Attaque avec cartes sélectionnées:', selectedCardsIndices);
 
       // Extraire les cartes sélectionnées
@@ -122,14 +133,52 @@ export const attackEnemy = createAsyncThunk(
       // Évaluer la main
       const partialHandResult = evaluatePartialHand(selectedCards);
 
-      // Calculer les dégâts
+      // Calculer les dégâts de base
       const baseDamage = partialHandResult.baseDamage;
-      const totalDamage = Math.max(1, Math.floor(baseDamage));
 
-      console.log('Évaluation de la main:', partialHandResult.handName, 'Dégâts:', totalDamage);
-
-      // Préparer les bonus
+      // Appliquer les bonus du deck bonus s'il y a une combinaison active
+      let totalDamage = baseDamage;
       const bonusEffects = [];
+
+      // Appliquer le bonus global de dégâts si présent
+      if (globalDamageBonus > 0) {
+        const damageBonus = Math.floor(baseDamage * (globalDamageBonus / 100));
+        totalDamage += damageBonus;
+        bonusEffects.push(`Bonus de dégâts global: +${globalDamageBonus}% (${damageBonus} points)`);
+      }
+
+      // Appliquer d'autres bonus spécifiques en fonction du type d'effet
+      if (bonusDeckCombination?.isActive && bonusDeckCombination.effect) {
+        // Bonus d'une combinaison de cartes
+        bonusEffects.push(
+          `${bonusDeckCombination.combination.name}: ${bonusDeckCombination.description}`
+        );
+
+        // Appliquer des effets spécifiques selon le type
+        if (bonusDeckCombination.effect.type === 'nextSkillDamage') {
+          // Bonus pour la compétence suivante uniquement
+          const skillBonus = Math.floor(baseDamage * (bonusDeckCombination.effect.value / 100));
+          totalDamage += skillBonus;
+          bonusEffects.push(
+            `Bonus de compétence: +${bonusDeckCombination.effect.value}% (${skillBonus} points)`
+          );
+
+          // Réinitialiser ce bonus après utilisation
+          dispatch({ type: 'combat/clearNextSkillBonus' });
+        }
+      }
+
+      // S'assurer que les dégâts sont au moins égaux à 1
+      totalDamage = Math.max(1, Math.floor(totalDamage));
+
+      console.log(
+        'Évaluation de la main:',
+        partialHandResult.handName,
+        'Dégâts de base:',
+        baseDamage,
+        'Dégâts totaux:',
+        totalDamage
+      );
 
       // Dispatcher l'évaluation de la main avec les dégâts
       dispatch(
@@ -169,12 +218,14 @@ export const attackEnemy = createAsyncThunk(
 /**
  * Traite l'attaque de l'ennemi
  */
-
 export const processEnemyAttack = createAsyncThunk(
   'combat/processEnemyAttack',
   async (_, { dispatch, getState }) => {
     const state = getState();
     const enemy = state.combat.enemy;
+    const bonusDeckCombination = state.bonusCards.deckCombination;
+    const defenseBonus = state.player.defenseBonus || 0;
+    const isInvulnerable = state.combat.invulnerableNextTurn || false;
 
     if (!enemy || enemy.health <= 0) {
       return { attacked: false };
@@ -183,14 +234,49 @@ export const processEnemyAttack = createAsyncThunk(
     // Make the enemy attack (update log)
     dispatch(enemyAction());
 
-    // IMPORTANT: Use takeDamage to apply damage to the player
-    dispatch(takeDamage(enemy.attack));
+    // Si le joueur est invulnérable, ignorer les dégâts
+    if (isInvulnerable) {
+      dispatch(
+        setActionFeedback({
+          message: 'Vous êtes invulnérable pour ce tour!',
+          type: 'success',
+        })
+      );
 
-    console.log(`Player took ${enemy.attack} damage`);
+      // Réinitialiser l'invulnérabilité après utilisation
+      dispatch({ type: 'combat/setInvulnerableNextTurn', payload: false });
+
+      return {
+        attacked: true,
+        damage: 0,
+        blocked: true,
+      };
+    }
+
+    // Calculer les dégâts en tenant compte du bonus de défense
+    let damageAmount = enemy.attack;
+
+    // Appliquer la réduction de dégâts grâce au bonus de défense
+    if (defenseBonus > 0) {
+      const damageReduction = Math.floor(enemy.attack * (defenseBonus / 100));
+      damageAmount = Math.max(1, enemy.attack - damageReduction);
+
+      dispatch(
+        setActionFeedback({
+          message: `Votre défense a réduit les dégâts de ${damageReduction} points!`,
+          type: 'info',
+        })
+      );
+    }
+
+    // IMPORTANT: Use takeDamage to apply damage to the player
+    dispatch(takeDamage(damageAmount));
+
+    console.log(`Player took ${damageAmount} damage`);
 
     return {
       attacked: true,
-      damage: enemy.attack,
+      damage: damageAmount,
     };
   }
 );
