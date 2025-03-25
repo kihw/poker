@@ -1,6 +1,6 @@
-// src/components/card/BonusCardDeck.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+// src/components/card/BonusCardDeck.jsx - Unified from BonusCardManager.jsx and BonusCardDeck.jsx
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import {
@@ -11,45 +11,46 @@ import {
 } from '../../redux/slices/bonusCardsSlice';
 import { spendGold } from '../../redux/slices/playerSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
+import { Card, Badge, Tooltip } from '../ui/DesignSystem';
 
 /**
- * Composant pour gérer le deck de cartes bonus du joueur
- * Permet de gérer l'inventaire permanent et les cartes actives
+ * Enhanced component for managing the player's bonus card collection
+ * Handles both permanent inventory and active cards
  */
 const BonusCardDeck = ({ readOnly = false }) => {
   const dispatch = useDispatch();
 
-  // Sélecteurs Redux
-  const bonusCardCollection = useSelector((state) => state.bonusCards?.collection || []);
+  // Redux selectors
+  const BonusCardDeck = useSelector((state) => state.bonusCards?.collection || []);
   const activeBonusCards = useSelector((state) => state.bonusCards?.active || []);
   const maxBonusCardSlots = useSelector((state) => state.bonusCards?.maxSlots || 3);
   const playerGold = useSelector((state) => state.player?.gold || 0);
   const gamePhase = useSelector((state) => state.game?.gamePhase);
 
-  // État local pour le filtrage et le tri
+  // Local state for filtering and sorting
   const [filterOptions, setFilterOptions] = useState({
-    tab: 'collection', // 'collection' ou 'equipped'
+    tab: 'collection', // 'collection' or 'equipped'
     search: '',
     sortBy: 'name', // 'name', 'rarity', 'level'
     rarity: 'all',
   });
 
-  // État pour afficher les détails d'une carte
+  // State for showing card details
   const [selectedCard, setSelectedCard] = useState(null);
   const [upgradeConfirmation, setUpgradeConfirmation] = useState(false);
 
-  // Charger les cartes bonus du localStorage au montage du composant
+  // Load bonus cards from localStorage on component mount
   useEffect(() => {
     dispatch(loadFromLocalStorage());
   }, [dispatch]);
 
-  // Filtrage des cartes mémorisé
+  // Memoized filtering of cards
   const filteredCards = useMemo(() => {
-    if (!bonusCardCollection || !Array.isArray(bonusCardCollection)) return [];
+    if (!BonusCardDeck || !Array.isArray(BonusCardDeck)) return [];
 
-    let cards = [...bonusCardCollection];
+    let cards = [...BonusCardDeck];
 
-    // Filtre par onglet (collection ou équipées)
+    // Filter by tab (collection or equipped)
     if (filterOptions.tab === 'equipped') {
       cards = activeBonusCards.slice();
     } else {
@@ -57,7 +58,7 @@ const BonusCardDeck = ({ readOnly = false }) => {
       cards = cards.filter((card) => !activeCardIds.includes(card.id));
     }
 
-    // Filtre par recherche texte
+    // Filter by text search
     if (filterOptions.search) {
       const searchTerm = filterOptions.search.toLowerCase();
       cards = cards.filter(
@@ -67,12 +68,12 @@ const BonusCardDeck = ({ readOnly = false }) => {
       );
     }
 
-    // Filtre par rareté
+    // Filter by rarity
     if (filterOptions.rarity !== 'all') {
       cards = cards.filter((card) => card.rarity === filterOptions.rarity);
     }
 
-    // Tri
+    // Sort cards
     return cards.sort((a, b) => {
       if (filterOptions.sortBy === 'name') {
         return a.name.localeCompare(b.name);
@@ -90,10 +91,10 @@ const BonusCardDeck = ({ readOnly = false }) => {
       }
       return 0;
     });
-  }, [bonusCardCollection, activeBonusCards, filterOptions]);
+  }, [BonusCardDeck, activeBonusCards, filterOptions]);
 
-  // Obtenir la couleur en fonction de la rareté
-  const getRarityColor = (rarity) => {
+  // Get color based on rarity
+  const getRarityColor = useCallback((rarity) => {
     const rarityColors = {
       common: '#9CA3AF',
       uncommon: '#10B981',
@@ -102,205 +103,214 @@ const BonusCardDeck = ({ readOnly = false }) => {
       legendary: '#F59E0B',
     };
     return rarityColors[rarity] || '#9CA3AF';
-  };
+  }, []);
 
-  // Gestionnaires d'événements
-  const handleEquipCard = (cardId) => {
-    if (readOnly) return;
+  // Event handlers
+  const handleEquipCard = useCallback(
+    (cardId) => {
+      if (readOnly) return;
 
-    if (activeBonusCards.length >= maxBonusCardSlots) {
+      if (activeBonusCards.length >= maxBonusCardSlots) {
+        dispatch(
+          setActionFeedback({
+            message: 'Maximum number of equipped cards reached',
+            type: 'warning',
+          })
+        );
+        return;
+      }
+
+      dispatch(equipCard(cardId));
+
       dispatch(
         setActionFeedback({
-          message: 'Nombre maximum de cartes équipées atteint',
-          type: 'warning',
+          message: 'Card equipped',
+          type: 'success',
         })
       );
-      return;
-    }
+    },
+    [dispatch, activeBonusCards.length, maxBonusCardSlots, readOnly]
+  );
 
-    dispatch(equipCard(cardId));
+  const handleUnequipCard = useCallback(
+    (cardId) => {
+      if (readOnly) return;
 
-    dispatch(
-      setActionFeedback({
-        message: 'Carte équipée',
-        type: 'success',
-      })
-    );
-  };
+      dispatch(unequipCard(cardId));
 
-  const handleUnequipCard = (cardId) => {
-    if (readOnly) return;
-
-    dispatch(unequipCard(cardId));
-
-    dispatch(
-      setActionFeedback({
-        message: 'Carte retirée',
-        type: 'info',
-      })
-    );
-  };
-
-  const handleUpgradeCard = (cardId) => {
-    if (readOnly) return;
-
-    const card = bonusCardCollection.find((c) => c.id === cardId);
-    if (!card) return;
-
-    // Coût d'amélioration
-    const upgradeCost = 50;
-
-    if (playerGold < upgradeCost) {
       dispatch(
         setActionFeedback({
-          message: "Or insuffisant pour l'amélioration",
-          type: 'warning',
-        })
-      );
-      return;
-    }
-
-    // Vérifier si la carte a atteint son niveau maximum
-    if (card.level && card.level >= 3) {
-      dispatch(
-        setActionFeedback({
-          message: 'Cette carte est déjà au niveau maximum',
+          message: 'Card removed',
           type: 'info',
         })
       );
-      return;
-    }
+    },
+    [dispatch, readOnly]
+  );
 
-    // Si la confirmation est demandée, afficher d'abord
-    if (!upgradeConfirmation) {
-      setSelectedCard(card);
-      setUpgradeConfirmation(true);
-      return;
-    }
+  const handleUpgradeCard = useCallback(
+    (cardId) => {
+      if (readOnly) return;
 
-    // Effectuer l'amélioration
-    dispatch(spendGold(upgradeCost));
-    dispatch(upgradeCard({ cardId }));
+      const card = BonusCardDeck.find((c) => c.id === cardId);
+      if (!card) return;
 
-    dispatch(
-      setActionFeedback({
-        message: 'Carte améliorée avec succès',
-        type: 'success',
-      })
-    );
+      // Upgrade cost
+      const upgradeCost = 50;
 
-    // Réinitialiser l'état de confirmation
-    setUpgradeConfirmation(false);
-    setSelectedCard(null);
-  };
+      if (playerGold < upgradeCost) {
+        dispatch(
+          setActionFeedback({
+            message: 'Not enough gold for the upgrade',
+            type: 'warning',
+          })
+        );
+        return;
+      }
 
-  // Gestion de la sélection et désélection de carte
-  const handleCardSelect = (card) => {
+      // Check if card has reached maximum level
+      if (card.level && card.level >= 3) {
+        dispatch(
+          setActionFeedback({
+            message: 'This card is already at maximum level',
+            type: 'info',
+          })
+        );
+        return;
+      }
+
+      // If confirmation is requested, show it first
+      if (!upgradeConfirmation) {
+        setSelectedCard(card);
+        setUpgradeConfirmation(true);
+        return;
+      }
+
+      // Perform the upgrade
+      dispatch(spendGold(upgradeCost));
+      dispatch(upgradeCard({ cardId }));
+
+      dispatch(
+        setActionFeedback({
+          message: 'Card successfully upgraded',
+          type: 'success',
+        })
+      );
+
+      // Reset confirmation state
+      setUpgradeConfirmation(false);
+      setSelectedCard(null);
+    },
+    [dispatch, playerGold, BonusCardDeck, upgradeConfirmation, readOnly]
+  );
+
+  // Card selection and deselection handler
+  const handleCardSelect = useCallback((card) => {
     setSelectedCard((prev) => (prev && prev.id === card.id ? null : card));
     setUpgradeConfirmation(false);
-  };
+  }, []);
 
-  // Fermer la modale de détails
-  const handleCloseDetails = () => {
+  // Close details modal
+  const handleCloseDetails = useCallback(() => {
     setSelectedCard(null);
     setUpgradeConfirmation(false);
-  };
+  }, []);
 
-  // Rendu d'une carte
-  const renderCardItem = (card) => {
-    const isEquipped = activeBonusCards.some((c) => c.id === card.id);
-    const canUpgrade = (!card.level || card.level < 3) && playerGold >= 50;
-    const rarity = card.rarity || 'common';
+  // Render a card item
+  const renderCardItem = useCallback(
+    (card) => {
+      const isEquipped = activeBonusCards.some((c) => c.id === card.id);
+      const canUpgrade = (!card.level || card.level < 3) && playerGold >= 50;
+      const rarity = card.rarity || 'common';
 
-    return (
-      <motion.div
-        key={card.id}
-        layoutId={`card-${card.id}`}
-        className="mb-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-        whileHover={{ scale: 1.02 }}
-      >
-        <div className="bg-gray-800 overflow-hidden rounded-lg shadow-md">
-          <div className="p-4">
-            <div
-              className="border-l-4 px-3 py-2 rounded-sm"
-              style={{ borderColor: getRarityColor(rarity) }}
-            >
-              <div className="flex justify-between items-start">
-                <h3 className="font-bold text-lg text-white">{card.name}</h3>
-                <div className="flex items-center space-x-2">
-                  <span
-                    className="px-2 py-0.5 text-xs rounded bg-opacity-80 text-white"
-                    style={{ backgroundColor: getRarityColor(rarity) }}
-                  >
-                    {rarity}
-                  </span>
-                  {card.level && (
-                    <span className="px-2 py-0.5 text-xs rounded bg-gray-700 text-gray-300">
-                      Nv. {card.level}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-300 mt-2 mb-3">{card.description}</p>
-
-              <div className="border-t border-gray-700 pt-2 mt-2">
-                <div className="flex text-xs text-gray-400 mb-2">
-                  <span className="mr-1">Type:</span>
-                  <span className="font-medium">
-                    {card.effect === 'active' ? 'Actif' : 'Passif'}
-                  </span>
-                  {card.effect === 'active' && (
-                    <span className="ml-2">(Utilisations: {card.uses || 1})</span>
-                  )}
-                </div>
-
-                {!readOnly && (
-                  <div className="flex justify-between mt-3">
-                    {isEquipped ? (
-                      <button
-                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded"
-                        onClick={() => handleUnequipCard(card.id)}
-                      >
-                        Retirer
-                      </button>
-                    ) : (
-                      <button
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
-                        onClick={() => handleEquipCard(card.id)}
-                        disabled={activeBonusCards.length >= maxBonusCardSlots}
-                      >
-                        Équiper
-                      </button>
-                    )}
-
-                    <div className="relative group">
-                      <button
-                        className={`px-3 py-1 bg-gray-700 text-white text-sm rounded ${!canUpgrade || readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-600'}`}
-                        disabled={!canUpgrade || readOnly}
-                        onClick={() => handleUpgradeCard(card.id)}
-                      >
-                        Améliorer
-                      </button>
-                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        Coût d'amélioration: 50 or (Niveau {card.level || 1})
-                      </div>
-                    </div>
+      return (
+        <motion.div
+          key={card.id}
+          layoutId={`card-${card.id}`}
+          className="mb-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          whileHover={{ scale: 1.02 }}
+        >
+          <Card className="overflow-hidden">
+            <div className="p-4">
+              <div
+                className="border-l-4 px-3 py-2 rounded-sm"
+                style={{ borderColor: getRarityColor(rarity) }}
+              >
+                <div className="flex justify-between items-start">
+                  <h3 className="font-bold text-lg">{card.name}</h3>
+                  <div className="flex items-center space-x-2">
+                    <Badge style={{ backgroundColor: getRarityColor(rarity) }}>{rarity}</Badge>
+                    {card.level && <Badge variant="outline">Lv. {card.level}</Badge>}
                   </div>
-                )}
+                </div>
+
+                <p className="text-sm text-gray-300 mt-2 mb-3">{card.description}</p>
+
+                <div className="border-t border-gray-700 pt-2 mt-2">
+                  <div className="flex text-xs text-gray-400 mb-2">
+                    <span className="mr-1">Type:</span>
+                    <span className="font-medium">
+                      {card.effect === 'active' ? 'Active' : 'Passive'}
+                    </span>
+                    {card.effect === 'active' && (
+                      <span className="ml-2">(Uses: {card.uses || 1})</span>
+                    )}
+                  </div>
+
+                  {!readOnly && (
+                    <div className="flex justify-between mt-3">
+                      {isEquipped ? (
+                        <button
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded"
+                          onClick={() => handleUnequipCard(card.id)}
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <button
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+                          onClick={() => handleEquipCard(card.id)}
+                          disabled={activeBonusCards.length >= maxBonusCardSlots}
+                        >
+                          Equip
+                        </button>
+                      )}
+
+                      <Tooltip content={`Upgrade cost: 50 gold (Level ${card.level || 1})`}>
+                        <button
+                          className={`px-3 py-1 bg-gray-700 text-white text-sm rounded ${!canUpgrade || readOnly ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-600'}`}
+                          disabled={!canUpgrade || readOnly}
+                          onClick={() => handleUpgradeCard(card.id)}
+                        >
+                          Upgrade
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+          </Card>
+        </motion.div>
+      );
+    },
+    [
+      activeBonusCards,
+      maxBonusCardSlots,
+      playerGold,
+      handleEquipCard,
+      handleUnequipCard,
+      handleUpgradeCard,
+      getRarityColor,
+      readOnly,
+    ]
+  );
 
-  // Rendu du modal de détails
+  // Render card details modal
   const renderCardDetails = () => {
     if (!selectedCard) return null;
 
@@ -321,12 +331,9 @@ const BonusCardDeck = ({ readOnly = false }) => {
         >
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-xl font-bold text-white">{selectedCard.name}</h2>
-            <span
-              className="px-2 py-0.5 text-xs rounded text-white"
-              style={{ backgroundColor: getRarityColor(selectedCard.rarity) }}
-            >
+            <Badge style={{ backgroundColor: getRarityColor(selectedCard.rarity) }}>
               {selectedCard.rarity}
-            </span>
+            </Badge>
           </div>
 
           <p className="text-gray-300 mb-4">{selectedCard.description}</p>
@@ -335,16 +342,16 @@ const BonusCardDeck = ({ readOnly = false }) => {
             <div>
               <h3 className="text-sm text-gray-400 mb-1">Type</h3>
               <p className="font-medium text-white">
-                {selectedCard.effect === 'active' ? 'Actif' : 'Passif'}
+                {selectedCard.effect === 'active' ? 'Active' : 'Passive'}
               </p>
             </div>
             <div>
-              <h3 className="text-sm text-gray-400 mb-1">Niveau</h3>
+              <h3 className="text-sm text-gray-400 mb-1">Level</h3>
               <p className="font-medium text-white">{selectedCard.level || 1}</p>
             </div>
             {selectedCard.bonus && (
               <div className="col-span-2">
-                <h3 className="text-sm text-gray-400 mb-1">Effet</h3>
+                <h3 className="text-sm text-gray-400 mb-1">Effect</h3>
                 <p className="font-medium text-white">
                   {selectedCard.bonus.type}: {selectedCard.bonus.value}
                 </p>
@@ -354,13 +361,13 @@ const BonusCardDeck = ({ readOnly = false }) => {
 
           {upgradeConfirmation ? (
             <div className="border-t border-gray-700 pt-4 mt-4">
-              <p className="text-yellow-300 mb-4">Confirmer l'amélioration pour 50 or ?</p>
+              <p className="text-yellow-300 mb-4">Confirm upgrade for 50 gold?</p>
               <div className="flex space-x-3">
                 <button
                   className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
                   onClick={() => handleUpgradeCard(selectedCard.id)}
                 >
-                  Confirmer
+                  Confirm
                 </button>
                 <button
                   className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded"
@@ -369,7 +376,7 @@ const BonusCardDeck = ({ readOnly = false }) => {
                     setSelectedCard(null);
                   }}
                 >
-                  Annuler
+                  Cancel
                 </button>
               </div>
             </div>
@@ -379,7 +386,7 @@ const BonusCardDeck = ({ readOnly = false }) => {
                 className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
                 onClick={handleCloseDetails}
               >
-                Fermer
+                Close
               </button>
             </div>
           )}
@@ -390,14 +397,14 @@ const BonusCardDeck = ({ readOnly = false }) => {
 
   return (
     <div className="bg-gray-900 p-4 rounded-lg">
-      {/* En-tête et filtres */}
+      {/* Header and filters */}
       <div className="flex flex-col md:flex-row justify-between mb-4">
         <h2 className="text-xl font-bold mb-3 md:mb-0 flex items-center text-white">
           <span className="mr-2">🃏</span>
-          Cartes Bonus
+          Bonus Cards
           {readOnly && (
             <span className="ml-2 px-2 py-0.5 text-xs bg-yellow-600 text-white rounded">
-              Mode lecture seule
+              Read-only mode
             </span>
           )}
         </h2>
@@ -407,22 +414,22 @@ const BonusCardDeck = ({ readOnly = false }) => {
             className={`px-3 py-1 text-sm rounded ${filterOptions.tab === 'collection' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
             onClick={() => setFilterOptions((prev) => ({ ...prev, tab: 'collection' }))}
           >
-            Collection {bonusCardCollection.length > 0 && `(${bonusCardCollection.length})`}
+            Collection {BonusCardDeck.length > 0 && `(${BonusCardDeck.length})`}
           </button>
           <button
             className={`px-3 py-1 text-sm rounded ${filterOptions.tab === 'equipped' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
             onClick={() => setFilterOptions((prev) => ({ ...prev, tab: 'equipped' }))}
           >
-            Équipées ({activeBonusCards.length}/{maxBonusCardSlots})
+            Equipped ({activeBonusCards.length}/{maxBonusCardSlots})
           </button>
         </div>
       </div>
 
-      {/* Filtres avancés */}
+      {/* Advanced filters */}
       <div className="mb-4 flex flex-wrap gap-2">
         <input
           type="text"
-          placeholder="Rechercher..."
+          placeholder="Search..."
           className="px-3 py-1 border border-gray-700 bg-gray-800 text-white rounded flex-grow md:flex-grow-0"
           value={filterOptions.search}
           onChange={(e) => setFilterOptions((prev) => ({ ...prev, search: e.target.value }))}
@@ -433,12 +440,12 @@ const BonusCardDeck = ({ readOnly = false }) => {
           value={filterOptions.rarity}
           onChange={(e) => setFilterOptions((prev) => ({ ...prev, rarity: e.target.value }))}
         >
-          <option value="all">Toutes raretés</option>
-          <option value="common">Commune</option>
-          <option value="uncommon">Peu commune</option>
+          <option value="all">All rarities</option>
+          <option value="common">Common</option>
+          <option value="uncommon">Uncommon</option>
           <option value="rare">Rare</option>
-          <option value="epic">Épique</option>
-          <option value="legendary">Légendaire</option>
+          <option value="epic">Epic</option>
+          <option value="legendary">Legendary</option>
         </select>
 
         <select
@@ -446,13 +453,13 @@ const BonusCardDeck = ({ readOnly = false }) => {
           value={filterOptions.sortBy}
           onChange={(e) => setFilterOptions((prev) => ({ ...prev, sortBy: e.target.value }))}
         >
-          <option value="name">Trier par nom</option>
-          <option value="rarity">Trier par rareté</option>
-          <option value="level">Trier par niveau</option>
+          <option value="name">Sort by name</option>
+          <option value="rarity">Sort by rarity</option>
+          <option value="level">Sort by level</option>
         </select>
       </div>
 
-      {/* Liste des cartes */}
+      {/* Card list */}
       <div className="mt-4">
         <AnimatePresence>
           {filteredCards.length > 0 ? (
@@ -464,44 +471,42 @@ const BonusCardDeck = ({ readOnly = false }) => {
               exit={{ opacity: 0 }}
               className="text-center py-8 text-gray-400"
             >
-              Aucune carte {filterOptions.tab === 'equipped' ? 'équipée' : ''} trouvée.
+              No {filterOptions.tab === 'equipped' ? 'equipped ' : ''}cards found.
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Modal de détails de carte */}
+      {/* Card details modal */}
       <AnimatePresence>{selectedCard && renderCardDetails()}</AnimatePresence>
 
-      {/* Informations sur les emplacements */}
+      {/* Slot information */}
       {filterOptions.tab === 'collection' && (
         <div className="mt-4 p-3 bg-blue-900 bg-opacity-30 text-blue-300 rounded-md text-sm">
           <p className="flex items-center">
             <span className="mr-2">ℹ️</span>
-            Vous disposez de {maxBonusCardSlots} emplacements pour équiper des cartes bonus.
+            You have {maxBonusCardSlots} slots available for bonus cards.
             {maxBonusCardSlots < 5 &&
-              " Vous pouvez débloquer plus d'emplacements en progressant dans le jeu."}
+              ' You can unlock more slots as you progress through the game.'}
           </p>
         </div>
       )}
 
-      {/* Guide d'utilisation */}
+      {/* Usage guide */}
       <div className="mt-4 border-t border-gray-700 pt-4 text-sm text-gray-400">
         <details>
           <summary className="cursor-pointer font-medium mb-2 text-gray-300">
-            Guide d'utilisation des cartes bonus
+            Bonus Cards Usage Guide
           </summary>
           <div className="pl-4 space-y-2">
             <p>
-              • Les cartes <strong>passives</strong> s'activent automatiquement lorsque leurs
-              conditions sont remplies.
+              • <strong>Passive</strong> cards activate automatically when their conditions are met.
             </p>
             <p>
-              • Les cartes <strong>actives</strong> doivent être activées manuellement pendant les
-              combats.
+              • <strong>Active</strong> cards must be manually activated during combat.
             </p>
-            <p>• Améliorez vos cartes pour augmenter leur puissance (jusqu'au niveau 3).</p>
-            <p>• Les cartes équipées seront disponibles pendant les combats.</p>
+            <p>• Upgrade your cards to increase their power (up to level 3).</p>
+            <p>• Equipped cards will be available during combat.</p>
           </div>
         </details>
       </div>
