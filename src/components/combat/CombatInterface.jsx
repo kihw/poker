@@ -1,235 +1,253 @@
-// src/components/combat/CombatInterface.jsx - Modified to show bonus card combinations
-import React, { useCallback, useMemo, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+// src/components/combat/CombatInterface.jsx - Version améliorée avec animations de combat
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSelector, useDispatch } from 'react-redux';
 
-// Design System Imports
-import {
-  Button,
-  Card,
-  Badge,
-  Tooltip,
-  DESIGN_TOKENS,
-  AnimationPresets,
-  Icons,
-} from '../ui/DesignSystem';
-
-// Component Imports
-import Hand from '../card/Hand';
-import BonusCards from '../card/BonusCardDeck';
-import BonusDeckCombination from '../card/BonusDeckCombination'; // Nouveau composant
-import ActiveBonusCards from '../card/ActiveBonusCards';
-import EnemyStatus from './EnemyStatus';
-import HandCombinationDisplay from './HandCombinationDisplay';
-import CombatLog from './CombatLog';
-import PlayerStatus from './PlayerStatus';
-
-// Redux Actions
-import {
-  toggleCardSelection,
-  dealHand,
-  discardCards,
-  setActionMode,
-  setTurnPhase,
-} from '../../redux/slices/combatSlice';
-import { attackEnemy, processEnemyAttack, checkCombatEnd } from '../../redux/thunks/combatThunks';
-import { evaluateBonusDeck } from '../../redux/thunks/bonusDeckThunks';
-
-const CombatInterface = () => {
-  const dispatch = useDispatch();
-
-  // Selectors avec useSelector hooks - optimisés pour la performance
-  const enemy = useSelector((state) => state.combat.enemy);
-  const hand = useSelector((state) => state.combat.hand);
-  const selectedCards = useSelector((state) => state.combat.selectedCards);
-  const turnPhase = useSelector((state) => state.combat.turnPhase);
-  const handResult = useSelector((state) => state.combat.handResult);
-  const activeBonusCards = useSelector((state) => state.bonusCards.active);
-  const discardLimit = useSelector((state) => state.combat.discardLimit);
-  const actionMode = useSelector((state) => state.combat.actionMode);
-  const player = useSelector((state) => state.player);
-  const bonusDeckCombination = useSelector((state) => state.bonusCards.deckCombination);
-
-  // Évaluer la combinaison de bonus dès le chargement du combat
-  useEffect(() => {
-    if (activeBonusCards && activeBonusCards.length > 0 && !bonusDeckCombination.isActive) {
-      dispatch(evaluateBonusDeck());
-    }
-  }, [dispatch, activeBonusCards, bonusDeckCombination.isActive]);
-
-  // Card Selection Handler - mémorisé avec useCallback
-  const handleCardSelection = useCallback(
-    (index) => {
-      dispatch(toggleCardSelection(index));
+// Composant d'animation pour les dégâts/soins
+const CombatAnimation = ({ type, value }) => {
+  const animationVariants = {
+    damage: {
+      initial: { opacity: 0, y: -20, scale: 0.5 },
+      animate: {
+        opacity: 1,
+        y: -50,
+        scale: 1,
+        transition: {
+          type: 'spring',
+          stiffness: 300,
+          damping: 10,
+        },
+      },
+      exit: {
+        opacity: 0,
+        y: -100,
+        scale: 0.5,
+        transition: { duration: 0.5 },
+      },
     },
-    [dispatch]
-  );
-
-  // Attack Handler - mémorisé avec useCallback
-  const handleAttack = useCallback(async () => {
-    if (selectedCards.length === 0) return;
-
-    // Effectuer l'attaque
-    await dispatch(attackEnemy());
-
-    // Faire attaquer l'ennemi
-    if (enemy && enemy.health > 0) {
-      await dispatch(processEnemyAttack());
-    }
-
-    // Vérifier la fin du combat
-    const result = await dispatch(checkCombatEnd()).unwrap();
-
-    // Si le combat n'est pas terminé, passer en phase "result"
-    if (result.status === 'ongoing') {
-      dispatch(setTurnPhase('result'));
-    }
-  }, [dispatch, selectedCards, enemy]);
-
-  // Discard Handler - mémorisé avec useCallback
-  const handleDiscard = useCallback(() => {
-    if (selectedCards.length > 0) {
-      dispatch(discardCards(selectedCards));
-    }
-  }, [dispatch, selectedCards]);
-
-  // Action Selection Handler - mémorisé avec useCallback
-  // IMPORTANT: Cette définition doit venir APRÈS handleAttack et handleDiscard
-  const handleActionSelect = useCallback(
-    (action) => {
-      dispatch(setActionMode(action));
-
-      // Si l'action est "attack", on attaque immédiatement
-      if (action === 'attack') {
-        handleAttack();
-      }
-      // Si l'action est "discard", on défausse immédiatement
-      else if (action === 'discard') {
-        handleDiscard();
-      }
+    heal: {
+      initial: { opacity: 0, y: -20, scale: 0.5, color: 'green' },
+      animate: {
+        opacity: 1,
+        y: -50,
+        scale: 1,
+        color: 'green',
+        transition: {
+          type: 'spring',
+          stiffness: 300,
+          damping: 10,
+        },
+      },
+      exit: {
+        opacity: 0,
+        y: -100,
+        scale: 0.5,
+        transition: { duration: 0.5 },
+      },
     },
-    [dispatch, handleAttack, handleDiscard]
-  );
-
-  // Next Hand Handler - mémorisé avec useCallback
-  const handleNextHand = useCallback(() => {
-    dispatch(dealHand());
-  }, [dispatch]);
-
-  // Best Hand Cards - mémorisé avec useMemo
-  const bestHandCards = useMemo(() => {
-    return handResult ? handResult.cards.map((card) => hand.indexOf(card)) : [];
-  }, [handResult, hand]);
+  };
 
   return (
     <motion.div
-      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl"
+      variants={animationVariants[type]}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className={`
+        absolute 
+        z-50 
+        text-3xl 
+        font-bold 
+        ${type === 'damage' ? 'text-red-500' : 'text-green-500'}
+      `}
+    >
+      {type === 'damage' ? `-${value}` : `+${value}`}
+    </motion.div>
+  );
+};
+
+// Composant de personnage de combat
+const BattleCharacter = ({
+  name,
+  hp,
+  maxHp,
+  position = 'left',
+  avatar,
+  lastDamage = null,
+  lastHeal = null,
+}) => {
+  const [animationQueue, setAnimationQueue] = useState([]);
+
+  useEffect(() => {
+    if (lastDamage) {
+      setAnimationQueue((prev) => [...prev, { type: 'damage', value: lastDamage }]);
+    }
+    if (lastHeal) {
+      setAnimationQueue((prev) => [...prev, { type: 'heal', value: lastHeal }]);
+    }
+
+    const timer = setTimeout(() => {
+      setAnimationQueue((prev) => prev.slice(1));
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [lastDamage, lastHeal]);
+
+  const hpPercentage = (hp / maxHp) * 100;
+
+  return (
+    <div
+      className={`
+        relative 
+        flex flex-col 
+        items-center 
+        ${position === 'left' ? 'mr-8' : 'ml-8'}
+      `}
+    >
+      <div
+        className={`
+          relative 
+          w-48 h-48 
+          rounded-full 
+          flex items-center 
+          justify-center 
+          overflow-hidden 
+          ${position === 'left' ? 'self-start' : 'self-end'}
+          ${hp <= maxHp * 0.2 ? 'animate-pulse' : ''}
+        `}
+      >
+        <img
+          src={avatar || '/api/placeholder/200/200'}
+          alt={name}
+          className="w-full h-full object-cover"
+        />
+
+        {/* Barre de vie */}
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-red-900" style={{ width: '100%' }}>
+          <div
+            className="h-full bg-green-500 transition-all duration-300"
+            style={{ width: `${hpPercentage}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="text-center mt-2">
+        <h3 className="text-xl font-bold">{name}</h3>
+        <p>
+          {hp}/{maxHp} PV
+        </p>
+      </div>
+
+      {/* Animations de dégâts/soins */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2">
+        <AnimatePresence>
+          {animationQueue.length > 0 &&
+            animationQueue.map((anim, index) => (
+              <CombatAnimation key={index} type={anim.type} value={anim.value} />
+            ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+// Interface de combat principale
+const CombatInterface = () => {
+  const dispatch = useDispatch();
+
+  // Sélecteurs Redux
+  const enemy = useSelector((state) => state.combat.enemy);
+  const player = useSelector((state) => state.player);
+  const gamePhase = useSelector((state) => state.game.gamePhase);
+  const combatState = useSelector((state) => state.combat);
+  const bonusCardCombination = useSelector((state) => state.bonusCards.deckCombination);
+
+  // États pour les animations de dégâts
+  const [playerLastDamage, setPlayerLastDamage] = useState(null);
+  const [enemyLastDamage, setEnemyLastDamage] = useState(null);
+
+  // Effet pour suivre les dégâts
+  useEffect(() => {
+    // Logique pour suivre les dégâts infligés et reçus
+    if (combatState.handResult && combatState.handResult.totalDamage) {
+      setEnemyLastDamage(combatState.handResult.totalDamage);
+    }
+  }, [combatState.handResult]);
+
+  // Vérifier si l'ennemi ou le joueur est vaincu
+  const isGameOver = player.health <= 0 || (enemy && enemy.health <= 0);
+
+  return (
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
+      className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-900 rounded-xl"
     >
-      {/* Enemy Section */}
-      <div className="md:col-span-2">
-        <EnemyStatus
-          name={enemy?.name}
-          hp={enemy?.health}
-          maxHp={enemy?.maxHealth}
-          nextAttack={enemy?.attack}
-        />
-      </div>
-
-      {/* Combat Log Section */}
-      <div className="md:col-span-1 md:row-span-2">
-        <CombatLog />
-      </div>
-
-      {/* Bonus Card Combination Section - NEW */}
-      <div className="md:col-span-2">
-        <BonusDeckCombination />
-      </div>
-
-      {/* Combat Hand Section */}
-      <div className="md:col-span-2">
-        <Card variant="elevated" className="p-4">
-          {/* Display Phase */}
-          {turnPhase === 'result' ? (
-            <div className="py-6 text-center">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800 p-4 rounded-lg mb-4"
-              >
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {enemy && enemy.health <= 0
-                    ? "Victoire! L'ennemi est vaincu!"
-                    : 'Vous avez infligé des dégâts!'}
-                </h3>
-                {handResult && (
-                  <p className="text-gray-300">
-                    Votre {handResult.handName} a infligé {handResult.totalDamage} points de dégâts.
-                  </p>
-                )}
-              </motion.div>
-
-              <Button variant="primary" size="lg" onClick={handleNextHand} className="px-8 py-3">
-                Continuer →
-              </Button>
-            </div>
-          ) : (
-            /* Normal play phase */
-            <>
-              {hand && hand.length > 0 ? (
-                <Hand
-                  cards={hand}
-                  onToggleSelect={handleCardSelection}
-                  onActionSelect={handleActionSelect}
-                  bestHandCards={bestHandCards}
-                  maxSelectable={5}
-                />
-              ) : (
-                <div className="py-6 text-center text-gray-400">Aucune carte disponible</div>
-              )}
-            </>
-          )}
-        </Card>
-      </div>
-
-      {/* Hand Result and Active Bonus Cards Section */}
-      <div className="md:col-span-2 space-y-4">
-        <AnimatePresence>
-          {handResult && turnPhase !== 'result' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <HandCombinationDisplay
-                handName={handResult.handName}
-                baseDamage={handResult.baseDamage}
-                totalDamage={handResult.totalDamage}
-                bonusEffects={handResult.bonusEffects}
-                cards={handResult.cards}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Active Bonus Cards */}
-        <ActiveBonusCards />
-      </div>
-
-      {/* Player Status Section */}
-      <div className="md:col-span-3 mt-4">
-        <PlayerStatus
+      {/* Zone du joueur */}
+      <div className="md:col-span-2 flex items-center justify-between">
+        <BattleCharacter
+          name="Joueur"
           hp={player.health}
           maxHp={player.maxHealth}
-          gold={player.gold}
-          xp={player.experience || 0}
-          level={player.level || 1}
-          shield={player.shield || 0}
-          defenseBonus={player.defenseBonus || 0}
+          position="left"
+          avatar="/api/placeholder/200/200"
+          lastDamage={playerLastDamage}
+        />
+
+        <div className="text-4xl text-white">VS</div>
+
+        <BattleCharacter
+          name={enemy?.name || 'Ennemi'}
+          hp={enemy?.health || 0}
+          maxHp={enemy?.maxHealth || 50}
+          position="right"
+          avatar="/api/placeholder/200/200"
+          lastDamage={enemyLastDamage}
         />
       </div>
+
+      {/* Journal de combat */}
+      <div className="md:col-span-1">
+        <div className="bg-gray-800 p-4 rounded-lg h-full overflow-y-auto">
+          <h3 className="text-xl font-bold mb-4 text-white">Journal de Combat</h3>
+          {combatState.combatLog &&
+            combatState.combatLog.slice(0, 10).map((entry, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-sm text-gray-300 mb-2 border-b border-gray-700 pb-2 last:border-b-0"
+              >
+                {entry}
+              </motion.div>
+            ))}
+        </div>
+      </div>
+
+      {/* Bonus de combinaison de cartes */}
+      {bonusCardCombination.isActive && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:col-span-3 bg-blue-900 bg-opacity-30 text-blue-300 p-3 rounded-lg text-center"
+        >
+          <strong>Combinaison Bonus:</strong> {bonusCardCombination.description}
+        </motion.div>
+      )}
+
+      {/* État de fin de combat */}
+      {isGameOver && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="md:col-span-3 bg-red-900 bg-opacity-50 text-white p-6 text-center rounded-lg"
+        >
+          <h2 className="text-2xl font-bold mb-4">
+            {player.health <= 0 ? 'Vous avez été vaincu!' : 'Victoire!'}
+          </h2>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

@@ -14,12 +14,14 @@ const initialState = {
   selectedCards: [],
   deck: [],
   discard: [],
-  turnPhase: 'draw', // draw, select, result
+  turnPhase: 'draw',
   discardLimit: 2,
-  actionMode: null, // Nouveau: null, 'attack', 'discard'
+  actionMode: null,
   bestHandCards: [],
   handResult: null,
   combatLog: [],
+  lastPlayerDamage: null,
+  lastEnemyDamage: null,
   pendingDamageBonus: 0,
   pendingDamageMultiplier: 1,
   invulnerableNextTurn: false,
@@ -28,7 +30,6 @@ const initialState = {
   criticalChanceBonus: 0,
   nextSkillBonus: 0,
   actionSpeedBonus: 0,
-  invulnerableNextTurn: false,
 };
 
 const combatSlice = createSlice({
@@ -76,14 +77,52 @@ const combatSlice = createSlice({
     enemyAction: (state) => {
       if (!state.enemy) return;
 
-      // Ajouter un message au journal de combat
+      // Tracker les dégâts infligés par l'ennemi
+      state.lastEnemyDamage = state.enemy.attack;
+
+      // Message de journal de combat
       const attackMessage = `${state.enemy.name} prépare une attaque de ${state.enemy.attack} dégâts`;
       state.combatLog.unshift(attackMessage);
 
       // Marquer que le joueur a subi des dégâts lors de ce tour
       state.playerDamagedLastTurn = true;
     },
+    trackPlayerDamage: (state, action) => {
+      state.lastPlayerDamage = action.payload;
+    },
 
+    trackEnemyDamage: (state, action) => {
+      state.lastEnemyDamage = action.payload;
+    },
+
+    // Reducer pour réinitialiser les indicateurs de dégâts
+    resetDamageTracking: (state) => {
+      state.lastPlayerDamage = null;
+      state.lastEnemyDamage = null;
+    },
+    takeDamage: (state, action) => {
+      const damageAmount = action.payload;
+      let remainingDamage = damageAmount;
+
+      // Tracker les dégâts
+      state.lastPlayerDamage = damageAmount;
+
+      // Application du bouclier
+      if (state.player.shield > 0) {
+        if (state.player.shield >= remainingDamage) {
+          state.player.shield -= remainingDamage;
+          remainingDamage = 0;
+        } else {
+          remainingDamage -= state.player.shield;
+          state.player.shield = 0;
+        }
+      }
+
+      // Appliquer les dégâts restants à la santé
+      if (remainingDamage > 0) {
+        state.player.health = Math.max(0, state.player.health - remainingDamage);
+      }
+    },
     // Nouveau reducer pour définir la phase de tour
     setTurnPhase: (state, action) => {
       state.turnPhase = action.payload;
@@ -507,6 +546,9 @@ export const {
   clearNextSkillBonus,
   setActionSpeedBonus,
   triggerUltimateEffect,
+  trackPlayerDamage,
+  trackEnemyDamage,
+  resetDamageTracking,
 } = combatSlice.actions;
 
 export default combatSlice.reducer;
