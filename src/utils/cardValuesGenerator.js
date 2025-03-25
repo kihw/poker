@@ -26,7 +26,6 @@ export function generateRandomCardSuit() {
   const randomIndex = Math.floor(Math.random() * CARD_SUITS.length);
   return CARD_SUITS[randomIndex];
 }
-
 /**
  * Génère une carte à jouer complète avec valeur et couleur aléatoires
  * @returns {Object} Objet contenant cardValue et cardSuit
