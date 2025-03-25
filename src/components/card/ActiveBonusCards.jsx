@@ -1,21 +1,26 @@
-// src/components/card/ActiveBonusCards.jsx
+// src/components/card/ActiveBonusCards.jsx - Optimized version combining BonusCards.jsx functionality
 import React, { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
 
 /**
- * Composant optimisé pour afficher et gérer les cartes bonus actives pendant le combat
- * Permet l'activation des cartes avec des effets actifs
- * Montre le statut des cartes passives
+ * Enhanced component to display and manage active bonus cards during combat
+ * Allows activation of cards with active effects
+ * Shows passive card status
  */
 const ActiveBonusCards = () => {
   const dispatch = useDispatch();
 
-  // Obtenir les cartes bonus actives du state Redux
+  // Get active bonus cards from Redux state
   const activeBonusCards = useSelector((state) => state.bonusCards.active || []);
   const gamePhase = useSelector((state) => state.game.gamePhase);
   const combatPhase = useSelector((state) => state.combat.turnPhase);
+
+  // If no active cards, don't render anything
+  if (!activeBonusCards || activeBonusCards.length === 0) {
+    return null;
+  }
 
   // Animations
   const containerAnimation = {
@@ -33,12 +38,7 @@ const ActiveBonusCards = () => {
     show: { opacity: 1, y: 0 },
   };
 
-  // Si aucune carte active, ne rien afficher
-  if (!activeBonusCards || activeBonusCards.length === 0) {
-    return null;
-  }
-
-  // Obtention de la couleur en fonction de la rareté
+  // Get color based on rarity
   const getRarityColor = (rarity) => {
     switch (rarity) {
       case 'common':
@@ -56,65 +56,65 @@ const ActiveBonusCards = () => {
     }
   };
 
-  // Obtention de l'icône en fonction du type d'effet
+  // Get appropriate icon based on effect type
   const getEffectIcon = (card) => {
     if (card.effect === 'passive') {
-      return '🔄'; // Effet passif
+      return '🔄'; // Passive effect
     }
 
-    if (!card.bonus) return '🎮'; // Cas par défaut
+    if (!card.bonus) return '🎮'; // Default case
 
     switch (card.bonus.type) {
       case 'damage':
-        return '⚔️'; // Dégâts
+        return '⚔️'; // Damage
       case 'heal':
-        return '❤️'; // Soin
+        return '❤️'; // Healing
       case 'shield':
-        return '🛡️'; // Bouclier
+        return '🛡️'; // Shield
       case 'discard':
-        return '🔄'; // Défausse
+        return '🔄'; // Discard
       case 'invulnerable':
-        return '✨'; // Invulnérabilité
+        return '✨'; // Invulnerability
       case 'damageMultiplier':
-        return '🔥'; // Multiplicateur
+        return '🔥'; // Multiplier
       default:
-        return '🎮'; // Cas par défaut
+        return '🎮'; // Default case
     }
   };
 
-  // Gestion de l'utilisation d'une carte bonus
+  // Handle using a bonus card
   const handleUseBonus = (index) => {
     const card = activeBonusCards[index];
 
-    // Vérifier si la carte peut être utilisée
+    // Check if the card can be used
     if (card.effect !== 'active' || card.usesRemaining <= 0 || card.available === false) {
       dispatch(
         setActionFeedback({
-          message: 'Cette carte ne peut pas être utilisée actuellement',
+          message: 'This card cannot be used right now',
           type: 'warning',
         })
       );
       return;
     }
 
-    // En dehors du combat ou en phase de pioche, ne pas permettre l'activation
+    // Outside of combat or in draw phase, don't allow activation
     if (gamePhase !== 'combat' || combatPhase === 'draw') {
       dispatch(
         setActionFeedback({
-          message: "Les cartes ne peuvent être utilisées qu'en combat",
+          message: 'Cards can only be used in combat',
           type: 'warning',
         })
       );
       return;
     }
 
-    // Dispatch l'action pour utiliser la carte
+    // Dispatch action to use the card
     dispatch({ type: 'bonusCards/useCard', payload: index });
 
-    // Feedback visuel
+    // Visual feedback
     dispatch(
       setActionFeedback({
-        message: `${card.name} activée`,
+        message: `${card.name} activated`,
         type: 'success',
       })
     );
@@ -122,7 +122,7 @@ const ActiveBonusCards = () => {
 
   return (
     <div className="p-4 bg-gray-800 rounded-md">
-      <h2 className="font-bold mb-2 text-white">Cartes Bonus</h2>
+      <h2 className="font-bold mb-2 text-white">Bonus Cards</h2>
       <motion.div
         className="flex flex-wrap gap-2"
         variants={containerAnimation}
@@ -155,7 +155,7 @@ const ActiveBonusCards = () => {
               combatPhase === 'draw'
             }
             title={card.description}
-            aria-label={`${card.name} - ${card.description} - ${card.effect === 'active' ? 'Cliquer pour utiliser' : 'Effet passif'}`}
+            aria-label={`${card.name} - ${card.description} - ${card.effect === 'active' ? 'Click to use' : 'Passive effect'}`}
             whileHover={{
               scale:
                 card.effect === 'active' && card.usesRemaining > 0 && gamePhase === 'combat'
@@ -183,10 +183,7 @@ const ActiveBonusCards = () => {
       </motion.div>
 
       <div className="mt-2 text-xs text-gray-400">
-        <p>
-          Les effets passifs (🔄) s'activent automatiquement. Cliquez sur les effets actifs pour les
-          utiliser.
-        </p>
+        <p>Passive effects (🔄) activate automatically. Click on active effects to use them.</p>
       </div>
     </div>
   );
