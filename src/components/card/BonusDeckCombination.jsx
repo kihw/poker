@@ -1,130 +1,92 @@
-// src/components/card/BonusDeckCombination.jsx
+// src/components/card/BonusDeckCombination.jsx - Version améliorée
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card as DesignCard, Badge, Tooltip, DESIGN_TOKENS } from '../ui/DesignSystem';
+import { Card as DesignCard, Badge } from '../ui/DesignSystem';
 import Card from './Card';
 
-/**
- * Composant qui affiche la combinaison active des cartes bonus et ses effets
- */
 const BonusDeckCombination = () => {
   const deckCombination = useSelector((state) => state.bonusCards.deckCombination);
   const activeBonusCards = useSelector((state) => state.bonusCards.active || []);
+  const maxSlots = useSelector((state) => state.bonusCards.maxSlots || 5);
 
-  // Si aucune combinaison active ou pas assez de cartes, ne rien afficher
-  if (!deckCombination?.isActive || activeBonusCards.length === 0) {
-    return null;
+  // Si aucune combinaison active ou pas assez de cartes, afficher un message d'aide
+  if (!deckCombination?.isActive) {
+    return (
+      <DesignCard variant="elevated" className="p-4 bg-gray-800 rounded-lg mb-4 opacity-75">
+        <h3 className="text-lg font-bold text-center text-gray-400 mb-3">
+          Pas de combinaison active
+        </h3>
+        <p className="text-sm text-gray-500 text-center">
+          {activeBonusCards.length === 0
+            ? 'Équipez des cartes bonus pour activer des combinaisons'
+            : activeBonusCards.length < 5
+              ? `Équipez ${5 - activeBonusCards.length} cartes supplémentaires pour une combinaison complète`
+              : 'Aucune combinaison valide détectée'}
+        </p>
+      </DesignCard>
+    );
   }
 
-  // Définir les couleurs en fonction du type de combinaison
-  const getCombinationColor = (combinationType) => {
-    switch (combinationType) {
+  // Obtenir la couleur en fonction du type de combinaison
+  const getCombinationColor = (type) => {
+    switch (type) {
       case 'HIGH_CARD':
-        return DESIGN_TOKENS.colors.neutral[500];
+        return '#9CA3AF'; // gris
       case 'PAIR':
-        return DESIGN_TOKENS.colors.primary.main;
+        return '#60A5FA'; // bleu clair
       case 'TWO_PAIR':
-        return DESIGN_TOKENS.colors.secondary.main;
+        return '#3B82F6'; // bleu
       case 'THREE_OF_A_KIND':
-        return DESIGN_TOKENS.colors.success.main;
+        return '#8B5CF6'; // violet
       case 'STRAIGHT':
-        return '#10B981'; // teal
+        return '#EC4899'; // rose
       case 'FLUSH':
-        return DESIGN_TOKENS.colors.warning.main;
+        return '#F59E0B'; // orange
       case 'FULL_HOUSE':
-        return '#8B5CF6'; // purple
+        return '#EF4444'; // rouge
       case 'FOUR_OF_A_KIND':
-        return DESIGN_TOKENS.colors.danger.main;
+        return '#10B981'; // vert
       case 'STRAIGHT_FLUSH':
-        return '#EC4899'; // pink
+        return '#6366F1'; // indigo
       case 'ROYAL_FLUSH':
-        return '#F59E0B'; // amber
+        return '#F59E0B'; // or
       default:
-        return DESIGN_TOKENS.colors.neutral[500];
-    }
-  };
-
-  // Définir l'icône en fonction du type d'effet
-  const getEffectIcon = (effectType) => {
-    switch (effectType) {
-      case 'criticalChance':
-        return '💥';
-      case 'defense':
-        return '🛡️';
-      case 'nextSkillDamage':
-        return '⚔️';
-      case 'actionSpeed':
-        return '⚡';
-      case 'globalDamage':
-        return '🔥';
-      case 'specialEffect':
-        return '✨';
-      case 'ultimateSkill':
-      case 'ultimate':
-        return '💫';
-      case 'multistat':
-        return '🌟';
-      default:
-        return '🎮';
+        return '#6B7280'; // gris par défaut
     }
   };
 
   const combinationColor = getCombinationColor(deckCombination.combination?.type);
 
-  // Animations
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.3,
-        staggerChildren: 0.1,
-      },
-    },
-    exit: { opacity: 0, y: -20 },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, scale: 0.9 },
-    visible: { opacity: 1, scale: 1 },
-  };
-
   return (
     <AnimatePresence>
       <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
         className="mb-4"
       >
-        <DesignCard variant="elevated" className="p-4 overflow-hidden">
-          <motion.div className="flex justify-between items-center mb-3" variants={itemVariants}>
+        <DesignCard
+          variant="elevated"
+          className="p-4 overflow-hidden border-l-4"
+          style={{ borderLeftColor: combinationColor }}
+        >
+          <div className="flex justify-between items-center mb-3">
             <div className="flex items-center">
               <div
                 className="w-3 h-3 rounded-full mr-2"
                 style={{ backgroundColor: combinationColor }}
               />
-              <h3 className="font-bold text-lg">
-                Combinaison Bonus: {deckCombination.combination?.name || 'Aucune'}
-              </h3>
+              <h3 className="font-bold text-lg">{deckCombination.combination?.name || 'Aucune'}</h3>
             </div>
             <Badge style={{ backgroundColor: combinationColor }}>
               {deckCombination.effect?.type === 'multistat' ? 'Multi-effet' : 'Actif'}
             </Badge>
-          </motion.div>
+          </div>
 
           {/* Description de l'effet */}
-          <motion.div
-            className="mb-4 p-3 bg-gray-800 rounded-lg text-gray-300"
-            variants={itemVariants}
-          >
-            <div className="flex items-center mb-2">
-              <span className="text-xl mr-2">{getEffectIcon(deckCombination.effect?.type)}</span>
-              <span className="font-medium">{deckCombination.description}</span>
-            </div>
+          <div className="mb-4 p-3 bg-gray-800 rounded-lg text-gray-300">
+            <div className="mb-2 font-medium">{deckCombination.description}</div>
 
             {/* Détails de l'effet selon le type */}
             {deckCombination.effect?.type === 'multistat' && (
@@ -138,27 +100,20 @@ const BonusDeckCombination = () => {
                 ))}
               </div>
             )}
-
-            {deckCombination.effect?.details && (
-              <div className="mt-1 text-sm text-gray-400">{deckCombination.effect.details}</div>
-            )}
-          </motion.div>
+          </div>
 
           {/* Cartes qui forment la combinaison */}
-          <motion.div variants={itemVariants}>
+          <div>
             <h4 className="text-sm text-gray-400 mb-2">Cartes de la combinaison:</h4>
-            <div className="flex flex-wrap justify-center gap-1">
+            <div className="flex flex-wrap justify-center gap-2">
               {activeBonusCards.map((card, index) => (
                 <div key={`deck-card-${index}`} className="transform scale-75 origin-center">
-                  <Tooltip content={card.name}>
-                    <Card
-                      value={card.cardValue}
-                      suit={card.cardSuit}
-                      rarity={card.rarity}
-                      selectionType="view"
-                      scale={0.8}
-                    />
-                  </Tooltip>
+                  <Card
+                    value={card.cardValue}
+                    suit={card.cardSuit}
+                    selectionType="view"
+                    scale={0.8}
+                  />
                 </div>
               ))}
 
@@ -171,7 +126,7 @@ const BonusDeckCombination = () => {
                 </div>
               )}
             </div>
-          </motion.div>
+          </div>
         </DesignCard>
       </motion.div>
     </AnimatePresence>

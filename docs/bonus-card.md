@@ -47,3 +47,7 @@
 
 - **Récompense (loot, victoire, coffre)** :  
   La valeur est **révélée après l’obtention**.
+
+#### **5. Etats**
+
+Implanté backend , front a faire

@@ -75,10 +75,14 @@ const bonusCardsSlice = createSlice({
             ...cardTemplate,
             owned: true,
             level: 1,
+            // Fixer les valeurs de la carte (ne seront jamais modifiées par la suite)
             cardValue: playingCardValues.cardValue,
             cardSuit: playingCardValues.cardSuit,
           });
         }
+      } else if (!state.collection[existingCardIndex].owned) {
+        // Si la carte existe mais n'est pas possédée, la marquer comme possédée
+        state.collection[existingCardIndex].owned = true;
       }
     },
 
