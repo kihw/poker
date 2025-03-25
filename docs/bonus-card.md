@@ -47,13 +47,3 @@
 
 - **Récompense (loot, victoire, coffre)** :  
   La valeur est **révélée après l’obtention**.
-
----
-
-### 📝 **Résumé**
-
-- **Deck bonus actif = 5 cartes max**, modifiable uniquement hors combat.
-- **Effets dépendants uniquement des combinaisons poker** formées dans le deck actif.
-- Optimisation stratégique entre la qualité individuelle des cartes et les synergies.
-
----

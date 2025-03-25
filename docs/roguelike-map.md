@@ -1,6 +1,6 @@
 **roguelike-map.md**
 
-`````markdown
+```markdown
 ### **Carte Roguelike – Fonctionnement complet**
 
 #### **1. Génération de la carte et structure**
@@ -42,17 +42,4 @@
 - Le jeu peut comporter plusieurs étages successifs (par exemple 3 étages principaux et un étage final). Chaque nouvel étage propose une nouvelle carte roguelike à explorer, avec son propre boss à la fin.
 - La progression d’un étage à l’autre s’accompagne généralement d’une **augmentation de la difficulté** (les probabilités de nœuds élite peuvent augmenter, les récompenses aussi). Le joueur conserve bien sûr l’ensemble de son état (PV restant, cartes bonus, or, niveau, inventaire) d’un étage à l’autre.
 - Atteindre et vaincre le dernier boss du dernier étage constitue l’**aboutissement de la partie** (victoire finale). Selon le jeu, il peut s’agir de la fin de la partie ou du début d’un mode infini. En cas de mode infini, les étages continuent de se générer aléatoirement avec une difficulté croissante tant que le joueur survit.
-
----
-
-### 📝 **Résumé**
-
-- La carte roguelike est un **réseau de nœuds** générés aléatoirement représentant les différentes rencontres de l’aventure (combats, événements, repos, boutique, etc.). Le joueur progresse du départ vers le boss en choisissant son chemin à chaque embranchement.
-- Les **types de nœuds** incluent : combats (normaux ou élites), événements spéciaux, sites de repos, boutiques, et boss de fin d’étage. Chaque type de nœud offre des défis ou avantages spécifiques.
-- Le joueur doit planifier son itinéraire en fonction de l’état de son personnage et des symboles de nœuds à venir, en équilibrant combats pour l’XP et l’or avec des arrêts stratégiques (repos, achats, événements).
-- Le générateur de niveau assure une progression équilibrée (ex. un repos garanti avant un boss). Après un boss vaincu, le joueur accède à l’étage suivant avec une nouvelle carte et des ennemis plus coriaces, jusqu’à la fin de l’aventure.
-
-```markdown
-
 ```
-`````
