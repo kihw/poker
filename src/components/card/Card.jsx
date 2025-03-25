@@ -1,171 +1,77 @@
-// src/components/card/Card.jsx - Design de sélection modifié
-import React from 'react';
-import { motion } from 'framer-motion';
-import { DESIGN_TOKENS } from '../ui/DesignSystem';
-
-// Définit ces constantes localement puisqu'elles ne sont pas exportées par DesignSystem
-const COLORS = {
-  primary: { main: '#26bf1b', light: '#60A5FA', dark: '#2563EB' },
-  danger: { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C' },
-};
-
-// Fonction locale pour obtenir la couleur de rareté
-const getRarityColor = (rarity) => {
-  switch (rarity) {
-    case 'common':
-      return '#9CA3AF'; // gris
-    case 'uncommon':
-      return '#60A5FA'; // bleu clair
-    case 'rare':
-      return '#8B5CF6'; // violet
-    case 'epic':
-      return '#EC4899'; // rose
-    case 'legendary':
-      return '#F59E0B'; // or
-    default:
-      return '#9CA3AF'; // gris par défaut
-  }
-};
-
-const Card = ({
-  value,
-  suit,
-  rarity = 'common', // Add rarity prop
+const BonusCard = ({
+  card,
+  onClick,
   isSelected = false,
-  onToggleSelect,
-  isHighlighted = false,
-  selectionType = 'attack',
+  onUpgrade,
+  onEquip,
+  onUnequip,
   disabled = false,
-  scale = 1,
 }) => {
-  // Color and styling based on suit and rarity
-  const suitSymbols = {
-    spades: '♠',
-    hearts: '♥',
-    diamonds: '♦',
-    clubs: '♣',
-  };
-
-  const displayValue = value || 'A';
-  const displaySuit = suitSymbols[suit] || suit;
-  const isRed = ['hearts', 'diamonds', '♥', '♦'].includes(suit);
-
-  // Rarity-based styling
-  const rarityColor = getRarityColor(rarity);
-  const textColor = isRed ? COLORS.danger.main : COLORS.primary.dark;
-
-  // Card border and shadow effects
-  const borderStyle = {
-    base: {
-      borderWidth: isSelected ? 2 : 1,
-      borderColor: isSelected ? COLORS.primary.main : DESIGN_TOKENS.colors.neutral[300],
-      boxShadow: isSelected
-        ? `0 0 10px ${COLORS.primary.light}80`
-        : isHighlighted
-          ? `0 0 8px ${COLORS.primary.light}80`
-          : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', // Shadow MD équivalent
-    },
-    rarity: {
-      borderColor: rarityColor,
-      background: rarityColor, // Couleur de fond opaque
-      backgroundImage: `linear-gradient(45deg, ${rarityColor}90, ${rarityColor}F0)`, // Gradient avec opacité
-    },
-  };
-
-  // Animation configurations
-  const cardAnimations = {
-    initial: { scale: 0.9, opacity: 1 }, // Opacity à 1 pour éviter la transparence
-    animate: {
-      scale: 1,
-      opacity: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 300,
-        damping: 10,
-      },
-    },
-    whileHover: {
-      scale: disabled ? 1 : 1.05,
-      transition: { duration: 0.2 },
-    },
-    whileTap: {
-      scale: disabled ? 1 : 0.95,
-      transition: { duration: 0.1 },
-    },
-  };
-
-  // Card dimensions based on scale
-  const width = 64 * scale;
-  const height = 96 * scale;
+  const rarityColor = getRarityColor(card.rarity);
+  const isRed = card.cardSuit === 'hearts' || card.cardSuit === 'diamonds';
 
   return (
     <motion.div
-      className={`
-      relative cursor-pointer transform-gpu 
-      ${isSelected ? 'z-10' : ''} 
-      ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-    `}
-      style={{ width, height }}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!disabled && onToggleSelect) onToggleSelect();
+      className="relative w-48 h-72 bg-white rounded-lg shadow-lg overflow-hidden"
+      style={{
+        transform: 'perspective(1000px) rotateY(0deg)',
+        transformStyle: 'preserve-3d',
+        backfaceVisibility: 'hidden',
       }}
+      whileHover={{
+        scale: 1.05,
+        boxShadow: '0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)',
+      }}
+      onClick={onClick}
     >
-      <motion.div
-        className="w-full h-full rounded-lg flex flex-col justify-center items-center"
+      {/* Partie supérieure (valeur de la carte) */}
+      <div
+        className={`absolute top-2 left-2 text-4xl font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+      >
+        {card.cardValue}
+      </div>
+      <div
+        className={`absolute top-2 right-2 text-4xl font-bold ${isRed ? 'text-red-600' : 'text-black'}`}
+      >
+        {getSuitSymbol(card.cardSuit)}
+      </div>
+
+      {/* Partie inférieure (description et effet) */}
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-gray-800 text-white p-3"
         style={{
-          ...borderStyle.base,
-          ...borderStyle.rarity,
-          transition: 'all 0.3s ease',
+          transform: 'translateZ(10px)',
         }}
       >
-        {/* Card Content */}
-        <div className="absolute w-full h-full flex flex-col justify-between p-2 backface-hidden">
-          {/* Top Left */}
-          <div className="flex justify-between items-center">
-            <div className="text-lg font-bold" style={{ color: textColor }}>
-              {displayValue}
-            </div>
-            <div className="text-lg" style={{ color: textColor }}>
-              {displaySuit}
-            </div>
-          </div>
+        <h3 className="font-bold text-sm mb-1">{card.name}</h3>
 
-          {/* Center */}
-          <div
-            className="flex-grow flex justify-center items-center text-3xl font-bold"
-            style={{ color: textColor }}
-          >
-            {displaySuit}
-          </div>
-
-          {/* Bottom Right (Inverted) */}
-          <div className="flex justify-between items-center rotate-180">
-            <div className="text-lg font-bold" style={{ color: textColor }}>
-              {displayValue}
-            </div>
-            <div className="text-lg" style={{ color: textColor }}>
-              {displaySuit}
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Selection Indicator*/}
-      {isSelected && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="absolute -bottom-2 left-0 right-0 text-xs text-center font-bold py-0.5 rounded-b-md"
+        <div
+          className="text-xs text-gray-300 mb-2"
           style={{
-            backgroundColor: COLORS.primary.main,
-            color: 'white',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
-          ✔
-        </motion.div>
-      )}
+          {card.description.split('\n')[0]}
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-semibold"
+            style={{
+              backgroundColor: rarityColor,
+              color: 'white',
+            }}
+          >
+            {card.level ? `Lv.${card.level}` : card.rarity}
+          </span>
+          {card.effect === 'active' && (
+            <span className="text-xs text-gray-400">{card.uses || 1} utilisations</span>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 };

@@ -251,6 +251,51 @@ const bonusCardsSlice = createSlice({
         state.error = action.error.message;
       });
   },
+  LOAD_SAVED_DATA: (state, action) => {
+    // Réinitialiser l'état du deck de cartes bonus
+    state.collection = [];
+    state.active = [];
+
+    // Charger la collection de cartes bonus
+    if (action.payload && action.payload.collection) {
+      state.collection = action.payload.collection.map((card) => ({
+        ...card,
+        owned: card.owned !== false,
+        level: card.level || 1,
+      }));
+    }
+
+    // Charger les cartes actives
+    if (action.payload && action.payload.active) {
+      state.active = action.payload.active
+        .map((card) => {
+          // Trouver la carte correspondante dans la collection
+          const fullCard = state.collection.find((c) => c.id === card.id);
+
+          return fullCard
+            ? {
+                ...fullCard,
+                usesRemaining: card.usesRemaining || 0,
+                available: true,
+              }
+            : null;
+        })
+        .filter(Boolean);
+    }
+
+    // Mettre à jour le nombre max d'emplacements
+    if (action.payload && action.payload.maxSlots) {
+      state.maxSlots = action.payload.maxSlots;
+    }
+
+    // Réinitialiser la combinaison de deck
+    state.deckCombination = {
+      combination: null,
+      effect: null,
+      description: null,
+      isActive: false,
+    };
+  },
 });
 
 export const {
@@ -264,6 +309,7 @@ export const {
   setDeckCombination,
   resetDeckCombination,
   resetBonusCards,
+  LOAD_SAVED_DATA,
 } = bonusCardsSlice.actions;
 
 export default bonusCardsSlice.reducer;

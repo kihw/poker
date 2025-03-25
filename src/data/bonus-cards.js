@@ -1,3 +1,11 @@
+export const CARD_RARITIES = {
+  COMMON: 'common',
+  UNCOMMON: 'uncommon',
+  RARE: 'rare',
+  EPIC: 'epic',
+  LEGENDARY: 'legendary',
+};
+
 export const ALL_BONUS_CARDS = [
   // Common cards
   {

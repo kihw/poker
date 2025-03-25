@@ -1,10 +1,10 @@
-// src/components/card/CollectionPreview.jsx - Enhanced Design System Collection View
 import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSuitSymbol, getCardDisplayName } from '../../utils/cardValuesGenerator';
 import { Card, Badge, Button, Tooltip, DESIGN_TOKENS, Icons } from '../ui/DesignSystem';
+import BonusCard from './BonusCard';
 
-// Définir la fonction getRarityColor localement au lieu de l'importer
 const getRarityColor = (rarity) => {
   switch (rarity) {
     case 'common':
@@ -25,6 +25,7 @@ const getRarityColor = (rarity) => {
 const CollectionPreview = ({ readOnly = false }) => {
   const bonusCards = useSelector((state) => state.bonusCards?.collection || []);
   const [selectedRarity, setSelectedRarity] = useState('all');
+  const [selectedCard, setSelectedCard] = useState(null);
 
   // Rarity filter options
   const rarityOptions = [
@@ -46,7 +47,7 @@ const CollectionPreview = ({ readOnly = false }) => {
       });
   }, [bonusCards, selectedRarity]);
 
-  // Card Detail View
+  // Card Detail Modal
   const CardDetailModal = ({ card, onClose }) => {
     if (!card) return null;
 
@@ -59,7 +60,7 @@ const CollectionPreview = ({ readOnly = false }) => {
         onClick={onClose}
       >
         <motion.div
-          className="bg-gray-800 rounded-xl p-6 max-w-md w-full"
+          className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex justify-between items-center mb-4">
@@ -69,16 +70,29 @@ const CollectionPreview = ({ readOnly = false }) => {
             <Badge variant="primary">{card.rarity}</Badge>
           </div>
 
-          <p className="text-gray-300 mb-4">{card.description}</p>
+          <div className="mb-4 flex items-center justify-center">
+            <div className="text-4xl">
+              {card.cardValue}
+              {getSuitSymbol(card.cardSuit)}
+            </div>
+          </div>
+
+          <p className="text-gray-700 mb-4">{card.description}</p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-400">Effet</h3>
+              <h3 className="text-sm font-semibold text-gray-600">Type</h3>
               <p>{card.bonus?.type || 'N/A'}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-400">Niveau</h3>
+              <h3 className="text-sm font-semibold text-gray-600">Niveau</h3>
               <p>{card.level || 1}</p>
+            </div>
+            <div className="col-span-2">
+              <h3 className="text-sm font-semibold text-gray-600">Effet</h3>
+              <p className="text-gray-700">
+                {card.bonus ? `${card.bonus.type}: ${card.bonus.value}` : 'Aucun effet spécifique'}
+              </p>
             </div>
           </div>
 
@@ -89,9 +103,6 @@ const CollectionPreview = ({ readOnly = false }) => {
       </motion.div>
     );
   };
-
-  // State for selected card
-  const [selectedCard, setSelectedCard] = useState(null);
 
   return (
     <Card variant="elevated" className="p-4">
@@ -153,40 +164,18 @@ const CollectionPreview = ({ readOnly = false }) => {
                 className={`cursor-${readOnly ? 'default' : 'pointer'}`}
                 onClick={() => !readOnly && setSelectedCard(card)}
               >
-                <Card
-                  variant="elevated"
-                  className="p-3 relative"
-                  style={{
-                    borderLeft: `4px solid ${getRarityColor(card.rarity)}`,
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-white">{card.name}</h3>
-                    <Badge
-                      variant="primary"
-                      size="sm"
-                      style={{
-                        backgroundColor: getRarityColor(card.rarity),
-                        color: 'white',
-                      }}
-                    >
-                      Lv. {card.level || 1}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-2 line-clamp-2">{card.description}</p>
-                  {!readOnly && (
-                    <div className="absolute bottom-1 right-1 text-xs text-gray-500">
-                      Cliquer pour détails
-                    </div>
-                  )}
-                </Card>
+                <BonusCard
+                  card={card}
+                  disabled={readOnly}
+                  onClick={() => !readOnly && setSelectedCard(card)}
+                />
               </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>
       )}
 
+      {/* Card Details Modal */}
       <AnimatePresence>
         {selectedCard && !readOnly && (
           <CardDetailModal card={selectedCard} onClose={() => setSelectedCard(null)} />

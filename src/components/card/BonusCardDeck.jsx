@@ -7,7 +7,7 @@ import {
   equipCard,
   unequipCard,
   upgradeCard,
-  loadFromLocalStorage,
+  initCollection,
 } from '../../redux/slices/bonusCardsSlice';
 import { spendGold } from '../../redux/slices/playerSlice';
 import { setActionFeedback } from '../../redux/slices/uiSlice';
@@ -41,7 +41,7 @@ const BonusCardDeck = ({ readOnly = false }) => {
 
   // Load bonus cards from localStorage on component mount
   useEffect(() => {
-    dispatch(loadFromLocalStorage());
+    dispatch(initCollection());
   }, [dispatch]);
 
   // Memoized filtering of cards
